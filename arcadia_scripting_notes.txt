@@ -1,0 +1,61 @@
+x = 7 + 11
+
+function Update()
+    --print("This is Entity 1 Update\n")
+    --print(''..x..'')
+    --print(''..Time.deltaTime..'')
+    local speed = 10
+    Transform.x = Transform.x + speed * Time.deltaTime
+    Transform.rotation = Transform.rotation + 45 * Time.deltaTime;
+
+    print(''..self..'')
+
+end
+
+
+> Player.arcscript -> it's just a human readable and editable string...so simple to work with
+
+var   int health    =  20
+var int ammo = 8;
+var float something = 23.0;
+
+// Upto 5 scripts can be attached to objects e.g.:
+// - MoveSideToSide script
+// - Kill player upon collision script
+// - Common enemy behaviour script
+// scripts are executed in order
+// there are only procedures. no variable declarations outside of procs
+// built in procedures called by the game:
+// - start
+// - update
+// - oncollision
+// - etc.
+// user can define their own procedures
+// all variables are declared and instantiated upon start
+
+// variable types:
+// - int
+// - float
+// - game objects?
+// - vectors?
+// - lists?
+
+// Keywords:
+// 
+
+proc Start()
+    global int score = 23
+    local int health = 10
+
+    MyProcedure
+end
+
+proc Update()
+
+end
+
+proc MyProcedure(int a, float b, bool c)
+end
+
+
+
