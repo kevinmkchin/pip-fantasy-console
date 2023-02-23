@@ -1,0 +1,12 @@
+build/
+xbuild/
+bin/
+out/
+cmake-build-*/
+
+.sln
+.vs/
+.idea/
+*.DS_Store
+
+lib/project_path.h
