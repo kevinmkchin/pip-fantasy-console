@@ -6,6 +6,27 @@
 - Limitations to scope ambition
 - Engine is only as good as its tools, documentation, and error messages
 
+## Todo
+
+- Editor GUI
+- Game GUI atomics
+- Pixel perfect AABB Collision checks -> GJK&EPA
+  - Select collider type from AABB, Sphere, and Convex point cloud
+- Sprite sheet & animations
+- Sprite batch rendering
+- Game file management
+  - meta data (Title, Cover art, Author, etc.)
+  - everything needed to play or edit the game
+- Screen system
+- Object system
+- Script interpreter
+
+Missing from Cute or Ascent
+- ECS + components
+- Asset management
+
+
+
 
 ## Build on Mac
 
