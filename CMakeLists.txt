@@ -12,7 +12,8 @@ set(SOURCE_FILES
         code/core/CoreShader.cpp
         code/core/CoreFileSystem.cpp
         code/core/CorePrintLog.cpp
-        code/core/CoreInput.cpp)
+        code/core/CoreInput.cpp
+        code/core/ArcadiaIMGUI.cpp)
 
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})

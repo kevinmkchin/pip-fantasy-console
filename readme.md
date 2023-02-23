@@ -8,8 +8,10 @@
 
 ## Todo
 
+- Make sure vertext height thing didn't regress
 - Editor GUI
 - Game GUI atomics
+- Editor camera & game camera
 - Pixel perfect AABB Collision checks -> GJK&EPA
   - Select collider type from AABB, Sphere, and Convex point cloud
 - Sprite sheet & animations
@@ -24,6 +26,7 @@
 Missing from Cute or Ascent
 - ECS + components
 - Asset management
+- Console
 
 
 

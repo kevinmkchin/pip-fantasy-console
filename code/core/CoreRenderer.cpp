@@ -5,9 +5,15 @@
 #include "ArcadiaOpenGL.h"
 #include "ArcadiaUtility.h"
 #include "CorePrintLog.h"
-
+#include "ArcadiaIMGUI.h"
 
 static SDL_Window* s_ActiveSDLWindow = nullptr;
+static CoreRenderer* s_TheCoreRenderer = nullptr;
+
+CoreRenderer* GetCoreRenderer()
+{
+    return s_TheCoreRenderer;
+}
 
 static const char* __finalpass_shader_vs =
         "#version 330\n"
@@ -59,6 +65,8 @@ bool CoreRenderer::Init()
 
     CreateMiscellaneous();
 
+    s_TheCoreRenderer = this;
+
     return true;
 }
 
@@ -102,7 +110,7 @@ void CoreRenderer::RenderGUILayer()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
 
-    // TODO(Kevin) KevGui::Draw();
+    ARCGUI::Draw();
 }
 
 //void CoreRenderer::RenderDebugUILayer()
