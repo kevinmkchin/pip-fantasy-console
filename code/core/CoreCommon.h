@@ -17,7 +17,15 @@ inline std::string data_path(const std::string& name) { return wd_path() + "data
 #define ASSERT(predicate) if(!(predicate)) { __builtin_trap(); }
 #endif
 
+#define ARRAY_COUNT(a) (sizeof(a) / (sizeof(a[0])))
+
 #define RGB255TO1(r,g,b) ((float)r)/255.f, ((float)g)/255.f, ((float)b)/255.f
+
+#define ISANYOF1(a, x) ((a) == (x))
+#define ISANYOF2(a, x, y) ((a) == (x) || (a) == (y))
+#define ISANYOF3(a, x, y, z) ((a) == (x) || (a) == (y) || (a) == (z))
+#define ISANYOF4(a, x, y, z, w) ((a) == (x) || (a) == (y) || (a) == (z) || (a) == (w))
+
 
 typedef uint8_t       u8;
 typedef uint16_t      u16;

@@ -110,3 +110,5 @@ private:
     Mesh screenSizeQuad;
 
 };
+
+CoreRenderer* GetCoreRenderer();

@@ -14,6 +14,7 @@
 #define VERTEXT_IMPLEMENTATION
 #include "singleheaders/vertext.h"
 #include "core/CoreInput.h"
+#include "core/ArcadiaIMGUI.h"
 
 static SDL_Window* g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
@@ -44,6 +45,7 @@ static bool InitializeEverything()
     SDL_GL_SetSwapInterval(1);
 
     g_gfx.Init();
+    ARCGUI::Init();
 
 
 
@@ -56,7 +58,7 @@ static void ProcessSDLEvents()
     while (SDL_PollEvent(&event))
     {
         Input.ProcessAllSDLInputEvents(event);
-//        KevGui::SDLProcessEvent(&event);
+        ARCGUI::SDLProcessEvent(&event);
 
         // Lower level engine related input
         switch (event.type)
@@ -102,8 +104,21 @@ int main()
     {
         if (Time.UpdateDeltaTime() > 0.1f) { continue; } // if delta time is too large, will cause glitches
 
-        //KevGui::NewFrame();
+        ARCGUI::NewFrame();
         ProcessSDLEvents();
+
+        auto sty = ARCGUI::GetActiveUIStyleCopy();
+        sty.textColor = vec4(0.f,0.f,0.f,1.f);
+        //ARCGUI::PushUIStyle(sty);
+        ARCGUI::DoTextUnformatted(30, 30, 16, ARCGUI::TextAlignment::Left, "JOURNEY");
+        ARCGUI::DoTextUnformatted(30, 60, 16, ARCGUI::TextAlignment::Left, "Start Editor");
+        ARCGUI::DoTextUnformatted(30, 90, 16, ARCGUI::TextAlignment::Left, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!");
+        //ARCGUI::DoButton(ARCGUI::FreshID(), ARCGUI::UIRect(30, 90, 100, 30), vec4(0,0,0,1), vec4(0.5,0.5,0.5,1), vec4(1.f, 1.f, 1.f, 1.f));
+        ARCGUI::EditorBeginWindow(ARCGUI::UIRect(30, 120, 200, 200));
+        ARCGUI::EditorLabelledButton("Insert Cartridge");
+        ARCGUI::EditorEndWindow();
+        //ARCGUI::PopUIStyle();
+
 //        console_update(Time.unscaledDeltaTime);
 //        editorRuntime.UpdateEditor(); //game->Update();
 //        DrawProfilerGUI();
