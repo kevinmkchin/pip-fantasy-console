@@ -13,6 +13,7 @@
 #include "singleheaders/stb_truetype.h"
 #define VERTEXT_IMPLEMENTATION
 #include "singleheaders/vertext.h"
+#include "core/CoreInput.h"
 
 static SDL_Window* g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
@@ -54,7 +55,7 @@ static void ProcessSDLEvents()
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
-//        Input.ProcessAllSDLInputEvents(event);
+        Input.ProcessAllSDLInputEvents(event);
 //        KevGui::SDLProcessEvent(&event);
 
         // Lower level engine related input
@@ -102,18 +103,13 @@ int main()
         if (Time.UpdateDeltaTime() > 0.1f) { continue; } // if delta time is too large, will cause glitches
 
         //KevGui::NewFrame();
-
         ProcessSDLEvents();
-
 //        console_update(Time.unscaledDeltaTime);
-//
 //        editorRuntime.UpdateEditor(); //game->Update();
 //        DrawProfilerGUI();
         g_gfx.Render();
-
         SDL_GL_SwapWindow(g_SDLWindow);
-
-        //Input.ResetInputStatesAtEndOfFrame();
+        Input.ResetInputStatesAtEndOfFrame();
     }
 
     SDL_DestroyWindow(g_SDLWindow);

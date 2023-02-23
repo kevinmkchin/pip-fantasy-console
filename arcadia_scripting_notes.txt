@@ -32,6 +32,8 @@ var float something = 23.0;
 // - etc.
 // user can define their own procedures
 // all variables are declared and instantiated upon start
+// there are globally accessible singletons
+// there are globally accessible built-in functions
 
 // variable types:
 // - int
@@ -39,23 +41,41 @@ var float something = 23.0;
 // - game objects?
 // - vectors?
 // - lists?
+// - structs
 
 // Keywords:
 // 
 
 proc Start()
-    global int score = 23
-    local int health = 10
+    global int score = 23 // accessible from other objects. persistent.
+    local int health = 10 // accessible from same object only. persistent.
+    internal int bruh = 9 // accessible from this script only. persistent.
+    var int temp = 42 // accessible from within this function only. deallocated upon exit
 
-    MyProcedure
+    MyProcedure  (bruh, 23.6, false)
 end
 
 proc Update()
-
+    if Keypressed("")
 end
 
 proc MyProcedure(int a, float b, bool c)
 end
 
 
+Custom structs can be implemented like so:
+struct SomeTypeA
+{
+    int a
+    float b
+    SomeOtherTypeB
+}
+For each member in the struct we know their size therefore we know the size of the struct. we also know
+their offset from the base. we can allocate memory for size and use offset to access data.
 
+We can have a "run procedure" native function that takes a procedure description and inputs and creates
+new stack and runs the procedure
+
+We need object descriptions, and keep track of object instances -> referencable from script like pointers.
+
+// do some tests like fibonacci calculations, etc.

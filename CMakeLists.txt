@@ -7,7 +7,12 @@ project(arcadia_fantasy_console)
 set(SOURCE_FILES
 	    code/ArcadiaFantasyConsole.cpp
         code/core/ArcadiaUtility.cpp
-        code/core/ArcadiaTimer.cpp code/core/CoreRenderer.cpp code/core/CoreRenderer.h code/core/CoreShader.cpp code/core/CoreShader.h code/core/CoreFileSystem.cpp code/core/CorePrintLog.cpp)
+        code/core/ArcadiaTimer.cpp
+        code/core/CoreRenderer.cpp
+        code/core/CoreShader.cpp
+        code/core/CoreFileSystem.cpp
+        code/core/CorePrintLog.cpp
+        code/core/CoreInput.cpp)
 
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
