@@ -1,8 +1,8 @@
 #include "ArcadiaScriptInterpreter.h"
 
-#include "../core/CoreCommon.h"
-#include "../core/ArcadiaUtility.h"
-#include "../core/CoreMemoryAllocator.h"
+#include "../../core/CoreCommon.h"
+#include "../../core/ArcadiaUtility.h"
+#include "../../core/CoreMemoryAllocator.h"
 
 #include <unordered_map>
 #include <vector>
@@ -177,72 +177,7 @@ std::vector<Token> Lexer(const std::string& code)
 }
 
 
-
-class ASTNode
-{
-
-};
-
-class ASTAssignment : public ASTNode
-{
-public:
-    ASTAssignment(ASTNode* id, ASTNode* expr);
-public:
-    ASTNode* id;
-    ASTNode* expr;
-};
-
-class ASTVariable : public ASTNode
-{
-public:
-    ASTVariable(const std::string& id);
-public:
-    std::string id;
-};
-
-class ASTReturn : public ASTNode
-{
-public:
-    ASTReturn(ASTNode* expr);
-public:
-    ASTNode* expr;
-};
-
-class ASTWhile : public ASTNode
-{
-public:
-    ASTWhile();
-public:
-    ASTNode* condition;
-    ASTNode* body;
-};
-
-class ASTNumberTerminal : public ASTNode
-{
-public:
-    ASTNumberTerminal(i32 num);
-public:
-    i32 value;
-};
-
-enum class BinOp
-{
-    Add,
-    Sub,
-    Mul,
-    Div
-};
-
-class ASTBinOp : public ASTNode
-{
-public:
-    ASTBinOp(BinOp op, ASTNode* left, ASTNode* right);
-public:
-    BinOp op; // add, sub, mul, div
-    ASTNode* left;
-    ASTNode* right;
-};
-
+#include "ASTNode.cpp"
 
 
 static MemoryLinearBuffer astBuffer;
@@ -442,34 +377,13 @@ ASTNode* Parser::expr()
 }
 
 
-ASTAssignment::ASTAssignment(ASTNode* id, ASTNode* expr)
-    : id(id)
-    , expr(expr)
-{}
-
-ASTVariable::ASTVariable(const std::string& id)
-    : id(id)
-{}
-
-ASTReturn::ASTReturn(ASTNode* expr)
-    : expr(expr)
-{}
-
-ASTNumberTerminal::ASTNumberTerminal(i32 num)
-    : value(num)
-{}
-
-ASTBinOp::ASTBinOp(BinOp op, ASTNode* left, ASTNode* right)
-    : op(op)
-    , left(left)
-    , right(right)
-{}
-
-
-
-// would be nice to have polymorphism
-// give me x amount of memory
-// use linear allocator bcs x memory will never be dealloced
+i8 printAstIndent = 0;
+void PrintAST(ASTNode* ast)
+{
+    ++printAstIndent;
+    if( static_cast<ASTBinOp*>(ast) == nullptr)
+    --printAstIndent;
+}
 
 void TestProc()
 {
@@ -512,33 +426,6 @@ void TestProc()
 //std::unordered_map<std::string, u32> pname_to_pid;
 //NiceArray<proc_definition, 4> procedure_definitions;
 //
-//std::string GetLine(std::string* code)
-//{
-//    size_t eol = code->find_first_of('\n');
-//    std::string line;
-//    if (eol == std::string::npos)
-//    {
-//        line = *code;
-//        code->clear();
-//    }
-//    line = code->substr(0, eol);
-//    *code = code->substr(eol + 1);
-//    return line;
-//}
-//
-//std::string GetToken(std::string* code)
-//{
-//
-//    // if ( x<= (4 + 3)) ...
-//    // 1 - "if"
-//    // 2 - "x<= (4 + 3)"
-//
-//    // x<= (4 + 3)
-//    // 1 - x
-//    // 2 - <=
-//    // 3 - 4 + 3
-//
-//}
 //
 //void ExecuteProcedure(proc_id pid)
 //{
