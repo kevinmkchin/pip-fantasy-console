@@ -381,7 +381,34 @@ i8 printAstIndent = 0;
 void PrintAST(ASTNode* ast)
 {
     ++printAstIndent;
-    if( static_cast<ASTBinOp*>(ast) == nullptr)
+    switch(ast->GetType())
+    {
+        case ASTNodeType::ASSIGN:  {
+            auto v = static_cast<ASTAssignment*>(ast);
+            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("assign ")).c_str());
+            PrintAST(v->id);
+            PrintAST(v->expr);
+        } break;
+        case ASTNodeType::RETURN: {
+            auto v = static_cast<ASTReturn*>(ast);
+            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("return ")).c_str());
+            PrintAST(v->expr);
+        } break;
+        case ASTNodeType::BINOP: {
+            auto v = static_cast<ASTBinOp*>(ast);
+            printf("%s%d\n", (std::string(printAstIndent, ' ') + std::string("binop ")).c_str(), v->op);
+            PrintAST(v->left);
+            PrintAST(v->right);
+        } break;
+        case ASTNodeType::VARIABLE: {
+            auto v = static_cast<ASTVariable*>(ast);
+            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("var ") + v->id).c_str());
+        } break;
+        case ASTNodeType::NUMBER: {
+            auto v = static_cast<ASTNumberTerminal*>(ast);
+            printf("%s%d\n", (std::string(printAstIndent, ' ') + std::string("num ")).c_str(), v->value);
+        } break;
+    }
     --printAstIndent;
 }
 
@@ -394,13 +421,17 @@ void TestProc()
     auto result = Lexer(" x = 4\n  return 32");
     auto parser = Parser(result);
     auto v = parser.parse();
+    for (auto n : v)
+    {
+        PrintAST(n);
+    }
 
     // void* a = MemoryLinearAllocate(&astBuffer, 16, 16);
     // void* b = MemoryLinearAllocate(&astBuffer, 32, 32);
     // void* c = MemoryLinearAllocate(&astBuffer, 16, 16);
     // void* d = MemoryLinearAllocate(&astBuffer, 128, 16);
 
-    printf("hello\n");
+//    printf("hello\n");
 }
 
 
