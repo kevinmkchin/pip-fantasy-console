@@ -1,7 +1,21 @@
+enum class ASTNodeType
+{
+    ASSIGN,
+    VARIABLE,
+    RETURN,
+    WHILE,
+    NUMBER,
+    BINOP
+};
+
 
 class ASTNode
 {
-
+public:
+    ASTNode(ASTNodeType type);
+    inline ASTNodeType GetType() { return nodeType; }
+private:
+    ASTNodeType nodeType;
 };
 
 class ASTAssignment : public ASTNode
@@ -65,26 +79,35 @@ public:
 };
 
 
+ASTNode::ASTNode(ASTNodeType type)
+    : nodeType(type)
+{}
+
 
 ASTAssignment::ASTAssignment(ASTNode* id, ASTNode* expr)
-    : id(id)
+    : ASTNode(ASTNodeType::ASSIGN)
+    , id(id)
     , expr(expr)
 {}
 
 ASTVariable::ASTVariable(const std::string& id)
-    : id(id)
+    : ASTNode(ASTNodeType::VARIABLE)
+    , id(id)
 {}
 
 ASTReturn::ASTReturn(ASTNode* expr)
-    : expr(expr)
+    : ASTNode(ASTNodeType::RETURN)
+    , expr(expr)
 {}
 
 ASTNumberTerminal::ASTNumberTerminal(i32 num)
-    : value(num)
+    : ASTNode(ASTNodeType::NUMBER)
+    , value(num)
 {}
 
 ASTBinOp::ASTBinOp(BinOp op, ASTNode* left, ASTNode* right)
-    : op(op)
+    : ASTNode(ASTNodeType::BINOP)
+    , op(op)
     , left(left)
     , right(right)
 {}
