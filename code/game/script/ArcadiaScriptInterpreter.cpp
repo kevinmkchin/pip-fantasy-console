@@ -289,8 +289,7 @@ void Parser::eat(TokenType tpe)
 
 ASTNode* Parser::factor()
 {
-    // factor : NUMBER | LPAREN expr RPAREN
-    // todo : IDENTIFIER
+    // factor : NUMBER | LPAREN expr RPAREN | VARIABLEIDENTIFIER
     // todo : function calls
 
     auto t = currentToken;
@@ -308,6 +307,14 @@ ASTNode* Parser::factor()
         eat(TokenType::LParen);
         auto node = expr();
         eat(TokenType::RParen);
+        return node;
+    }
+    else if (t.type == TokenType::Identifier)
+    {
+        eat(TokenType::Identifier);
+        auto node = 
+            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), 32))
+            ASTVariable(t.text);
         return node;
     }
     else
@@ -380,7 +387,7 @@ ASTNode* Parser::expr()
 i8 printAstIndent = 0;
 void PrintAST(ASTNode* ast)
 {
-    ++printAstIndent;
+    printAstIndent += 3;
     switch(ast->GetType())
     {
         case ASTNodeType::ASSIGN:  {
@@ -396,7 +403,15 @@ void PrintAST(ASTNode* ast)
         } break;
         case ASTNodeType::BINOP: {
             auto v = static_cast<ASTBinOp*>(ast);
-            printf("%s%d\n", (std::string(printAstIndent, ' ') + std::string("binop ")).c_str(), v->op);
+            const char* opName = nullptr;
+            switch (v->op)
+            {
+                case BinOp::Add: opName = "add"; break;
+                case BinOp::Sub: opName = "sub"; break;
+                case BinOp::Mul: opName = "mul"; break;
+                case BinOp::Div: opName = "div"; break;
+            }
+            printf("%s%s\n", (std::string(printAstIndent, ' ') + std::string("binop ")).c_str(), opName);
             PrintAST(v->left);
             PrintAST(v->right);
         } break;
@@ -409,16 +424,16 @@ void PrintAST(ASTNode* ast)
             printf("%s%d\n", (std::string(printAstIndent, ' ') + std::string("num ")).c_str(), v->value);
         } break;
     }
-    --printAstIndent;
+    printAstIndent -= 3;
 }
 
 void TestProc()
 {
     MemoryLinearInitialize(&astBuffer, 4096);
 
-    //auto result = Lexer(" 7 + 42 ");
+    //auto result = Lexer(" 7 - (4 + 3) ");
     //auto result = Lexer(" 2 +3* 7 - 1 ");
-    auto result = Lexer(" x = 4\n  return 32");
+    auto result = Lexer(" x = 2 + 3 * y - z\n  return x");
     auto parser = Parser(result);
     auto v = parser.parse();
     for (auto n : v)
