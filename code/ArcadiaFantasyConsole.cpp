@@ -15,6 +15,7 @@
 #include "singleheaders/vertext.h"
 #include "core/CoreInput.h"
 #include "core/ArcadiaIMGUI.h"
+#include "game/ArcadiaScriptInterpreter.h"
 
 static SDL_Window* g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
@@ -36,7 +37,7 @@ static bool InitializeEverything()
 
     g_SDLWindow = SDL_CreateWindow("ARCADIA Fantasy Console",
                                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H,
-                                   SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+                                   SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);// | SDL_WINDOW_RESIZABLE);
 
     g_SDLGLContext = SDL_GL_CreateContext(g_SDLWindow);
 
@@ -99,6 +100,8 @@ int main()
 	InitializeEverything();
 
     LoadFantasyConsole();
+
+    TestProc();
 
     while (!g_ProgramShouldShutdown)
     {

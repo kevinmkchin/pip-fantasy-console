@@ -45,6 +45,11 @@ template<typename T, int _count> struct NiceArray
         return *(data + index);
     }
 
+    T& At(unsigned int index)
+    {
+        return At((int) index);
+    }
+
     T& Back()
     {
         return *(data + count - 1);

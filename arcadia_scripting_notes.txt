@@ -62,6 +62,14 @@ end
 proc MyProcedure(int a, float b, bool c)
 end
 
+proc (int a, float b, bool c -> int : myProc)
+end
+
+proc (void -> void : Update)
+{
+    
+}
+
 
 Custom structs can be implemented like so:
 struct SomeTypeA
@@ -79,3 +87,9 @@ new stack and runs the procedure
 We need object descriptions, and keep track of object instances -> referencable from script like pointers.
 
 // do some tests like fibonacci calculations, etc.
+
+
+We are creating an imperative language like C, like assembly
+thus, the goal of executing the AST is to mutate the machine state.
+
+
