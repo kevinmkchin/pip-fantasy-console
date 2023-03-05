@@ -5,11 +5,13 @@
 - Frictionless
 - Limitations to scope ambition
 - Engine is only as good as its tools, documentation, and error messages
+- For Mac, Windows, Linux
 
 ## Todo
 
+- GUI incorrect zones when window resize
+  - prob cuz mouse x y will be incorrect.
 - Make sure vertext height thing didn't regress
-- Editor GUI
 - Game GUI atomics
 - Editor camera & game camera
 - Pixel perfect AABB Collision checks -> GJK&EPA

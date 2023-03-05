@@ -13,7 +13,9 @@ set(SOURCE_FILES
         code/core/CoreFileSystem.cpp
         code/core/CorePrintLog.cpp
         code/core/CoreInput.cpp
-        code/core/ArcadiaIMGUI.cpp)
+        code/core/ArcadiaIMGUI.cpp
+        code/game/ArcadiaScriptInterpreter.cpp 
+        code/core/CoreMemoryAllocator.cpp)
 
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
