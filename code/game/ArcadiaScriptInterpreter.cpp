@@ -55,6 +55,7 @@ enum class TokenType
     Identifier,
     LParen,
     RParen,
+    Return,
     EndOfLine,
     EndOfFile
 };
@@ -109,7 +110,7 @@ std::vector<Token> Lexer(const std::string& code)
         }
         else if(IsDigit(lookAhead))
         {
-            NiceArray<char, 32> numberCharsBuffer;
+            NiceArray<char, 65> numberCharsBuffer;
             numberCharsBuffer.ResetToZero();
             while (currentIndex < code.length() && IsDigit(code.at(currentIndex)))
             {
@@ -120,7 +121,7 @@ std::vector<Token> Lexer(const std::string& code)
         }
         else if(IsCharacter(lookAhead))
         {
-            NiceArray<char, 32> wordCharsBuffer; // then collect string of character to form word
+            NiceArray<char, 65> wordCharsBuffer; // then collect string of character to form word
             wordCharsBuffer.ResetToZero();
             while(currentIndex < code.length() && (IsCharacter(code.at(currentIndex)) || IsDigit(code.at(currentIndex))))
             {
@@ -140,9 +141,15 @@ std::vector<Token> Lexer(const std::string& code)
             // - bool
             // - string
             // - struct
-
-            // else word is function call or identifier
-            retval.push_back({ TokenType::Identifier, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            if (std::string(wordCharsBuffer.data) == "return")
+            {
+                retval.push_back({ TokenType::Return, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else
+            {
+                // else word is function call or identifier
+                retval.push_back({ TokenType::Identifier, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
         }
         else
         {
@@ -156,7 +163,7 @@ std::vector<Token> Lexer(const std::string& code)
                 case '(': { tokenType = TokenType::LParen; } break;
                 case ')': { tokenType = TokenType::RParen; } break;
                 case '=': { tokenType = TokenType::AssignmentOperator; } break;
-                case '\n': { tokenType = TokenType::AssignmentOperator; } break;
+                case '\n': { continue; /*tokenType = TokenType::EndOfLine;*/ } break;
                 default:{
                     printf("error: unrecognized character in Lexer");
                     continue;
@@ -179,9 +186,25 @@ class ASTNode
 class ASTAssignment : public ASTNode
 {
 public:
-    ASTAssignment();
+    ASTAssignment(ASTNode* id, ASTNode* expr);
 public:
     ASTNode* id;
+    ASTNode* expr;
+};
+
+class ASTVariable : public ASTNode
+{
+public:
+    ASTVariable(const std::string& id);
+public:
+    std::string id;
+};
+
+class ASTReturn : public ASTNode
+{
+public:
+    ASTReturn(ASTNode* expr);
+public:
     ASTNode* expr;
 };
 
@@ -264,6 +287,7 @@ std::vector<ASTNode*> Parser::parse()
     while(currentTokenIndex < tokens.size() - 1)
     {
         statementSequence.push_back(statement());
+        //eat(TokenType::EndOfLine);
     }
 
     return statementSequence;
@@ -273,14 +297,31 @@ ASTNode* Parser::statement()
 {
     // statement : expr
     // statement : IDENTIFIER ASSIGN expr
+    // statement : RETURN expr
+    
     // statement : WHILE LPAREN condition RPAREN (statement sequence)
     // statement : IF LPAREN condition RPAREN (body statement sequence) (else statement sequence)
-    // statement : RETURN expr
 
     if (currentToken.type == TokenType::Identifier)
     {
-        // (AssignmentNode - left: identifier, right: expr)
-        return nullptr;
+        auto t = currentToken;
+        eat(TokenType::Identifier);
+        eat(TokenType::AssignmentOperator);
+        auto varNode = 
+            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), 32))
+            ASTVariable(t.text);
+        auto node = 
+            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignment), 8))
+            ASTAssignment(varNode, expr());
+        return node;
+    }
+    else if (currentToken.type == TokenType::Return)
+    {
+        eat(TokenType::Return);
+        auto node =
+            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTReturn), 8))
+            ASTReturn(expr());
+        return node;
     }
     else
     {
@@ -401,6 +442,19 @@ ASTNode* Parser::expr()
 }
 
 
+ASTAssignment::ASTAssignment(ASTNode* id, ASTNode* expr)
+    : id(id)
+    , expr(expr)
+{}
+
+ASTVariable::ASTVariable(const std::string& id)
+    : id(id)
+{}
+
+ASTReturn::ASTReturn(ASTNode* expr)
+    : expr(expr)
+{}
+
 ASTNumberTerminal::ASTNumberTerminal(i32 num)
     : value(num)
 {}
@@ -422,7 +476,8 @@ void TestProc()
     MemoryLinearInitialize(&astBuffer, 4096);
 
     //auto result = Lexer(" 7 + 42 ");
-    auto result = Lexer(" 2 +3* 7 - 1 ");
+    //auto result = Lexer(" 2 +3* 7 - 1 ");
+    auto result = Lexer(" x = 4\n  return 32");
     auto parser = Parser(result);
     auto v = parser.parse();
 
