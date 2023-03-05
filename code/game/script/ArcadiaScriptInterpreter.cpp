@@ -9,7 +9,6 @@
 
 /** TODO
     - scopes and symbol tables
-    - negative numbers
     - floats
     - conditions
 */
@@ -60,6 +59,14 @@ enum class TokenType
     EndOfFile
 };
 
+bool IsValueType(TokenType type)
+{
+    return 
+        type == TokenType::NumberLiteral ||
+        type == TokenType::Identifier ||
+        type == TokenType::RParen;
+}
+
 struct Token
 {
     TokenType type = TokenType::Default;
@@ -106,15 +113,24 @@ std::vector<Token> Lexer(const std::string& code)
         else if(lookAhead == '-')
         {
             ++currentIndex;
-            retval.push_back({ TokenType::SubOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            if (!IsValueType(retval.back().type) && currentIndex < code.length() && IsDigit(code.at(currentIndex)))
+            {
+                flag_NegativeNumberAhead = true;
+            }
+            else
+            {
+                retval.push_back({ TokenType::SubOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
         }
         else if(IsDigit(lookAhead))
         {
-            NiceArray<char, 65> numberCharsBuffer;
-            numberCharsBuffer.ResetToZero();
+            if (flag_NegativeNumberAhead)
+            {
+                tokenStartIndex -= 1;
+                flag_NegativeNumberAhead = false;
+            }
             while (currentIndex < code.length() && IsDigit(code.at(currentIndex)))
             {
-                numberCharsBuffer.PushBack(code.at(currentIndex));
                 ++currentIndex;
             }
             retval.push_back({ TokenType::NumberLiteral, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
@@ -154,7 +170,7 @@ std::vector<Token> Lexer(const std::string& code)
         else
         {
             ++currentIndex;
-            TokenType tokenType = TokenType::Default;
+            TokenType tokenType;
             switch(lookAhead)
             {
                 case '+': { tokenType = TokenType::AddOperator; } break;
@@ -320,6 +336,7 @@ ASTNode* Parser::factor()
     else
     {
         error();
+        return nullptr;
     }
 }
 
@@ -432,8 +449,8 @@ void TestProc()
     MemoryLinearInitialize(&astBuffer, 4096);
 
     //auto result = Lexer(" 7 - (4 + 3) ");
-    //auto result = Lexer(" 2 +3* 7 - 1 ");
-    auto result = Lexer(" x = 2 + 3 * y - z\n  return x");
+    auto result = Lexer(" 2 +3*-7 - 1 ");
+    //auto result = Lexer(" x = 2 + 3 * y - z\n  return x");
     auto parser = Parser(result);
     auto v = parser.parse();
     for (auto n : v)
