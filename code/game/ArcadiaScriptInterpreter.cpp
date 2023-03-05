@@ -7,13 +7,20 @@
 #include <unordered_map>
 #include <vector>
 
+/** TODO
+    - scopes and symbol tables
+    - negative numbers
+    - floats
+    - conditions
+*/
+
 /*
  * stuff can be one of :
  * - keyword
  *   - if, ret, else, proc, end, int, float, bool, struct, string, while, for, array, list
  * - identifier
  *   - x, y, fib, Start, Update
- * - constant
+ * - terminal
  *   - 2, 514, 3.14, "hello world", true, false
  * - operator
  *   - +, -, *, /, <, >, is, <=, >=, isnt, and, or
@@ -44,6 +51,8 @@ enum class TokenType
     SubOperator,
     MulOperator,
     DivOperator,
+    AssignmentOperator,
+    Identifier,
     LParen,
     RParen,
     EndOfLine,
@@ -63,6 +72,14 @@ struct Token
 bool IsDigit(char c)
 {
     return ('0' <= c && c <= '9');
+}
+
+bool IsCharacter(char c)
+{
+    return 
+        ('a' <= c && c <= 'z') ||
+        ('A' <= c && c <= 'Z') ||
+        ('_' == c);
 }
 
 bool IsWhitespace(char c)
@@ -101,10 +118,31 @@ std::vector<Token> Lexer(const std::string& code)
             }
             retval.push_back({ TokenType::NumberLiteral, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
         }
-        else if(lookAhead == '\n')
+        else if(IsCharacter(lookAhead))
         {
-            ++currentIndex;
-            retval.push_back({ TokenType::EndOfLine, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            NiceArray<char, 32> wordCharsBuffer; // then collect string of character to form word
+            wordCharsBuffer.ResetToZero();
+            while(currentIndex < code.length() && (IsCharacter(code.at(currentIndex)) || IsDigit(code.at(currentIndex))))
+            {
+                wordCharsBuffer.PushBack(code.at(currentIndex));
+                ++currentIndex;
+            } // at this point, we have a fully formed word
+
+            // check if word is a keyword
+            // - return
+            // - while
+            // - if else
+            // - for
+            // - continue
+            // - break
+            // - int
+            // - float
+            // - bool
+            // - string
+            // - struct
+
+            // else word is function call or identifier
+            retval.push_back({ TokenType::Identifier, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
         }
         else
         {
@@ -117,6 +155,8 @@ std::vector<Token> Lexer(const std::string& code)
                 case '/': { tokenType = TokenType::DivOperator; } break;
                 case '(': { tokenType = TokenType::LParen; } break;
                 case ')': { tokenType = TokenType::RParen; } break;
+                case '=': { tokenType = TokenType::AssignmentOperator; } break;
+                case '\n': { tokenType = TokenType::AssignmentOperator; } break;
                 default:{
                     printf("error: unrecognized character in Lexer");
                     continue;
@@ -181,18 +221,6 @@ public:
 };
 
 
-//
-//    // a = 2 + 3 * -7 - 1
-//
-//  
-//
-//    //     assign(id(a), rhs)
-//    // assign a b
-//
-//    (2 + (3 * -7)) - 1
-
-// 
-
 
 static MemoryLinearBuffer astBuffer;
 
@@ -201,7 +229,7 @@ class Parser
 public:
     Parser(std::vector<Token> _tokens);
 
-    ASTNode* parse();
+    std::vector<ASTNode*> parse();
 
 private:
     void error();
@@ -213,6 +241,8 @@ private:
     ASTNode* term();
 
     ASTNode* expr();
+
+    ASTNode* statement();
 
 
 private:
@@ -227,9 +257,35 @@ Parser::Parser(std::vector<Token> _tokens)
     , currentTokenIndex(0)
 {}
 
-ASTNode* Parser::parse()
+std::vector<ASTNode*> Parser::parse()
 {
-    return expr();
+    std::vector<ASTNode*> statementSequence;
+
+    while(currentTokenIndex < tokens.size() - 1)
+    {
+        statementSequence.push_back(statement());
+    }
+
+    return statementSequence;
+}
+
+ASTNode* Parser::statement()
+{
+    // statement : expr
+    // statement : IDENTIFIER ASSIGN expr
+    // statement : WHILE LPAREN condition RPAREN (statement sequence)
+    // statement : IF LPAREN condition RPAREN (body statement sequence) (else statement sequence)
+    // statement : RETURN expr
+
+    if (currentToken.type == TokenType::Identifier)
+    {
+        // (AssignmentNode - left: identifier, right: expr)
+        return nullptr;
+    }
+    else
+    {
+        return expr();
+    }
 }
 
 void Parser::error()
@@ -257,7 +313,9 @@ void Parser::eat(TokenType tpe)
 
 ASTNode* Parser::factor()
 {
-    // factor : NUMBER | LPAREN expr RPAREN | IDENTIFIER
+    // factor : NUMBER | LPAREN expr RPAREN
+    // todo : IDENTIFIER
+    // todo : function calls
 
     auto t = currentToken;
 
@@ -372,11 +430,6 @@ void TestProc()
     // void* b = MemoryLinearAllocate(&astBuffer, 32, 32);
     // void* c = MemoryLinearAllocate(&astBuffer, 16, 16);
     // void* d = MemoryLinearAllocate(&astBuffer, 128, 16);
-    // ASTNode* l = new(MemoryLinearAllocate(&astBuffer, sizeof(ASTNumberTerminal), 8)) ASTNumberTerminal(78);
-    // ASTNode* r = new(MemoryLinearAllocate(&astBuffer, sizeof(ASTNumberTerminal), 8)) ASTNumberTerminal(42);
-    // ASTBinOp* op = new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBinOp), 8)) ASTBinOp(BinOp::Add);
-    // op->left = l;
-    // op->right = r;
 
     printf("hello\n");
 }
