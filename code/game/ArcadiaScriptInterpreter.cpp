@@ -44,6 +44,8 @@ enum class TokenType
     SubOperator,
     MulOperator,
     DivOperator,
+    LParen,
+    RParen,
     EndOfLine,
     EndOfFile
 };
@@ -55,8 +57,6 @@ struct Token
     u32 startPos = 0;
 };
 
-// "2 + 4"
-// string -> list of Token
 
 // char -> bool
 // return true if char is one of [0, 9]
@@ -70,6 +70,7 @@ bool IsWhitespace(char c)
     return c == ' ' /* or some other shit*/;
 }
 
+// string -> list of Token
 std::vector<Token> Lexer(const std::string& code)
 {
     std::vector<Token> retval;
@@ -84,25 +85,10 @@ std::vector<Token> Lexer(const std::string& code)
         {
             ++currentIndex;
         }
-        else if(lookAhead == '+')
-        {
-            ++currentIndex;
-            retval.push_back({ TokenType::AddOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
-        }
         else if(lookAhead == '-')
         {
             ++currentIndex;
             retval.push_back({ TokenType::SubOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
-        }
-        else if(lookAhead == '*')
-        {
-            ++currentIndex;
-            retval.push_back({ TokenType::MulOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
-        }
-        else if(lookAhead == '/')
-        {
-            ++currentIndex;
-            retval.push_back({ TokenType::DivOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
         }
         else if(IsDigit(lookAhead))
         {
@@ -122,8 +108,21 @@ std::vector<Token> Lexer(const std::string& code)
         }
         else
         {
-            printf("error: unrecognized character in Lexer");
             ++currentIndex;
+            TokenType tokenType = TokenType::Default;
+            switch(lookAhead)
+            {
+                case '+': { tokenType = TokenType::AddOperator; } break;
+                case '*': { tokenType = TokenType::MulOperator; } break;
+                case '/': { tokenType = TokenType::DivOperator; } break;
+                case '(': { tokenType = TokenType::LParen; } break;
+                case ')': { tokenType = TokenType::RParen; } break;
+                default:{
+                    printf("error: unrecognized character in Lexer");
+                    continue;
+                }
+            }
+            retval.push_back({ tokenType, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
         }
     }
     retval.push_back({TokenType::EndOfFile, "<EOF>", (u32)code.length()});
@@ -270,10 +269,13 @@ ASTNode* Parser::factor()
             ASTNumberTerminal(atoi(t.text.c_str()));
         return node;
     }
-    // else if ()
-    // {
-
-    // }
+    else if (t.type == TokenType::LParen)
+    {
+        eat(TokenType::LParen);
+        auto node = expr();
+        eat(TokenType::RParen);
+        return node;
+    }
     else
     {
         error();
