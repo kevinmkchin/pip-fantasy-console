@@ -177,7 +177,7 @@ std::vector<Token> Lexer(const std::string& code)
 }
 
 
-#include "ASTNode.cpp"
+#include "ASTNodes.cpp"
 
 
 static MemoryLinearBuffer astBuffer;
