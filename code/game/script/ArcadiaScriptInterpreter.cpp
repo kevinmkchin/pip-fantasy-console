@@ -200,7 +200,6 @@ std::vector<Token> Lexer(const std::string& code)
             } // at this point, we have a fully formed word
 
             // check if word is a keyword
-            // - return
             // - while
             // - if else
             // - for
@@ -354,6 +353,8 @@ ASTNode* Parser::statement()
 
 ASTNode* Parser::cond_expr()
 {
+    // cond_expr : expr ((< | > | <= | =>) expr)?
+
     auto node = expr();
 
     if(ISANYOF4(currentToken.type, TokenType::LessThan, TokenType::LessThanOrEqual, 
@@ -393,6 +394,9 @@ ASTNode* Parser::cond_expr()
 
 ASTNode* Parser::cond_equal()
 {
+    // cond_equal : cond_expr ((== | !=) cond_expr)?
+    // cond_equal : LPAREN cond_or RPAREN
+
     ASTNode* node = nullptr;
 
     if (currentToken.type == TokenType::LParen)
@@ -431,6 +435,8 @@ ASTNode* Parser::cond_equal()
 
 ASTNode* Parser::cond_and()
 {
+    // cond_and : cond_equal (AND cond_equal)*
+
     auto node = cond_equal();
 
     if(currentToken.type == TokenType::And)
@@ -447,6 +453,8 @@ ASTNode* Parser::cond_and()
 
 ASTNode* Parser::cond_or()
 {
+    // cond_or : cond_and (OR cond_and)*
+
     auto node = cond_and();
 
     if(currentToken.type == TokenType::Or)
@@ -459,30 +467,6 @@ ASTNode* Parser::cond_or()
     }
 
     return node;
-}
-
-
-void Parser::error()
-{
-    printf("oof\n");
-    ASSERT(0);
-}
-
-void Parser::eat(TokenType tpe)
-{
-    // compare the current token type with the passed token
-    // type and if they match then "eat" the current token
-    // and assign the next token to currentToken, otherwise 
-    // error.
-
-    if(currentToken.type == tpe)
-    {
-        currentToken = tokens[++currentTokenIndex];
-    }
-    else
-    {
-        error();
-    }
 }
 
 ASTNode* Parser::factor()
@@ -597,6 +581,29 @@ ASTNode* Parser::expr()
     }
 
     return node;
+}
+
+void Parser::error()
+{
+    printf("oof\n");
+    ASSERT(0);
+}
+
+void Parser::eat(TokenType tpe)
+{
+    // compare the current token type with the passed token
+    // type and if they match then "eat" the current token
+    // and assign the next token to currentToken, otherwise
+    // error.
+
+    if(currentToken.type == tpe)
+    {
+        currentToken = tokens[++currentTokenIndex];
+    }
+    else
+    {
+        error();
+    }
 }
 
 
