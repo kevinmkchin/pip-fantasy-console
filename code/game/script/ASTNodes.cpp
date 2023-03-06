@@ -5,7 +5,9 @@ enum class ASTNodeType
     RETURN,
     WHILE,
     NUMBER,
-    BINOP
+    BOOLEAN,
+    BINOP,
+    RELOP
 };
 
 
@@ -60,6 +62,14 @@ public:
     i32 value;
 };
 
+class ASTBooleanTerminal : public ASTNode
+{
+public:
+    ASTBooleanTerminal(bool v);
+public:
+    bool value;
+};
+
 enum class BinOp
 {
     Add,
@@ -73,7 +83,29 @@ class ASTBinOp : public ASTNode
 public:
     ASTBinOp(BinOp op, ASTNode* left, ASTNode* right);
 public:
-    BinOp op; // add, sub, mul, div
+    BinOp op;
+    ASTNode* left;
+    ASTNode* right;
+};
+
+enum class RelOp
+{
+    LT,
+    GT,
+    LE,
+    GE,
+    EQ,
+    NEQ,
+    AND, // and logical AND OR
+    OR
+};
+
+class ASTRelOp : public ASTNode
+{
+public:
+    ASTRelOp(RelOp op, ASTNode* left, ASTNode* right);
+public:
+    RelOp op;
     ASTNode* left;
     ASTNode* right;
 };
@@ -105,10 +137,24 @@ ASTNumberTerminal::ASTNumberTerminal(i32 num)
     , value(num)
 {}
 
+ASTBooleanTerminal::ASTBooleanTerminal(bool v)
+    : ASTNode(ASTNodeType::BOOLEAN)
+    , value(v)
+{}
+
 ASTBinOp::ASTBinOp(BinOp op, ASTNode* left, ASTNode* right)
     : ASTNode(ASTNodeType::BINOP)
     , op(op)
     , left(left)
     , right(right)
 {}
+
+ASTRelOp::ASTRelOp(RelOp op, ASTNode* left, ASTNode* right)
+    : ASTNode(ASTNodeType::RELOP)
+    , op(op)
+    , left(left)
+    , right(right)
+{}
+
+
 
