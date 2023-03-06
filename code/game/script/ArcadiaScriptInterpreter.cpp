@@ -8,10 +8,13 @@
 #include <vector>
 
 /** TODO
+    - negation operator !
+    - if else branch
+    - while
+    - ast interpreter start work
+
     - scopes and symbol tables
     - floats
-    - conditions
-    - negation operator !
 */
 
 /*
