@@ -11,6 +11,7 @@
     - scopes and symbol tables
     - floats
     - conditions
+    - negation operator !
 */
 
 /*
@@ -43,17 +44,30 @@ static const char* script1 = "3 + 7";
 enum class TokenType
 {
     Default,
-    NumberLiteral,
-    True,
-    False,
+
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+    Equal,
+    NotEqual,
+    And,
+    Or,
+
     AddOperator,
     SubOperator,
     MulOperator,
     DivOperator,
     AssignmentOperator,
+
+    NumberLiteral,
+    True,
+    False,
     Identifier,
+
     LParen,
     RParen,
+
     Return,
     EndOfLine,
     EndOfFile
@@ -122,6 +136,46 @@ std::vector<Token> Lexer(const std::string& code)
                 retval.push_back({ TokenType::SubOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
             }
         }
+        else if(lookAhead == '<' || lookAhead == '>' || lookAhead == '!' || lookAhead == '=')
+        {
+            ++currentIndex;
+            if (currentIndex < code.length() && code.at(currentIndex) == '=') // check if next char is =
+            {
+                ++currentIndex;
+                if (lookAhead == '<')
+                {
+                    retval.push_back({ TokenType::LessThanOrEqual, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                }
+                else if (lookAhead == '>')
+                {
+                    retval.push_back({ TokenType::GreaterThanOrEqual, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                }
+                else if (lookAhead == '!')
+                {
+                    retval.push_back({ TokenType::NotEqual, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                }
+                else if (lookAhead == '=')
+                {
+                    retval.push_back({ TokenType::Equal, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                }
+            }
+            else if (lookAhead == '<')
+            {
+                retval.push_back({ TokenType::LessThan, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (lookAhead == '>')
+            {
+                retval.push_back({ TokenType::GreaterThan, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (lookAhead == '=')
+            {
+                retval.push_back({ TokenType::AssignmentOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (lookAhead == '!')
+            {
+                // TODO(Kevin)
+            }
+        }
         else if(IsDigit(lookAhead))
         {
             if (flag_NegativeNumberAhead)
@@ -157,13 +211,29 @@ std::vector<Token> Lexer(const std::string& code)
             // - bool
             // - string
             // - struct
-            if (std::string(wordCharsBuffer.data) == "return")
+            auto word = std::string(wordCharsBuffer.data);
+            if (word == "return")
             {
                 retval.push_back({ TokenType::Return, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
             }
-            else
+            else if (word == "true")
             {
-                // else word is function call or identifier
+                retval.push_back({ TokenType::True, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (word == "false")
+            {
+                retval.push_back({ TokenType::False, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (word == "and")
+            {
+                retval.push_back({ TokenType::And, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (word == "or")
+            {
+                retval.push_back({ TokenType::Or, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else // otherwise, word is function call or identifier
+            {
                 retval.push_back({ TokenType::Identifier, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
             }
         }
@@ -178,7 +248,6 @@ std::vector<Token> Lexer(const std::string& code)
                 case '/': { tokenType = TokenType::DivOperator; } break;
                 case '(': { tokenType = TokenType::LParen; } break;
                 case ')': { tokenType = TokenType::RParen; } break;
-                case '=': { tokenType = TokenType::AssignmentOperator; } break;
                 case '\n': { continue; /*tokenType = TokenType::EndOfLine;*/ } break;
                 default:{
                     printf("error: unrecognized character in Lexer");
@@ -211,10 +280,13 @@ private:
     void eat(TokenType tpe);
 
     ASTNode* factor();
-
     ASTNode* term();
-
     ASTNode* expr();
+
+    ASTNode* cond_expr();
+    ASTNode* cond_equal();
+    ASTNode* cond_and();
+    ASTNode* cond_or();
 
     ASTNode* statement();
 
@@ -246,12 +318,12 @@ std::vector<ASTNode*> Parser::parse()
 
 ASTNode* Parser::statement()
 {
-    // statement : expr
-    // statement : IDENTIFIER ASSIGN expr
-    // statement : RETURN expr
+    // statement : cond_or // TODO(Kevin): should remove later...
+    // statement : IDENTIFIER ASSIGN cond_or
+    // statement : RETURN cond_or
     
-    // statement : WHILE LPAREN condition RPAREN (statement sequence)
-    // statement : IF LPAREN condition RPAREN (body statement sequence) (else statement sequence)
+    // todo : WHILE LPAREN cond_or RPAREN (statement sequence)
+    // todo : IF LPAREN cond_or RPAREN (body statement sequence) (else statement sequence)
 
     if (currentToken.type == TokenType::Identifier)
     {
@@ -263,7 +335,7 @@ ASTNode* Parser::statement()
             ASTVariable(t.text);
         auto node = 
             new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignment), 8))
-            ASTAssignment(varNode, expr());
+            ASTAssignment(varNode, cond_or());
         return node;
     }
     else if (currentToken.type == TokenType::Return)
@@ -271,14 +343,124 @@ ASTNode* Parser::statement()
         eat(TokenType::Return);
         auto node =
             new (MemoryLinearAllocate(&astBuffer, sizeof(ASTReturn), 8))
-            ASTReturn(expr());
+            ASTReturn(cond_or());
         return node;
     }
     else
     {
-        return expr();
+        return cond_or();
     }
 }
+
+ASTNode* Parser::cond_expr()
+{
+    auto node = expr();
+
+    if(ISANYOF4(currentToken.type, TokenType::LessThan, TokenType::LessThanOrEqual, 
+        TokenType::GreaterThan, TokenType::GreaterThanOrEqual))
+    {
+        auto t = currentToken;
+        RelOp op = RelOp::LT;
+        
+        if (t.type == TokenType::LessThan)
+        {
+            eat(TokenType::LessThan);
+            op = RelOp::LT;
+        }
+        else if (t.type == TokenType::LessThanOrEqual)
+        {
+            eat(TokenType::LessThanOrEqual);
+            op = RelOp::LE;
+        }
+        else if (t.type == TokenType::GreaterThan)
+        {
+            eat(TokenType::GreaterThan);
+            op = RelOp::GT;
+        }
+        else if (t.type == TokenType::GreaterThanOrEqual)
+        {
+            eat(TokenType::GreaterThanOrEqual);
+            op = RelOp::GE;
+        }
+
+        node =
+            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), 8))
+            ASTRelOp(op, node, expr());
+    }
+
+    return node;
+}
+
+ASTNode* Parser::cond_equal()
+{
+    ASTNode* node = nullptr;
+
+    if (currentToken.type == TokenType::LParen)
+    {
+        eat(TokenType::LParen);
+        node = cond_or();
+        eat(TokenType::RParen);
+        return node;
+    }
+
+    node = cond_expr();
+
+    if(ISANYOF2(currentToken.type, TokenType::Equal, TokenType::NotEqual))
+    {
+        auto t = currentToken;
+        RelOp op = RelOp::EQ;
+        
+        if (t.type == TokenType::Equal)
+        {
+            eat(TokenType::Equal);
+            op = RelOp::EQ;
+        }
+        else if (t.type == TokenType::NotEqual)
+        {
+            eat(TokenType::NotEqual);
+            op = RelOp::NEQ;
+        }
+
+        node =
+            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), 8))
+            ASTRelOp(op, node, cond_expr());
+    }
+
+    return node;
+}
+
+ASTNode* Parser::cond_and()
+{
+    auto node = cond_equal();
+
+    if(currentToken.type == TokenType::And)
+    {
+        eat(TokenType::And);
+
+        node =
+            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), 8))
+            ASTRelOp(RelOp::AND, node, cond_equal());
+    }
+
+    return node;
+}
+
+ASTNode* Parser::cond_or()
+{
+    auto node = cond_and();
+
+    if(currentToken.type == TokenType::Or)
+    {
+        eat(TokenType::Or);
+
+        node =
+            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), 8))
+            ASTRelOp(RelOp::OR, node, cond_and());
+    }
+
+    return node;
+}
+
 
 void Parser::error()
 {
@@ -305,39 +487,56 @@ void Parser::eat(TokenType tpe)
 
 ASTNode* Parser::factor()
 {
-    // factor : NUMBER | LPAREN expr RPAREN | VARIABLEIDENTIFIER
+    // factor : NUMBER
+    // factor : LPAREN expr RPAREN
+    // factor : VARIABLEIDENTIFIER
+    // factor : TRUE|FALSE
     // todo : function calls
 
     auto t = currentToken;
+    ASTNode* node = nullptr;
 
     if (t.type == TokenType::NumberLiteral)
     {
         eat(TokenType::NumberLiteral);
-        ASTNode* node = 
+        node =
             new(MemoryLinearAllocate(&astBuffer, sizeof(ASTNumberTerminal), 8)) 
             ASTNumberTerminal(atoi(t.text.c_str()));
         return node;
     }
+    else if (t.type == TokenType::True)
+    {
+        eat(TokenType::True);
+        node = 
+            new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), 8)) 
+            ASTBooleanTerminal(true);
+    }
+    else if (t.type == TokenType::False)
+    {
+        eat(TokenType::False);
+        node = 
+            new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), 8)) 
+            ASTBooleanTerminal(false);
+    }
     else if (t.type == TokenType::LParen)
     {
         eat(TokenType::LParen);
-        auto node = expr();
+        node = expr();
         eat(TokenType::RParen);
-        return node;
     }
     else if (t.type == TokenType::Identifier)
     {
         eat(TokenType::Identifier);
-        auto node = 
+        node = 
             new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), 32))
             ASTVariable(t.text);
-        return node;
     }
     else
     {
         error();
-        return nullptr;
     }
+
+    return node;
 }
 
 ASTNode* Parser::term()
@@ -432,6 +631,24 @@ void PrintAST(ASTNode* ast)
             PrintAST(v->left);
             PrintAST(v->right);
         } break;
+        case ASTNodeType::RELOP: {
+            auto v = static_cast<ASTRelOp*>(ast);
+            const char* opName = nullptr;
+            switch (v->op)
+            {
+                case RelOp::LT: opName = "less than"; break;
+                case RelOp::GT: opName = "greater than"; break;
+                case RelOp::LE: opName = "less than or equal"; break;
+                case RelOp::GE: opName = "greater than or equal"; break;
+                case RelOp::EQ: opName = "equal"; break;
+                case RelOp::NEQ: opName = "not equal"; break;
+                case RelOp::AND: opName = "and"; break;
+                case RelOp::OR: opName = "or"; break;
+            }
+            printf("%s%s\n", (std::string(printAstIndent, ' ') + std::string("relop ")).c_str(), opName);
+            PrintAST(v->left);
+            PrintAST(v->right);
+        } break;
         case ASTNodeType::VARIABLE: {
             auto v = static_cast<ASTVariable*>(ast);
             printf("%s\n", (std::string(printAstIndent, ' ') + std::string("var ") + v->id).c_str());
@@ -439,6 +656,10 @@ void PrintAST(ASTNode* ast)
         case ASTNodeType::NUMBER: {
             auto v = static_cast<ASTNumberTerminal*>(ast);
             printf("%s%d\n", (std::string(printAstIndent, ' ') + std::string("num ")).c_str(), v->value);
+        } break;
+        case ASTNodeType::BOOLEAN: {
+            auto v = static_cast<ASTBooleanTerminal*>(ast);
+            printf("%s%s\n", (std::string(printAstIndent, ' ') + std::string("bool ")).c_str(), (v->value ? "true" : "false"));
         } break;
     }
     printAstIndent -= 3;
@@ -449,8 +670,11 @@ void TestProc()
     MemoryLinearInitialize(&astBuffer, 4096);
 
     //auto result = Lexer(" 7 - (4 + 3) ");
-    auto result = Lexer(" 2 +3*-7 - 1 ");
+    //auto result = Lexer(" 2 +3*-7 - 1 ");
     //auto result = Lexer(" x = 2 + 3 * y - z\n  return x");
+    //auto result = Lexer(" x = (3 >= y) and (2 == 4 or true)\n  return x");
+    auto result = Lexer("((false)) or 4 + y > 7 - (4 + 3) and 45 != z");
+
     auto parser = Parser(result);
     auto v = parser.parse();
     for (auto n : v)

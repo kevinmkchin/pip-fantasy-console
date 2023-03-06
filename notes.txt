@@ -1,0 +1,42 @@
+
+    // statement : expr
+    // statement : IDENTIFIER ASSIGN expr
+    // statement : RETURN expr
+    
+    // statement : WHILE LPAREN condition RPAREN (statement sequence)
+    // statement : IF LPAREN condition RPAREN (body statement sequence) (else statement sequence)
+
+    // factor : NUMBER
+    // factor : LPAREN expr RPAREN
+    // factor : VARIABLEIDENTIFIER // how do we know if variable is boolean or number??
+    // factor : (true | false)
+
+    // term : factor ((MUL | DIV) factor)*
+
+    // expr : term ((PLUS | MINUS) term)*
+
+
+    // condexpr : expr ((< | > | <= | =>) expr)?
+    //          : 3*2+3-1/4 (<|>|<=|=>) 8/4*3
+    //          : x(number) (<|>|<=|=>) y(number)
+    //          : (true|false)
+    //          : x(boolean)
+
+    // condequal : condexpr ((== | !=) condexpr)?
+    // condequal : LPAREN condOr RPAREN
+
+    // condAnd : condequal (and condequal)*
+
+    // condOr : condAnd (or condAnd)*
+
+
+
+
+
+    // condition : !condition | LPAREN condOr RPAREN
+
+
+
+
+
+(t and t) and (x or y)
