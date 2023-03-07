@@ -8,10 +8,10 @@
 #include <vector>
 
 /** TODO
-    - negation operator !
-    - while
     - ast interpreter start work
     - print (or just use return as print for now)
+    - while
+    - for
 
     - scopes and symbol tables
     - floats
@@ -54,8 +54,9 @@ enum class TokenType
     GreaterThanOrEqual,
     Equal,
     NotEqual,
-    And,
-    Or,
+    LogicalAnd,
+    LogicalOr,
+    LogicalNegation,
 
     AddOperator,
     SubOperator,
@@ -192,7 +193,7 @@ std::vector<Token> Lexer(const std::string& code)
             }
             else if (lookAhead == '!')
             {
-                // TODO(Kevin)
+                retval.push_back({TokenType::LogicalNegation, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
             }
         }
         else if(IsDigit(lookAhead))
@@ -244,11 +245,11 @@ std::vector<Token> Lexer(const std::string& code)
             }
             else if (word == "and")
             {
-                retval.push_back({ TokenType::And, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({TokenType::LogicalAnd, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
             }
             else if (word == "or")
             {
-                retval.push_back({ TokenType::Or, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({TokenType::LogicalOr, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
             }
             else if (word == "if")
             {
@@ -348,7 +349,6 @@ ASTNode* Parser::statement()
     // statement : RETURN cond_or
     // statement : expr  // this is valid because a statement can be a function call
     // statement : IF cond_or statement (ELSE statement)? // todo change statement to statement sequence
-    
     // todo : WHILE cond_or (statement sequence)
 
     if (currentToken.type == TokenType::Identifier)
@@ -440,6 +440,8 @@ ASTNode* Parser::cond_equal()
 {
     // cond_equal : cond_expr ((== | !=) cond_expr)?
     // cond_equal : LPAREN cond_or RPAREN
+    // cond_equal : NOT LPAREN cond_or RPAREN
+    // cond_equal : NOT factor
 
     ASTNode* node = nullptr;
 
@@ -448,6 +450,25 @@ ASTNode* Parser::cond_equal()
         eat(TokenType::LParen);
         node = cond_or();
         eat(TokenType::RParen);
+        return node;
+    }
+    else if (currentToken.type == TokenType::LogicalNegation)
+    {
+        eat(TokenType::LogicalNegation);
+        if(currentToken.type == TokenType::LParen)
+        {
+            eat(TokenType::LParen);
+            node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTLogicalNot), 8))
+                ASTLogicalNot(cond_or());
+            eat(TokenType::RParen);
+        }
+        else
+        {
+            node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTLogicalNot), 8))
+                ASTLogicalNot(factor());
+        }
         return node;
     }
 
@@ -479,13 +500,13 @@ ASTNode* Parser::cond_equal()
 
 ASTNode* Parser::cond_and()
 {
-    // cond_and : cond_equal (AND cond_equal)*
+    // cond_and : cond_equal (AND cond_equal)?
 
     auto node = cond_equal();
 
-    if(currentToken.type == TokenType::And)
+    if(currentToken.type == TokenType::LogicalAnd)
     {
-        eat(TokenType::And);
+        eat(TokenType::LogicalAnd);
 
         node =
             new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), 8))
@@ -497,13 +518,13 @@ ASTNode* Parser::cond_and()
 
 ASTNode* Parser::cond_or()
 {
-    // cond_or : cond_and (OR cond_and)*
+    // cond_or : cond_and (OR cond_and)?
 
     auto node = cond_and();
 
-    if(currentToken.type == TokenType::Or)
+    if(currentToken.type == TokenType::LogicalOr)
     {
-        eat(TokenType::Or);
+        eat(TokenType::LogicalOr);
 
         node =
             new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), 8))
@@ -706,6 +727,11 @@ void PrintAST(ASTNode* ast)
             PrintAST(v->left);
             PrintAST(v->right);
         } break;
+        case ASTNodeType::LOGICALNOT: {
+            auto v = static_cast<ASTLogicalNot*>(ast);
+            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("not")).c_str());
+            PrintAST(v->boolExpr);
+        } break;
         case ASTNodeType::BRANCH: {
             auto v = static_cast<ASTBranch*>(ast);
             printf("%s\n", (std::string(printAstIndent, ' ') + std::string("branch (cond, if, else)")).c_str());
@@ -737,9 +763,10 @@ void TestProc()
     //auto result = Lexer(" 2 +3*-7 - 1 ");
     //auto result = Lexer(" x = 2 + 3 * y - z\n  return x");
     //auto result = Lexer(" x = (3 >= y) and (2 == 4 or true)\n  return x");
-//    auto result = Lexer("((false)) or 4 + y > 7 - (4 + 3) and 45 != z\n"
-//                        "x = (3 >= y) and (2 == 4 or true)\n  return x");
-    auto result = Lexer("if false return x else if false return y else if true return z");
+    //auto result = Lexer("((false)) or 4 + y > 7 - (4 + 3) and 45 != z\n"
+    //                    "x = (3 >= y) and (2 == 4 or true)\n  return x");
+    //auto result = Lexer("if false return x else if false return y else if true return z");
+    auto result = Lexer("return ! (4 < (3 + 2)) and false");
 
     auto parser = Parser(result);
     auto v = parser.parse();
