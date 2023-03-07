@@ -114,6 +114,10 @@ int main()
         sty.textColor = vec4(0.f,0.f,0.f,1.f);
         //ARCGUI::PushUIStyle(sty);
         ARCGUI::DoTextUnformatted(30, 30, 16, ARCGUI::TextAlignment::Left, "JOURNEY");
+        ARCGUI::DoTextUnformatted(130, 30, 16, ARCGUI::TextAlignment::Left, "Comet");
+        ARCGUI::DoTextUnformatted(230, 30, 16, ARCGUI::TextAlignment::Left, "MESA");
+        ARCGUI::DoTextUnformatted(330, 30, 16, ARCGUI::TextAlignment::Left, "Star");
+        ARCGUI::DoTextUnformatted(430, 30, 16, ARCGUI::TextAlignment::Left, "Heart");
         ARCGUI::DoTextUnformatted(30, 60, 16, ARCGUI::TextAlignment::Left, "Start Editor");
         ARCGUI::DoTextUnformatted(30, 90, 16, ARCGUI::TextAlignment::Left, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!");
         //ARCGUI::DoButton(ARCGUI::FreshID(), ARCGUI::UIRect(30, 90, 100, 30), vec4(0,0,0,1), vec4(0.5,0.5,0.5,1), vec4(1.f, 1.f, 1.f, 1.f));
