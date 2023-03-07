@@ -1,0 +1,24 @@
+
+potentially:
+auto
+const
+float
+int
+struct
+void
+enum
+
+break
+continue
+for
+while
+do
+switch
+case
+default
+
+
+
+I want:
+- boxes instead of pointers
+- tables instead of structs?

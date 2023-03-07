@@ -59,6 +59,18 @@ proc Update()
     if Keypressed("")
 end
 
+proc (:Update)
+end
+
+proc (int : a -> int : fib)
+end
+
+proc ((inputs : name)* -> output : name)
+end
+
+proc (float:name)
+end
+
 proc MyProcedure(int a, float b, bool c)
 end
 
