@@ -7,7 +7,8 @@ enum class ASTNodeType
     NUMBER,
     BOOLEAN,
     BINOP,
-    RELOP
+    RELOP,
+    BRANCH
 };
 
 
@@ -110,11 +111,20 @@ public:
     ASTNode* right;
 };
 
+class ASTBranch : public ASTNode
+{
+public:
+    ASTBranch(ASTNode* condition, ASTNode* if_case, ASTNode* else_case);
+public:
+    ASTNode* condition;
+    ASTNode* if_body;
+    ASTNode* else_body;
+};
+
 
 ASTNode::ASTNode(ASTNodeType type)
     : nodeType(type)
 {}
-
 
 ASTAssignment::ASTAssignment(ASTNode* id, ASTNode* expr)
     : ASTNode(ASTNodeType::ASSIGN)
@@ -154,6 +164,13 @@ ASTRelOp::ASTRelOp(RelOp op, ASTNode* left, ASTNode* right)
     , op(op)
     , left(left)
     , right(right)
+{}
+
+ASTBranch::ASTBranch(ASTNode* condition, ASTNode* if_case, ASTNode* else_case)
+        : ASTNode(ASTNodeType::BRANCH)
+        , condition(condition)
+        , if_body(if_case)
+        , else_body(else_case)
 {}
 
 

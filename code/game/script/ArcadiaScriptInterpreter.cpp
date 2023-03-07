@@ -9,9 +9,9 @@
 
 /** TODO
     - negation operator !
-    - if else branch
     - while
     - ast interpreter start work
+    - print (or just use return as print for now)
 
     - scopes and symbol tables
     - floats
@@ -71,10 +71,26 @@ enum class TokenType
     LParen,
     RParen,
 
+    If,
+    Else,
+
     Return,
     EndOfLine,
     EndOfFile
 };
+
+//if b statementx
+//if b statementx else statementy
+//if b (statementx) else (if c (statementy) else (if d statementz else (statementa)))
+//if b
+//    statementx
+//else if c
+//    statementy
+//else if d
+//    statementz
+//else
+//    statementa
+// maybe we only need one "end"?
 
 bool IsValueType(TokenType type)
 {
@@ -234,6 +250,14 @@ std::vector<Token> Lexer(const std::string& code)
             {
                 retval.push_back({ TokenType::Or, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
             }
+            else if (word == "if")
+            {
+                retval.push_back({ TokenType::If, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (word == "else")
+            {
+                retval.push_back({ TokenType::Else, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
             else // otherwise, word is function call or identifier
             {
                 retval.push_back({ TokenType::Identifier, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
@@ -320,12 +344,12 @@ std::vector<ASTNode*> Parser::parse()
 
 ASTNode* Parser::statement()
 {
-    // statement : cond_or // TODO(Kevin): should remove later...
     // statement : IDENTIFIER ASSIGN cond_or
     // statement : RETURN cond_or
+    // statement : expr  // this is valid because a statement can be a function call
+    // statement : IF cond_or statement (ELSE statement)? // todo change statement to statement sequence
     
-    // todo : WHILE LPAREN cond_or RPAREN (statement sequence)
-    // todo : IF LPAREN cond_or RPAREN (body statement sequence) (else statement sequence)
+    // todo : WHILE cond_or (statement sequence)
 
     if (currentToken.type == TokenType::Identifier)
     {
@@ -346,6 +370,23 @@ ASTNode* Parser::statement()
         auto node =
             new (MemoryLinearAllocate(&astBuffer, sizeof(ASTReturn), 8))
             ASTReturn(cond_or());
+        return node;
+    }
+    else if (currentToken.type == TokenType::If)
+    {
+        eat(TokenType::If);
+        ASTNode* condition = cond_or();
+        ASTNode* ifCase = statement(); // todo sequence of statements
+        ASTNode* elseCase = nullptr;
+        if (currentToken.type == TokenType::Else)
+        {
+            eat(TokenType::Else);
+            elseCase = statement(); // todo sequence of statements
+        }
+
+        auto node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTBranch), 8))
+                ASTBranch(condition, ifCase, elseCase);
         return node;
     }
     else
@@ -614,6 +655,12 @@ i8 printAstIndent = 0;
 void PrintAST(ASTNode* ast)
 {
     printAstIndent += 3;
+    if(ast == nullptr)
+    {
+        printf("%s\n", (std::string(printAstIndent, ' ') + std::string("null")).c_str());
+        printAstIndent -= 3;
+        return;
+    }
     switch(ast->GetType())
     {
         case ASTNodeType::ASSIGN:  {
@@ -637,7 +684,7 @@ void PrintAST(ASTNode* ast)
                 case BinOp::Mul: opName = "mul"; break;
                 case BinOp::Div: opName = "div"; break;
             }
-            printf("%s%s\n", (std::string(printAstIndent, ' ') + std::string("binop ")).c_str(), opName);
+            printf("%s%s%s\n", (std::string(printAstIndent, ' ') + std::string("binop l ")).c_str(), opName, " r");
             PrintAST(v->left);
             PrintAST(v->right);
         } break;
@@ -655,9 +702,16 @@ void PrintAST(ASTNode* ast)
                 case RelOp::AND: opName = "and"; break;
                 case RelOp::OR: opName = "or"; break;
             }
-            printf("%s%s\n", (std::string(printAstIndent, ' ') + std::string("relop ")).c_str(), opName);
+            printf("%s%s%s\n", (std::string(printAstIndent, ' ') + std::string("relop l ")).c_str(), opName, " r");
             PrintAST(v->left);
             PrintAST(v->right);
+        } break;
+        case ASTNodeType::BRANCH: {
+            auto v = static_cast<ASTBranch*>(ast);
+            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("branch (cond, if, else)")).c_str());
+            PrintAST(v->condition);
+            PrintAST(v->if_body);
+            PrintAST(v->else_body);
         } break;
         case ASTNodeType::VARIABLE: {
             auto v = static_cast<ASTVariable*>(ast);
@@ -683,7 +737,9 @@ void TestProc()
     //auto result = Lexer(" 2 +3*-7 - 1 ");
     //auto result = Lexer(" x = 2 + 3 * y - z\n  return x");
     //auto result = Lexer(" x = (3 >= y) and (2 == 4 or true)\n  return x");
-    auto result = Lexer("((false)) or 4 + y > 7 - (4 + 3) and 45 != z");
+//    auto result = Lexer("((false)) or 4 + y > 7 - (4 + 3) and 45 != z\n"
+//                        "x = (3 >= y) and (2 == 4 or true)\n  return x");
+    auto result = Lexer("if false return x else if false return y else if true return z");
 
     auto parser = Parser(result);
     auto v = parser.parse();
@@ -691,11 +747,6 @@ void TestProc()
     {
         PrintAST(n);
     }
-
-    // void* a = MemoryLinearAllocate(&astBuffer, 16, 16);
-    // void* b = MemoryLinearAllocate(&astBuffer, 32, 32);
-    // void* c = MemoryLinearAllocate(&astBuffer, 16, 16);
-    // void* d = MemoryLinearAllocate(&astBuffer, 128, 16);
 
 //    printf("hello\n");
 }

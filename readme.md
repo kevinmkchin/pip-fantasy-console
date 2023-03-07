@@ -11,7 +11,7 @@
 
 - GUI incorrect zones when window resize
   - prob cuz mouse x y will be incorrect.
-- Make sure vertext height thing didn't regress
+- Make sure vertext height thing didn't regress (text height inconsistency for loading vs forming vertices)
 - Game GUI atomics
 - Editor camera & game camera
 - Pixel perfect AABB Collision checks -> GJK&EPA
