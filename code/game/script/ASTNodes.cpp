@@ -8,6 +8,7 @@ enum class ASTNodeType
     BOOLEAN,
     BINOP,
     RELOP,
+    LOGICALNOT,
     BRANCH
 };
 
@@ -111,6 +112,14 @@ public:
     ASTNode* right;
 };
 
+class ASTLogicalNot : public ASTNode
+{
+public:
+    ASTLogicalNot(ASTNode* boolExpr);
+public:
+    ASTNode* boolExpr;
+};
+
 class ASTBranch : public ASTNode
 {
 public:
@@ -164,6 +173,11 @@ ASTRelOp::ASTRelOp(RelOp op, ASTNode* left, ASTNode* right)
     , op(op)
     , left(left)
     , right(right)
+{}
+
+ASTLogicalNot::ASTLogicalNot(ASTNode* boolExpr)
+    : ASTNode(ASTNodeType::LOGICALNOT)
+    , boolExpr(boolExpr)
 {}
 
 ASTBranch::ASTBranch(ASTNode* condition, ASTNode* if_case, ASTNode* else_case)

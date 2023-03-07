@@ -3,7 +3,7 @@
 
 - Easy to learn
 - Frictionless
-- Limitations to scope ambition
+- Limitations to scope ambition (USEFUL CONSTRAINTS - "useful" for gamedev)
 - Engine is only as good as its tools, documentation, and error messages
 - For Mac, Windows, Linux
 
