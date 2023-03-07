@@ -764,7 +764,9 @@ void TestProc()
     //auto result = Lexer(" x = 2 + 3 * y - z\n  return x");
     //auto result = Lexer(" x = (3 >= y) and (2 == 4 or true)\n  return x");
     //auto result = Lexer("((false)) or 4 + y > 7 - (4 + 3) and 45 != z\n"
-    //                    "x = (3 >= y) and (2 == 4 or true)\n  return x");
+    //                    "x = (3 >= y) and (2 == 4 or true)\n"
+    //                    "return !(4 < (3 + 2)) and false");
+    //                    "return x");
     //auto result = Lexer("if false return x else if false return y else if true return z");
     auto result = Lexer("return ! (4 < (3 + 2)) and false");
 
