@@ -31,6 +31,16 @@ Missing from Cute or Ascent
 - Console
 
 
+## MVP
+- Sprites and import pngs (objects?)
+- Game logic scripting engine
+
+## Add after MVP
+- Screen system and screen switching
+- Collision and dispatch system
+- Sound effects and music system
+
+
 
 
 ## Build on Mac
