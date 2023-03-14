@@ -35,14 +35,12 @@
 static const char* script0 =
         //"proc fib(int x)\n"
         "if (x< 2) \n"
-        "ret x \n"
+        "  return x \n"
         "else\n"
-        "  ret fib(x-1) + fib(x  - 2)\n"
-        "end\n"
+        "  return fib(x-1) + fib(x  - 2)\n"
+        "\n"
         //"end\n"
         "";
-
-static const char* script1 = "3 + 7";
 
 enum class TokenType
 {
@@ -672,6 +670,29 @@ void Parser::eat(TokenType tpe)
 }
 
 
+
+struct TValue
+{
+    enum class ValueType
+    {
+        Invalid,
+        Integer,
+        Real,
+        Boolean
+    };
+
+    union
+    {
+        i64 integerValue;
+        float realValue;
+        bool boolValue;
+    };
+
+    ValueType type = ValueType::Invalid;
+};
+
+
+
 i8 printAstIndent = 0;
 void PrintAST(ASTNode* ast)
 {
@@ -755,12 +776,204 @@ void PrintAST(ASTNode* ast)
     printAstIndent -= 3;
 }
 
+TValue InterpretExpression(ASTNode* ast)
+{
+    switch(ast->GetType())
+    {
+        case ASTNodeType::BINOP: {
+            auto v = static_cast<ASTBinOp*>(ast);
+            TValue l = InterpretExpression(v->left);
+            TValue r = InterpretExpression(v->right);
+            // both integer, then integer
+            // both float, then float
+            // one int, one float, then float
+            TValue::ValueType retValType = TValue::ValueType::Integer;
+            switch (v->op)
+            {
+                case BinOp::Add: {
+                    if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
+                    {
+                        return { .integerValue=l.integerValue + r.integerValue, .type=TValue::ValueType::Integer };
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
+                    {
+                        return { .realValue=l.realValue + r.integerValue, .type=TValue::ValueType::Real };
+                    }
+                    else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
+                    {
+                        return { .realValue=l.integerValue + r.realValue, .type=TValue::ValueType::Real };
+
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
+                    {
+                        return { .realValue=l.realValue + r.realValue, .type=TValue::ValueType::Real };
+                    }
+                    else
+                    {
+                        // todo error
+                    }
+                } break;
+                case BinOp::Sub: {
+                    if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
+                    {
+                        return { .integerValue=l.integerValue - r.integerValue, .type=TValue::ValueType::Integer };
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
+                    {
+                        return { .realValue=l.realValue - r.integerValue, .type=TValue::ValueType::Real };
+                    }
+                    else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
+                    {
+                        return { .realValue=l.integerValue - r.realValue, .type=TValue::ValueType::Real };
+
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
+                    {
+                        return { .realValue=l.realValue - r.realValue, .type=TValue::ValueType::Real };
+                    }
+                    else
+                    {
+                        // todo error
+                    }
+                } break;
+                case BinOp::Mul: {
+                    if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
+                    {
+                        return { .integerValue=l.integerValue * r.integerValue, .type=TValue::ValueType::Integer };
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
+                    {
+                        return { .realValue=l.realValue * r.integerValue, .type=TValue::ValueType::Real };
+                    }
+                    else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
+                    {
+                        return { .realValue=l.integerValue * r.realValue, .type=TValue::ValueType::Real };
+
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
+                    {
+                        return { .realValue=l.realValue * r.realValue, .type=TValue::ValueType::Real };
+                    }
+                    else
+                    {
+                        // todo error
+                    }
+                } break;
+                case BinOp::Div: {
+                    if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
+                    {
+                        return { .integerValue=l.integerValue / r.integerValue, .type=TValue::ValueType::Integer };
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
+                    {
+                        return { .realValue=l.realValue / r.integerValue, .type=TValue::ValueType::Real };
+                    }
+                    else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
+                    {
+                        return { .realValue=l.integerValue / r.realValue, .type=TValue::ValueType::Real };
+
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
+                    {
+                        return { .realValue=l.realValue / r.realValue, .type=TValue::ValueType::Real };
+                    }
+                    else
+                    {
+                        // todo error
+                    }
+                } break;
+            }
+        } break;
+        case ASTNodeType::RELOP: {
+            auto v = static_cast<ASTRelOp*>(ast);
+            TValue l = InterpretExpression(v->left);
+            TValue r = InterpretExpression(v->right);
+            if (l.type == TValue::ValueType::Integer)
+            {
+                l.realValue = float(l.integerValue);
+                l.type = TValue::ValueType::Real;
+            }
+            else if (l.type == TValue::ValueType::Boolean)
+            {
+                l.realValue = l.boolValue ? 1.f : 0.f;
+                l.type = TValue::ValueType::Real;
+            }
+            if (r.type == TValue::ValueType::Integer)
+            {
+                r.realValue = float(r.integerValue);
+                r.type = TValue::ValueType::Real;
+            }
+            else if (r.type == TValue::ValueType::Boolean)
+            {
+                r.realValue = l.boolValue ? 1.f : 0.f;
+                r.type = TValue::ValueType::Real;
+            }
+            switch (v->op)
+            {
+                case RelOp::LT: return { .boolValue=l.realValue < r.realValue, .type=TValue::ValueType::Boolean };
+                case RelOp::GT: return { .boolValue=l.realValue > r.realValue, .type=TValue::ValueType::Boolean };
+                case RelOp::LE: return { .boolValue=l.realValue <= r.realValue, .type=TValue::ValueType::Boolean };
+                case RelOp::GE: return { .boolValue=l.realValue >= r.realValue, .type=TValue::ValueType::Boolean };
+                case RelOp::EQ: return { .boolValue=l.realValue == r.realValue, .type=TValue::ValueType::Boolean };
+                case RelOp::NEQ: return { .boolValue=l.realValue != r.realValue, .type=TValue::ValueType::Boolean };
+                case RelOp::AND: return { .boolValue=(l.realValue == 1.f && r.realValue == 1.f), .type=TValue::ValueType::Boolean };
+                case RelOp::OR: return { .boolValue=(l.realValue == 1.f || r.realValue == 1.f), .type=TValue::ValueType::Boolean };
+            }
+        } break;
+//        case ASTNodeType::LOGICALNOT: {
+//            auto v = static_cast<ASTLogicalNot*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("not")).c_str());
+//            PrintAST(v->boolExpr);
+//        } break;
+//        case ASTNodeType::VARIABLE: {
+//            auto v = static_cast<ASTVariable*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("var ") + v->id).c_str());
+//        } break;
+        case ASTNodeType::NUMBER: {
+            auto v = static_cast<ASTNumberTerminal*>(ast);
+            return { .integerValue=v->value, .type=TValue::ValueType::Integer };
+        } break;
+        case ASTNodeType::BOOLEAN: {
+            auto v = static_cast<ASTBooleanTerminal*>(ast);
+            return { .boolValue = v->value, .type=TValue::ValueType::Boolean };
+        } break;
+    }
+}
+
+void InterpretStatement(ASTNode* statement)
+{
+    switch(statement->GetType())
+    {
+//        case ASTNodeType::ASSIGN:  {
+//            auto v = static_cast<ASTAssignment*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("assign ")).c_str());
+//            PrintAST(v->id);
+//            PrintAST(v->expr);
+//        } break;
+        case ASTNodeType::RETURN: {
+            auto v = static_cast<ASTReturn*>(statement);
+            TValue result = InterpretExpression(v->expr);
+            printf("result %lld\n", result.integerValue);
+        } break;
+        case ASTNodeType::BRANCH: {
+            auto v = static_cast<ASTBranch*>(statement);
+            auto condition = InterpretExpression(v->condition);
+            ASSERT(condition.type == TValue::ValueType::Boolean);
+            if(condition.boolValue)
+                InterpretStatement(v->if_body);
+            else
+                InterpretStatement(v->else_body);
+        } break;
+    }
+}
+
+
 void TestProc()
 {
     MemoryLinearInitialize(&astBuffer, 4096);
 
-    //auto result = Lexer(" 7 - (4 + 3) ");
-    //auto result = Lexer(" 2 +3*-7 - 1 ");
+    //auto result = Lexer("return 7 - (4 + 3) ");
+    //auto result = Lexer(" return 2 +3*-7 - 1 ");
     //auto result = Lexer(" x = 2 + 3 * y - z\n  return x");
     //auto result = Lexer(" x = (3 >= y) and (2 == 4 or true)\n  return x");
     //auto result = Lexer("((false)) or 4 + y > 7 - (4 + 3) and 45 != z\n"
@@ -768,13 +981,23 @@ void TestProc()
     //                    "return !(4 < (3 + 2)) and false");
     //                    "return x");
     //auto result = Lexer("if false return x else if false return y else if true return z");
-    auto result = Lexer("return ! (4 < (3 + 2)) and false");
+    //auto result = Lexer("return ! (4 < (3 + 2)) and false");
 
+    //auto result = Lexer(" return -170*3*5+4-2+1");
+    auto result = Lexer(" "
+                        "if (4 < 32) "
+                        "   if (false) "
+                        "       return 3 "
+                        "   else "
+                        "       return 7 "
+                        "else "
+                        "   return -2 - 4 ");
     auto parser = Parser(result);
     auto v = parser.parse();
     for (auto n : v)
     {
-        PrintAST(n);
+        InterpretStatement(n);
+        //PrintAST(n);
     }
 
 //    printf("hello\n");
