@@ -1,3 +1,4 @@
+
 enum class ASTNodeType
 {
     ASSIGN,
@@ -11,7 +12,6 @@ enum class ASTNodeType
     LOGICALNOT,
     BRANCH
 };
-
 
 class ASTNode
 {
