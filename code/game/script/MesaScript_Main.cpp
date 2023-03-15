@@ -161,7 +161,7 @@ void TestProc()
     auto result = Lexer(" "
                         "{ "
                         "   x = 11  "
-                        "   if true "
+                        "   if false "
                         "   { "
                         "       y = 3   "
                         "       x = y "
