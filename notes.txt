@@ -4,10 +4,11 @@ auto
 const
 float
 int
+bool
+string
 struct
 void
 enum
-
 break
 continue
 for
@@ -16,7 +17,6 @@ do
 switch
 case
 default
-
 
 
 I want:

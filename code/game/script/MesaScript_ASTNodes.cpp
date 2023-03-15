@@ -1,6 +1,7 @@
 
 enum class ASTNodeType
 {
+    STATEMENTLIST,
     ASSIGN,
     VARIABLE,
     RETURN,
@@ -20,6 +21,14 @@ public:
     inline ASTNodeType GetType() { return nodeType; }
 private:
     ASTNodeType nodeType;
+};
+
+class ASTStatementList : public ASTNode
+{
+public:
+    ASTStatementList();
+public:
+    std::vector<ASTNode*> statements;
 };
 
 class ASTAssignment : public ASTNode
@@ -133,6 +142,10 @@ public:
 
 ASTNode::ASTNode(ASTNodeType type)
     : nodeType(type)
+{}
+
+ASTStatementList::ASTStatementList()
+    : ASTNode(ASTNodeType::STATEMENTLIST)
 {}
 
 ASTAssignment::ASTAssignment(ASTNode* id, ASTNode* expr)

@@ -6,7 +6,7 @@ class Parser
 public:
     Parser(std::vector<Token> _tokens);
 
-    std::vector<ASTNode*> parse();
+    ASTStatementList* parse();
 
 private:
     void error();
@@ -22,6 +22,7 @@ private:
     ASTNode* cond_and();
     ASTNode* cond_or();
 
+    ASTStatementList* statement_list();
     ASTNode* statement();
 
 
@@ -37,17 +38,24 @@ Parser::Parser(std::vector<Token> _tokens)
         , currentTokenIndex(0)
 {}
 
-std::vector<ASTNode*> Parser::parse()
+ASTStatementList* Parser::parse()
 {
-    std::vector<ASTNode*> statementSequence;
+    return statement_list();
+}
 
-    while(currentTokenIndex < tokens.size() - 1)
+ASTStatementList* Parser::statement_list()
+{
+    // statement_list : LBRACE statement* RBRACE
+
+    auto statement_list = new (MemoryLinearAllocate(&astBuffer, sizeof(ASTStatementList), alignof(ASTStatementList)))
+            ASTStatementList();
+    eat(TokenType::LBrace);
+    while(currentToken.type != TokenType::RBrace)
     {
-        statementSequence.push_back(statement());
-        //eat(TokenType::EndOfLine);
+        statement_list->statements.push_back(statement());
     }
-
-    return statementSequence;
+    eat(TokenType::RBrace);
+    return statement_list;
 }
 
 ASTNode* Parser::statement()
@@ -55,8 +63,7 @@ ASTNode* Parser::statement()
     // statement : IDENTIFIER ASSIGN cond_or
     // statement : RETURN cond_or
     // statement : expr  // this is valid because a statement can be a function call
-    // statement : IF cond_or statement (ELSE statement)? // todo change statement to statement sequence
-    // statement : empty
+    // statement : IF cond_or statement_list (ELSE statement_list)? // todo change statement to statement sequence
     // todo : WHILE cond_or (statement sequence)
 
     if (currentToken.type == TokenType::Identifier)
@@ -84,12 +91,12 @@ ASTNode* Parser::statement()
     {
         eat(TokenType::If);
         ASTNode* condition = cond_or();
-        ASTNode* ifCase = statement(); // todo sequence of statements
+        ASTNode* ifCase = statement_list();
         ASTNode* elseCase = nullptr;
         if (currentToken.type == TokenType::Else)
         {
             eat(TokenType::Else);
-            elseCase = statement(); // todo sequence of statements
+            elseCase = statement_list();
         }
 
         auto node =
