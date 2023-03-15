@@ -1,4 +1,4 @@
-#include "ArcadiaScriptInterpreter.h"
+#include "MesaScript_Main.h"
 
 #include "../../core/CoreCommon.h"
 #include "../../core/ArcadiaUtility.h"
@@ -287,7 +287,7 @@ std::vector<Token> Lexer(const std::string& code)
 }
 
 
-#include "ASTNodes.cpp"
+#include "MesaScript_ASTNodes.cpp"
 
 
 static MemoryLinearBuffer astBuffer;

@@ -15,7 +15,7 @@
 #include "singleheaders/vertext.h"
 #include "core/CoreInput.h"
 #include "core/ArcadiaIMGUI.h"
-#include "game/script/ArcadiaScriptInterpreter.h"
+#include "game/script/MesaScript_Main.h"
 
 static SDL_Window* g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
