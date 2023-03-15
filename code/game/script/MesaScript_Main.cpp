@@ -12,6 +12,7 @@
     - for
     - scopes and symbol tables
     - floats
+    - use custom assert for mesascript
 */
 
 /*
@@ -136,14 +137,21 @@ void TestProc()
     //auto result = Lexer("return ! (4 < (3 + 2)) and false");
 
     //auto result = Lexer(" return -170*3*5+4-2+1");
-    auto result = Lexer(" "
-                        "if (4 < 32) "
-                        "   if (false) "
-                        "       return 3 "
-                        "   else "
-                        "       return 7 "
+//    auto result = Lexer(" "
+//                        "if (4 < 32) "
+//                        "   if (false) "
+//                        "       return 3 "
+//                        "   else "
+//                        "       return 7 "
+//                        "else "
+//                        "   return -2 - 4 ");
+    auto result = Lexer(""
+                        "x = false  "
+                        "y = 3 + 7 * 32   "
+                        "if(x) "
+                        "   return x "
                         "else "
-                        "   return -2 - 4 ");
+                        "   return y");
     auto parser = Parser(result);
     auto v = parser.parse();
     for (auto n : v)
@@ -151,8 +159,6 @@ void TestProc()
         InterpretStatement(n);
         //PrintAST(n);
     }
-
-//    printf("hello\n");
 }
 
 

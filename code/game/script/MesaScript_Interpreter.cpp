@@ -1,4 +1,6 @@
 
+static std::unordered_map<std::string, TValue> GLOBAL_SCOPE_SYMBOL_TABLE;
+
 static TValue
 InterpretExpression(ASTNode* ast)
 {
@@ -146,10 +148,14 @@ InterpretExpression(ASTNode* ast)
             result.boolValue = !result.boolValue;
             return result;
         } break;
-//        case ASTNodeType::VARIABLE: {
-//            auto v = static_cast<ASTVariable*>(ast);
-//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("var ") + v->id).c_str());
-//        } break;
+        case ASTNodeType::VARIABLE: {
+            auto v = static_cast<ASTVariable*>(ast);
+            try {
+                return GLOBAL_SCOPE_SYMBOL_TABLE.at(v->id);
+            } catch (const std::exception& e) {
+                // todo error
+            }
+        } break;
         case ASTNodeType::NUMBER: {
             auto v = static_cast<ASTNumberTerminal*>(ast);
             return { .integerValue=v->value, .type=TValue::ValueType::Integer };
@@ -168,16 +174,25 @@ InterpretStatement(ASTNode* statement)
     {
         case ASTNodeType::ASSIGN:  {
             auto v = static_cast<ASTAssignment*>(statement);
-            // assign v->expr to v->id
             auto result = InterpretExpression(v->expr);
-            // assign result to v->id
-            // todo
-
+            ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
+            GLOBAL_SCOPE_SYMBOL_TABLE.emplace(static_cast<ASTVariable*>(v->id)->id, result);
         } break;
         case ASTNodeType::RETURN: {
             auto v = static_cast<ASTReturn*>(statement);
             TValue result = InterpretExpression(v->expr);
-            printf("returned %lld\n", result.integerValue);
+            if(result.type == TValue::ValueType::Integer)
+            {
+                printf("returned %lld\n", result.integerValue);
+            }
+            else if (result.type == TValue::ValueType::Boolean)
+            {
+                printf("returned %s\n", (result.boolValue ? "true" : "false"));
+            }
+            else if (result.type == TValue::ValueType::Real)
+            {
+                printf("returned %f\n", result.realValue);
+            }
         } break;
         case ASTNodeType::BRANCH: {
             auto v = static_cast<ASTBranch*>(statement);

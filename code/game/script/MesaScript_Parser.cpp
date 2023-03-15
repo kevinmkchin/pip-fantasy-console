@@ -56,6 +56,7 @@ ASTNode* Parser::statement()
     // statement : RETURN cond_or
     // statement : expr  // this is valid because a statement can be a function call
     // statement : IF cond_or statement (ELSE statement)? // todo change statement to statement sequence
+    // statement : empty
     // todo : WHILE cond_or (statement sequence)
 
     if (currentToken.type == TokenType::Identifier)
