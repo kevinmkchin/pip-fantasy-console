@@ -802,7 +802,6 @@ TValue InterpretExpression(ASTNode* ast)
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
                     {
                         return { .realValue=l.integerValue + r.realValue, .type=TValue::ValueType::Real };
-
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
@@ -825,7 +824,6 @@ TValue InterpretExpression(ASTNode* ast)
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
                     {
                         return { .realValue=l.integerValue - r.realValue, .type=TValue::ValueType::Real };
-
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
@@ -848,7 +846,6 @@ TValue InterpretExpression(ASTNode* ast)
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
                     {
                         return { .realValue=l.integerValue * r.realValue, .type=TValue::ValueType::Real };
-
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
@@ -871,7 +868,6 @@ TValue InterpretExpression(ASTNode* ast)
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
                     {
                         return { .realValue=l.integerValue / r.realValue, .type=TValue::ValueType::Real };
-
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
@@ -920,11 +916,12 @@ TValue InterpretExpression(ASTNode* ast)
                 case RelOp::OR: return { .boolValue=(l.realValue == 1.f || r.realValue == 1.f), .type=TValue::ValueType::Boolean };
             }
         } break;
-//        case ASTNodeType::LOGICALNOT: {
-//            auto v = static_cast<ASTLogicalNot*>(ast);
-//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("not")).c_str());
-//            PrintAST(v->boolExpr);
-//        } break;
+        case ASTNodeType::LOGICALNOT: {
+            auto v = static_cast<ASTLogicalNot*>(ast);
+            auto result = InterpretExpression(v->boolExpr);
+            result.boolValue = !result.boolValue;
+            return result;
+        } break;
 //        case ASTNodeType::VARIABLE: {
 //            auto v = static_cast<ASTVariable*>(ast);
 //            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("var ") + v->id).c_str());
@@ -944,12 +941,14 @@ void InterpretStatement(ASTNode* statement)
 {
     switch(statement->GetType())
     {
-//        case ASTNodeType::ASSIGN:  {
-//            auto v = static_cast<ASTAssignment*>(ast);
-//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("assign ")).c_str());
-//            PrintAST(v->id);
-//            PrintAST(v->expr);
-//        } break;
+        case ASTNodeType::ASSIGN:  {
+            auto v = static_cast<ASTAssignment*>(statement);
+            // assign v->expr to v->id
+            auto result = InterpretExpression(v->expr);
+            // assign result to v->id
+            // todo
+
+        } break;
         case ASTNodeType::RETURN: {
             auto v = static_cast<ASTReturn*>(statement);
             TValue result = InterpretExpression(v->expr);
