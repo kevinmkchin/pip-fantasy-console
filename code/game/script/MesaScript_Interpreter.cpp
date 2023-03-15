@@ -176,7 +176,10 @@ InterpretStatement(ASTNode* statement)
             auto v = static_cast<ASTAssignment*>(statement);
             auto result = InterpretExpression(v->expr);
             ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
-            GLOBAL_SCOPE_SYMBOL_TABLE.emplace(static_cast<ASTVariable*>(v->id)->id, result);
+            if(GLOBAL_SCOPE_SYMBOL_TABLE.find(static_cast<ASTVariable*>(v->id)->id) == GLOBAL_SCOPE_SYMBOL_TABLE.end())
+                GLOBAL_SCOPE_SYMBOL_TABLE.emplace(static_cast<ASTVariable*>(v->id)->id, result);
+            else
+                GLOBAL_SCOPE_SYMBOL_TABLE.at(static_cast<ASTVariable*>(v->id)->id) = result;
         } break;
         case ASTNodeType::RETURN: {
             auto v = static_cast<ASTReturn*>(statement);
