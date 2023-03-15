@@ -65,10 +65,10 @@ ASTNode* Parser::statement()
         eat(TokenType::Identifier);
         eat(TokenType::AssignmentOperator);
         auto varNode =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), 32))
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
                         ASTVariable(t.text);
         auto node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignment), 8))
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignment), alignof(ASTAssignment)))
                         ASTAssignment(varNode, cond_or());
         return node;
     }
@@ -76,7 +76,7 @@ ASTNode* Parser::statement()
     {
         eat(TokenType::Return);
         auto node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTReturn), 8))
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTReturn), alignof(ASTReturn)))
                         ASTReturn(cond_or());
         return node;
     }
@@ -93,7 +93,7 @@ ASTNode* Parser::statement()
         }
 
         auto node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTBranch), 8))
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTBranch), alignof(ASTBranch)))
                         ASTBranch(condition, ifCase, elseCase);
         return node;
     }
@@ -137,7 +137,7 @@ ASTNode* Parser::cond_expr()
         }
 
         node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), 8))
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
                         ASTRelOp(op, node, expr());
     }
 
@@ -167,14 +167,14 @@ ASTNode* Parser::cond_equal()
         {
             eat(TokenType::LParen);
             node =
-                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTLogicalNot), 8))
+                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTLogicalNot), alignof(ASTLogicalNot)))
                             ASTLogicalNot(cond_or());
             eat(TokenType::RParen);
         }
         else
         {
             node =
-                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTLogicalNot), 8))
+                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTLogicalNot), alignof(ASTLogicalNot)))
                             ASTLogicalNot(factor());
         }
         return node;
@@ -199,7 +199,7 @@ ASTNode* Parser::cond_equal()
         }
 
         node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), 8))
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
                         ASTRelOp(op, node, cond_expr());
     }
 
@@ -217,7 +217,7 @@ ASTNode* Parser::cond_and()
         eat(TokenType::LogicalAnd);
 
         node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), 8))
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
                         ASTRelOp(RelOp::AND, node, cond_equal());
     }
 
@@ -235,7 +235,7 @@ ASTNode* Parser::cond_or()
         eat(TokenType::LogicalOr);
 
         node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), 8))
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
                         ASTRelOp(RelOp::OR, node, cond_and());
     }
 
@@ -257,7 +257,7 @@ ASTNode* Parser::factor()
     {
         eat(TokenType::NumberLiteral);
         node =
-                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTNumberTerminal), 8))
+                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTNumberTerminal), alignof(ASTNumberTerminal)))
                         ASTNumberTerminal(atoi(t.text.c_str()));
         return node;
     }
@@ -265,14 +265,14 @@ ASTNode* Parser::factor()
     {
         eat(TokenType::True);
         node =
-                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), 8))
+                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
                         ASTBooleanTerminal(true);
     }
     else if (t.type == TokenType::False)
     {
         eat(TokenType::False);
         node =
-                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), 8))
+                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
                         ASTBooleanTerminal(false);
     }
     else if (t.type == TokenType::LParen)
@@ -285,7 +285,7 @@ ASTNode* Parser::factor()
     {
         eat(TokenType::Identifier);
         node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), 32))
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
                         ASTVariable(t.text);
     }
     else
@@ -319,7 +319,7 @@ ASTNode* Parser::term()
         }
 
         node =
-                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBinOp), 8))
+                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBinOp), alignof(ASTBinOp)))
                         ASTBinOp(op, node, factor());
     }
 
@@ -349,7 +349,7 @@ ASTNode* Parser::expr()
         }
 
         node =
-                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBinOp), 8))
+                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBinOp), alignof(ASTBinOp)))
                         ASTBinOp(op, node, term());
     }
 
