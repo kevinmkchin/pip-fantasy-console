@@ -158,7 +158,21 @@ void TestProc()
 //                        "   return x "
 //                        "else "
 //                        "   return y");
-    auto result = Lexer(" { x = 11  if false { y = 3   x = y } else { y = 9  x = x + y }  return x } ");
+    auto result = Lexer(" "
+                        "{ "
+                        "   x = 11  "
+                        "   if true "
+                        "   { "
+                        "       y = 3   "
+                        "       x = y "
+                        "   } "
+                        "   else "
+                        "   { "
+                        "       y = 9  "
+                        "       x = x + y "
+                        "   }  "
+                        "   return x "
+                        "} ");
     auto parser = Parser(result);
     auto v = parser.parse();
     InterpretStatementList(v);
