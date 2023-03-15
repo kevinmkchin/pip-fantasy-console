@@ -117,17 +117,6 @@ std::vector<Token> Lexer(const std::string& code)
                 ++currentIndex;
             } // at this point, we have a fully formed word
 
-            // check if word is a keyword
-            // - while
-            // - if else
-            // - for
-            // - continue
-            // - break
-            // - int
-            // - float
-            // - bool
-            // - string
-            // - struct
             auto word = std::string(wordCharsBuffer.data);
             if (word == "return")
             {
@@ -173,6 +162,8 @@ std::vector<Token> Lexer(const std::string& code)
                 case '/': { tokenType = TokenType::DivOperator; } break;
                 case '(': { tokenType = TokenType::LParen; } break;
                 case ')': { tokenType = TokenType::RParen; } break;
+                case '{': { tokenType = TokenType::LBrace; } break;
+                case '}': { tokenType = TokenType::RBrace; } break;
                 case '\n': { continue; /*tokenType = TokenType::EndOfLine;*/ } break;
                 default:{
                     printf("error: unrecognized character in Lexer");

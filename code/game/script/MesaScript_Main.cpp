@@ -15,6 +15,7 @@
     - scopes and symbol tables
     - floats
     - use custom assert for mesascript
+    - replace all std::vectors with custom data struct
 */
 
 /*
@@ -82,6 +83,8 @@ enum class TokenType
 
     LParen,
     RParen,
+    LBrace,
+    RBrace,
 
     If,
     Else,
@@ -148,20 +151,18 @@ void TestProc()
 //                        "       return 7 "
 //                        "else "
 //                        "   return -2 - 4 ");
-    auto result = Lexer(""
-                        "x = false  "
-                        "y = 3 + 7 * 32   "
-                        "if(x) "
-                        "   return x "
-                        "else "
-                        "   return y");
+//    auto result = Lexer(""
+//                        "x = false  "
+//                        "y = 3 + 7 * 32   "
+//                        "if(x) "
+//                        "   return x "
+//                        "else "
+//                        "   return y");
+    auto result = Lexer(" { x = 11  if false { y = 3   x = y } else { y = 9  x = x + y }  return x } ");
     auto parser = Parser(result);
     auto v = parser.parse();
-    for (auto n : v)
-    {
-        InterpretStatement(n);
-        //PrintAST(n);
-    }
+    InterpretStatementList(v);
+
 }
 
 

@@ -1,6 +1,9 @@
 
 static std::unordered_map<std::string, TValue> GLOBAL_SCOPE_SYMBOL_TABLE;
 
+static void
+InterpretStatementList(ASTNode* statements);
+
 static TValue
 InterpretExpression(ASTNode* ast)
 {
@@ -202,10 +205,21 @@ InterpretStatement(ASTNode* statement)
             auto condition = InterpretExpression(v->condition);
             ASSERT(condition.type == TValue::ValueType::Boolean);
             if(condition.boolValue)
-                InterpretStatement(v->if_body);
+                InterpretStatementList(v->if_body);
             else
-                InterpretStatement(v->else_body);
+                InterpretStatementList(v->else_body);
         } break;
+    }
+}
+
+static void
+InterpretStatementList(ASTNode* statements)
+{
+    ASSERT(statements->GetType() == ASTNodeType::STATEMENTLIST);
+    auto v = static_cast<ASTStatementList*>(statements);
+    for (const auto& s : v->statements)
+    {
+        InterpretStatement(s);
     }
 }
 
