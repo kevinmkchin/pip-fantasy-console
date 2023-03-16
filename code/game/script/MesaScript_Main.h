@@ -1,12 +1,16 @@
 #pragma once
 
+// todo program : procedure (program)*
+//      program : global variable assignment (program)*
+//      program : procedure_call
+
 // todo procedure : SYMBOL LPAREN (SYMBOL)* RPAREN statement_list
 
 // statement_list : LBRACE statement* RBRACE
 
 // statement : IDENTIFIER ASSIGN cond_or
 // statement : RETURN cond_or
-// statement : expr  // this is valid because a statement can be a procedure call
+// statement : procedure_call
 // statement : IF cond_or statement_list (ELSE statement_list)?
 // todo : WHILE cond_or (statement sequence)
 
@@ -25,7 +29,12 @@
 // factor : LPAREN expr RPAREN
 // factor : VARIABLEIDENTIFIER
 // factor : TRUE|FALSE
-// todo factor : PROCEDURESYMBOL LPAREN (cond_or)* RPAREN
+// factor : procedure_call
+
+// procedure_call : PROCEDURESYMBOL LPAREN RPAREN
+// todo procedure_call : PROCEDURESYMBOL LPAREN (cond_or (COMMA cond_or)*)? RPAREN
+// before procedure call, if arguments will overwrite existing variables, then cache those variables in a stack, then
+// bring them back after procedure call.
 
 // term : factor ((MUL | DIV) factor)*
 

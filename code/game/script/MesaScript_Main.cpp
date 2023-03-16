@@ -8,7 +8,8 @@
 #include <vector>
 
 /** TODO
-    - procedures and invoking procedure calls
+    - procedure return values
+    - procedure arguments
     - scopes and symbol tables
 
     - floats
@@ -46,8 +47,6 @@ static const char* script0 =
         //"end\n"
         "";
 
-// 
-
 enum class TokenType
 {
     Default,
@@ -77,6 +76,7 @@ enum class TokenType
     RParen,
     LBrace,
     RBrace,
+    Comma,
 
     If,
     Else,
@@ -93,6 +93,13 @@ struct Token
     u32 startPos = 0;
 };
 
+#include "MesaScript_Lexer.cpp"
+#include "MesaScript_ASTNodes.cpp"
+
+typedef size_t PID;
+#define PID_MAX 256
+NiceArray<ASTStatementList*, PID_MAX> PROCEDURES_DATABASE;
+
 struct TValue
 {
     enum class ValueType
@@ -100,7 +107,8 @@ struct TValue
         Invalid,
         Integer,
         Real,
-        Boolean
+        Boolean,
+        Function
     };
 
     union
@@ -108,15 +116,17 @@ struct TValue
         i64 integerValue;
         float realValue;
         bool boolValue;
+        PID procedureId;
     };
 
     ValueType type = ValueType::Invalid;
 };
 
-#include "MesaScript_Lexer.cpp"
-#include "MesaScript_ASTNodes.cpp"
+static std::unordered_map<std::string, TValue> GLOBAL_SCOPE_SYMBOL_TABLE;
+
 #include "MesaScript_Parser.cpp"
 #include "MesaScript_Interpreter.cpp"
+
 
 void TestProc()
 {
@@ -150,24 +160,35 @@ void TestProc()
 //                        "   return x "
 //                        "else "
 //                        "   return y");
+//    auto result = Lexer(" "
+//                        "{ "
+//                        "   x = 11  "
+//                        "   if false "
+//                        "   { "
+//                        "       y = 3   "
+//                        "       x = y "
+//                        "   } "
+//                        "   else "
+//                        "   { "
+//                        "       y = 9  "
+//                        "       x = x + y "
+//                        "   }  "
+//                        "   return x "
+//                        "} ");
     auto result = Lexer(" "
-                        "{ "
-                        "   x = 11  "
-                        "   if false "
-                        "   { "
-                        "       y = 3   "
-                        "       x = y "
-                        "   } "
-                        "   else "
-                        "   { "
-                        "       y = 9  "
-                        "       x = x + y "
-                        "   }  "
-                        "   return x "
-                        "} ");
+                        "A(){ "
+                        "  x = B"
+                        "  x()"
+                        "  return x"
+                        "}"
+                        ""
+                        "B(){"
+                        "  x = 42"
+                        "}"
+                        "");
     auto parser = Parser(result);
-    auto v = parser.parse();
-    InterpretStatementList(v);
+    parser.parse();
+    InterpretStatementList(PROCEDURES_DATABASE.At((unsigned int)GLOBAL_SCOPE_SYMBOL_TABLE.at("A").procedureId));
 
 }
 

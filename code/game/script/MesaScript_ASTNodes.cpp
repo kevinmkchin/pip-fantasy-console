@@ -4,6 +4,7 @@ enum class ASTNodeType
     STATEMENTLIST,
     ASSIGN,
     VARIABLE,
+    PROCEDURECALL,
     RETURN,
     WHILE,
     NUMBER,
@@ -44,6 +45,14 @@ class ASTVariable : public ASTNode
 {
 public:
     ASTVariable(const std::string& id);
+public:
+    std::string id;
+};
+
+class ASTProcedureCall : public ASTNode
+{
+public:
+    ASTProcedureCall(const std::string& id);
 public:
     std::string id;
 };
@@ -157,6 +166,11 @@ ASTAssignment::ASTAssignment(ASTNode* id, ASTNode* expr)
 ASTVariable::ASTVariable(const std::string& id)
     : ASTNode(ASTNodeType::VARIABLE)
     , id(id)
+{}
+
+ASTProcedureCall::ASTProcedureCall(const std::string& id)
+        : ASTNode(ASTNodeType::PROCEDURECALL)
+        , id(id)
 {}
 
 ASTReturn::ASTReturn(ASTNode* expr)

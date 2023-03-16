@@ -164,6 +164,7 @@ std::vector<Token> Lexer(const std::string& code)
                 case ')': { tokenType = TokenType::RParen; } break;
                 case '{': { tokenType = TokenType::LBrace; } break;
                 case '}': { tokenType = TokenType::RBrace; } break;
+                case ',': { tokenType = TokenType::Comma; } break;
                 case '\n': { continue; /*tokenType = TokenType::EndOfLine;*/ } break;
                 default:{
                     printf("error: unrecognized character in Lexer");
