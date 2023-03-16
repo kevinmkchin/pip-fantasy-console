@@ -177,20 +177,32 @@ void TestProc()
 //                        "   }  "
 //                        "   return x "
 //                        "} ");
+//    auto result = Lexer(" "
+//                        "A(){ "
+//                        "  x = B"
+//                        "  x()"
+//                        "  print x"
+//                        "}"
+//                        ""
+//                        "B(){"
+//                        "  x = 42"
+//                        "}"
+//                        "");
     auto result = Lexer(" "
                         "A(){ "
                         "  x = B"
-                        "  x()"
-                        "  print x"
+                        "  print x()"
                         "}"
                         ""
                         "B(){"
                         "  x = 42"
+                        "  return x + 80"
                         "}"
                         "");
     auto parser = Parser(result);
     parser.parse();
-    InterpretStatementList(PROCEDURES_DATABASE.At((unsigned int)GLOBAL_SCOPE_SYMBOL_TABLE.at("A").procedureId));
+    ASTProcedureCall pcall = ASTProcedureCall("A");
+    InterpretProcedureCall(&pcall);
 
 }
 
