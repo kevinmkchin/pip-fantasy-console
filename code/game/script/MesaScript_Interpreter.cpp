@@ -190,6 +190,9 @@ InterpretStatement(ASTNode* statement)
                 GLOBAL_SCOPE_SYMBOL_TABLE.at(static_cast<ASTVariable*>(v->id)->id) = result;
         } break;
         case ASTNodeType::RETURN: {
+            printf("return values not implemented\n");
+        } break;
+        case ASTNodeType::PRINT: {
             auto v = static_cast<ASTReturn*>(statement);
             TValue result = InterpretExpression(v->expr);
             if(result.type == TValue::ValueType::Integer)

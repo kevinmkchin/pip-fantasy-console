@@ -10,6 +10,7 @@
 
 // statement : IDENTIFIER ASSIGN cond_or
 // statement : RETURN cond_or
+// statement : PRINT cond_or
 // statement : procedure_call
 // statement : IF cond_or statement_list (ELSE statement_list)?
 // todo : WHILE cond_or (statement sequence)

@@ -6,6 +6,7 @@ enum class ASTNodeType
     VARIABLE,
     PROCEDURECALL,
     RETURN,
+    PRINT,
     WHILE,
     NUMBER,
     BOOLEAN,
@@ -61,6 +62,14 @@ class ASTReturn : public ASTNode
 {
 public:
     ASTReturn(ASTNode* expr);
+public:
+    ASTNode* expr;
+};
+
+class ASTPrint : public ASTNode
+{
+public:
+    ASTPrint(ASTNode* expr);
 public:
     ASTNode* expr;
 };
@@ -176,6 +185,11 @@ ASTProcedureCall::ASTProcedureCall(const std::string& id)
 ASTReturn::ASTReturn(ASTNode* expr)
     : ASTNode(ASTNodeType::RETURN)
     , expr(expr)
+{}
+
+ASTPrint::ASTPrint(ASTNode* expr)
+        : ASTNode(ASTNodeType::PRINT)
+        , expr(expr)
 {}
 
 ASTNumberTerminal::ASTNumberTerminal(i32 num)

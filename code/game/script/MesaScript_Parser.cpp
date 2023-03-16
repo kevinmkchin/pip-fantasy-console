@@ -135,6 +135,14 @@ ASTNode* Parser::statement()
                         ASTReturn(cond_or());
         return node;
     }
+    else if (currentToken.type == TokenType::Print)
+    {
+        eat(TokenType::Print);
+        auto node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTPrint), alignof(ASTPrint)))
+                        ASTPrint(cond_or());
+        return node;
+    }
     else if (currentToken.type == TokenType::If)
     {
         eat(TokenType::If);
