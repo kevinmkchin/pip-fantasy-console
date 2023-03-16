@@ -1,6 +1,4 @@
 
-static std::unordered_map<std::string, TValue> GLOBAL_SCOPE_SYMBOL_TABLE;
-
 static void
 InterpretStatementList(ASTNode* statements);
 
@@ -167,6 +165,7 @@ InterpretExpression(ASTNode* ast)
             auto v = static_cast<ASTBooleanTerminal*>(ast);
             return { .boolValue = v->value, .type=TValue::ValueType::Boolean };
         } break;
+        // TODO CASE PROCEDURECALL
     }
 }
 
@@ -175,7 +174,13 @@ InterpretStatement(ASTNode* statement)
 {
     switch(statement->GetType())
     {
-        case ASTNodeType::ASSIGN:  {
+        case ASTNodeType::PROCEDURECALL: {
+            auto v = static_cast<ASTProcedureCall*>(statement);
+            auto functionVariable = GLOBAL_SCOPE_SYMBOL_TABLE.at(v->id);
+            auto functionBody = PROCEDURES_DATABASE.At((unsigned int)functionVariable.procedureId);
+            InterpretStatementList(functionBody);
+        } break;
+        case ASTNodeType::ASSIGN: {
             auto v = static_cast<ASTAssignment*>(statement);
             auto result = InterpretExpression(v->expr);
             ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);

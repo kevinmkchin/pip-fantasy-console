@@ -6,13 +6,14 @@ class Parser
 public:
     Parser(std::vector<Token> _tokens);
 
-    ASTStatementList* parse();
+    void parse();
 
 private:
     void error();
 
     void eat(TokenType tpe);
 
+    ASTNode* procedure_call();
     ASTNode* factor();
     ASTNode* term();
     ASTNode* expr();
@@ -22,8 +23,9 @@ private:
     ASTNode* cond_and();
     ASTNode* cond_or();
 
-    ASTStatementList* statement_list();
     ASTNode* statement();
+    ASTStatementList* statement_list();
+    PID procedure();
 
 
 private:
@@ -38,9 +40,55 @@ Parser::Parser(std::vector<Token> _tokens)
         , currentTokenIndex(0)
 {}
 
-ASTStatementList* Parser::parse()
+void Parser::parse()
 {
-    return statement_list();
+    while (currentToken.type != TokenType::EndOfFile)
+    {
+        procedure();
+    }
+}
+
+PID Parser::procedure()
+{
+    ASSERT(currentToken.type == TokenType::Identifier);
+
+    auto procedureNameToken = currentToken;
+
+    eat(TokenType::Identifier);
+    eat(TokenType::LParen);
+//    while(currentToken.type != TokenType::RParen)
+//    {
+//        eat(TokenType::Identifier);
+//    }
+    eat(TokenType::RParen);
+
+    PROCEDURES_DATABASE.PushBack(statement_list());
+    const PID createdProcedureId = PROCEDURES_DATABASE.count - 1;
+
+    TValue functionVariable = { .procedureId=createdProcedureId, .type=TValue::ValueType::Function };
+
+    if (GLOBAL_SCOPE_SYMBOL_TABLE.find(procedureNameToken.text) == GLOBAL_SCOPE_SYMBOL_TABLE.end())
+    {
+        GLOBAL_SCOPE_SYMBOL_TABLE.emplace(procedureNameToken.text, functionVariable);
+    }
+    else
+    {
+        GLOBAL_SCOPE_SYMBOL_TABLE.at(procedureNameToken.text) = functionVariable;
+    }
+
+    return createdProcedureId;
+}
+
+ASTNode* Parser::procedure_call()
+{
+    auto procSymbol = currentToken;
+    eat(TokenType::Identifier);
+    eat(TokenType::LParen);
+    eat(TokenType::RParen);
+    auto node =
+            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTProcedureCall), alignof(ASTProcedureCall)))
+                    ASTProcedureCall(procSymbol.text);
+    return node;
 }
 
 ASTStatementList* Parser::statement_list()
@@ -60,16 +108,24 @@ ASTNode* Parser::statement()
 {
     if (currentToken.type == TokenType::Identifier)
     {
-        auto t = currentToken;
-        eat(TokenType::Identifier);
-        eat(TokenType::AssignmentOperator);
-        auto varNode =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
-                        ASTVariable(t.text);
-        auto node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignment), alignof(ASTAssignment)))
-                        ASTAssignment(varNode, cond_or());
-        return node;
+        auto nextToken = tokens.at(currentTokenIndex + 1);
+        if (nextToken.type == TokenType::LParen)
+        {
+            return procedure_call();
+        }
+        else
+        {
+            auto t = currentToken;
+            eat(TokenType::Identifier);
+            eat(TokenType::AssignmentOperator);
+            auto varNode =
+                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                            ASTVariable(t.text);
+            auto node =
+                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignment), alignof(ASTAssignment)))
+                            ASTAssignment(varNode, cond_or());
+            return node;
+        }
     }
     else if (currentToken.type == TokenType::Return)
     {
@@ -98,7 +154,7 @@ ASTNode* Parser::statement()
     }
     else
     {
-        return cond_or();
+        error();
     }
 }
 
@@ -265,10 +321,19 @@ ASTNode* Parser::factor()
     }
     else if (t.type == TokenType::Identifier)
     {
-        eat(TokenType::Identifier);
-        node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
-                        ASTVariable(t.text);
+        auto nextToken = tokens.at(currentTokenIndex + 1);
+        if (nextToken.type == TokenType::LParen)
+        {
+            // procedure call symbol
+            procedure_call();
+        }
+        else
+        {
+            eat(TokenType::Identifier);
+            node =
+                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                            ASTVariable(t.text);
+        }
     }
     else
     {
