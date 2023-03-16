@@ -20,6 +20,7 @@
 
     - use custom assert for mesascript
     - replace all std::vectors with custom data struct
+    - REFACTOR
 */
 
 /*
@@ -82,6 +83,7 @@ enum class TokenType
     Else,
 
     Return,
+    Print, // temporary
     EndOfLine,
     EndOfFile
 };
@@ -179,7 +181,7 @@ void TestProc()
                         "A(){ "
                         "  x = B"
                         "  x()"
-                        "  return x"
+                        "  print x"
                         "}"
                         ""
                         "B(){"

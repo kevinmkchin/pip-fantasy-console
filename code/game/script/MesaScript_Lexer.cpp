@@ -122,6 +122,10 @@ std::vector<Token> Lexer(const std::string& code)
             {
                 retval.push_back({ TokenType::Return, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
             }
+            else if (word == "print")
+            {
+                retval.push_back({ TokenType::Print, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
             else if (word == "true")
             {
                 retval.push_back({ TokenType::True, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
