@@ -35,17 +35,6 @@
  *
  * */
 
-// returns the x-th fibonnaci number
-static const char* script0 =
-        //"proc fib(int x)\n"
-        "if (x< 2) \n"
-        "  return x \n"
-        "else\n"
-        "  return fib(x-1) + fib(x  - 2)\n"
-        "\n"
-        //"end\n"
-        "";
-
 enum class TokenType
 {
     Default,
@@ -181,17 +170,6 @@ void TestProc()
 //                        "   }  "
 //                        "   return x "
 //                        "} ");
-    auto result = Lexer(" "
-                        "A(){ "
-                        "  x = square"
-                        "  x = x(6)"
-                        "  print x"
-                        "}"
-                        ""
-                        "square(n){"
-                        "  return n*n"
-                        "}"
-                        "");
 //    auto result = Lexer(" "
 //                        "A(){ "
 //                        "  x = B"
@@ -203,71 +181,41 @@ void TestProc()
 //                        "  return x + 80"
 //                        "}"
 //                        "");
+//    auto result = Lexer(" "
+//                        "A(){ "
+//                        "  x = square"
+//                        "  x = x(6)"
+//                        "  print x"
+//                        "}"
+//                        ""
+//                        "square(n){"
+//                        "  return n*n"
+//                        "}"
+//                        "");
+
+    // returns n-th fibonnacci number
+    static const char* script0 = ""
+                                 "fib (n) {"
+                                 "  if (n < 2) {"
+                                 "    return n"
+                                 "  } else {"
+                                 "    return fib(n - 1) + fib(n - 2)"
+                                 "  }"
+                                 "}"
+                                 ""
+                                 "call_fib () {"
+                                 "  print fib(9)"
+                                 "}"
+                                 ""
+                                 "";
+
+    auto result = Lexer(script0);
     auto parser = Parser(result);
     parser.parse();
-    ASTProcedureCall pcall = ASTProcedureCall("A");
+    ASTProcedureCall pcall = ASTProcedureCall("call_fib");
+//    ASTNumberTerminal pargnum = ASTNumberTerminal(3);
+//    pcall.argsExpressions.push_back(&pargnum);
     InterpretProcedureCall(&pcall);
 
 }
 
-
-// need database of function definitions
-// need a stack
-//  need base pointer
-//  need types and their sizes
-
-//static char stack[4096];
-//static u32 base_ptr = 0;
-//static u32 stack_ptr = 0;
-//
-//typedef u32 proc_id;
-//
-//struct proc_definition
-//{
-//    std::string proc_code;
-//    u8 arg_count;
-//    u8 arg_size;
-//    u8 retval_size;
-//};
-//
-//std::unordered_map<std::string, u32> pname_to_pid;
-//NiceArray<proc_definition, 4> procedure_definitions;
-//
-//
-//void ExecuteProcedure(proc_id pid)
-//{
-//    // before executing procedure, the prior procedure should place function arguments
-//    // on the stack and move the base pointer above the function arguments
-//
-//    proc_definition proc = procedure_definitions.At(pid);
-//    std::string code = proc.proc_code;
-//
-//        {
-//            u32 processToCall = pname_to_pid["fib"];
-//
-//            u32 sizeOfLocalsOfStackFrame = stack_ptr - base_ptr;
-//            base_ptr += sizeOfLocalsOfStackFrame + proc.arg_size;
-//            stack_ptr = base_ptr;
-//            ExecuteProcedure(processToCall);
-//            u32 sizeOfCalledProcedureLocals = stack_ptr - base_ptr;
-//            stack_ptr = stack_ptr - sizeOfCalledProcedureLocals - proc.arg_size;
-//            base_ptr = base_ptr - sizeOfLocalsOfStackFrame - proc.arg_size;
-//        }
-//    }
-//
-//void InterpretScript0()
-//{
-//    proc_definition proc = { script0, 1, 4, 4 };
-//    procedure_definitions.PushBack(proc);
-//    pname_to_pid.emplace("fib", 0);
-//
-//    u32 sizeOfLocalsOfStackFrame = stack_ptr - base_ptr;
-//    base_ptr += sizeOfLocalsOfStackFrame + proc.arg_size;
-//    stack_ptr = base_ptr;
-//    ExecuteProcedure(0);
-//    u32 sizeOfCalledProcedureLocals = stack_ptr - base_ptr;
-//    stack_ptr = stack_ptr - sizeOfCalledProcedureLocals - proc.arg_size;
-//    base_ptr = base_ptr - sizeOfLocalsOfStackFrame - proc.arg_size;
-//
-//
-//}
