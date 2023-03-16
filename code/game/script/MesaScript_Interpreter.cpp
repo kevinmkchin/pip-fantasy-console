@@ -243,17 +243,28 @@ InterpretStatementList(ASTNode* statements)
     }
 }
 
+NiceArray<TValue, 256> valueCache;
+
 static TValue
 InterpretProcedureCall(ASTProcedureCall* procedureCall)
 {
-    // todo cache variables that will be overwritten/masked by procedure argument symbols
+    auto procedureVariable = GLOBAL_SCOPE_SYMBOL_TABLE.at(procedureCall->id);
+    auto procedureDefinition = PROCEDURES_DATABASE.At((unsigned int)procedureVariable.procedureId);
+
+    // todo cache variables but less hacky
+    for (int i = 0; i < procedureDefinition.args.size(); ++i)
+    {
+        auto argn = procedureDefinition.args[i];
+        if(GLOBAL_SCOPE_SYMBOL_TABLE.find(argn) == GLOBAL_SCOPE_SYMBOL_TABLE.end())
+            valueCache.PushBack(TValue());
+        else
+            valueCache.PushBack(GLOBAL_SCOPE_SYMBOL_TABLE.at(argn));
+    }
 
     TValue retval;
     returnRequestedFlag = false;
     returnValueSetFlag = false;
 
-    auto procedureVariable = GLOBAL_SCOPE_SYMBOL_TABLE.at(procedureCall->id);
-    auto procedureDefinition = PROCEDURES_DATABASE.At((unsigned int)procedureVariable.procedureId);
     for (int arg = 0; arg < procedureDefinition.args.size(); ++arg) // todo replace hacky way of assigning argument values
     {
         auto argn = procedureDefinition.args[arg];
@@ -269,7 +280,16 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
     returnRequestedFlag = false;
     returnValueSetFlag = false;
 
-    // todo restore variables that were overwritten/masked
+    // todo restore variables but less hacky
+    for (int i = procedureDefinition.args.size() - 1; i >= 0; --i)
+    {
+        auto argn = procedureDefinition.args[i];
+        if(GLOBAL_SCOPE_SYMBOL_TABLE.find(argn) == GLOBAL_SCOPE_SYMBOL_TABLE.end())
+            GLOBAL_SCOPE_SYMBOL_TABLE.emplace(argn, valueCache.Back());
+        else
+            GLOBAL_SCOPE_SYMBOL_TABLE.at(argn) = valueCache.Back();
+        --valueCache.count;
+    }
 
     return retval;
 }
