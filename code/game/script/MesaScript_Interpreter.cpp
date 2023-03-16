@@ -1,6 +1,12 @@
+static TValue returnValue;
+static bool returnValueSetFlag = false;
+static bool returnRequestedFlag = false;
 
 static void
 InterpretStatementList(ASTNode* statements);
+
+static TValue
+InterpretProcedureCall(ASTProcedureCall* procedureCall);
 
 static TValue
 InterpretExpression(ASTNode* ast)
@@ -165,7 +171,10 @@ InterpretExpression(ASTNode* ast)
             auto v = static_cast<ASTBooleanTerminal*>(ast);
             return { .boolValue = v->value, .type=TValue::ValueType::Boolean };
         } break;
-        // TODO CASE PROCEDURECALL
+        case ASTNodeType::PROCEDURECALL: {
+            auto v = static_cast<ASTProcedureCall*>(ast);
+            return InterpretProcedureCall(v);
+        } break;
     }
 }
 
@@ -176,9 +185,7 @@ InterpretStatement(ASTNode* statement)
     {
         case ASTNodeType::PROCEDURECALL: {
             auto v = static_cast<ASTProcedureCall*>(statement);
-            auto functionVariable = GLOBAL_SCOPE_SYMBOL_TABLE.at(v->id);
-            auto functionBody = PROCEDURES_DATABASE.At((unsigned int)functionVariable.procedureId);
-            InterpretStatementList(functionBody);
+            InterpretProcedureCall(v);
         } break;
         case ASTNodeType::ASSIGN: {
             auto v = static_cast<ASTAssignment*>(statement);
@@ -190,10 +197,14 @@ InterpretStatement(ASTNode* statement)
                 GLOBAL_SCOPE_SYMBOL_TABLE.at(static_cast<ASTVariable*>(v->id)->id) = result;
         } break;
         case ASTNodeType::RETURN: {
-            printf("return values not implemented\n");
+            auto v = static_cast<ASTReturn*>(statement);
+            TValue result = InterpretExpression(v->expr);
+            returnValue = result;
+            returnValueSetFlag = true;
+            returnRequestedFlag = true;
         } break;
         case ASTNodeType::PRINT: {
-            auto v = static_cast<ASTReturn*>(statement);
+            auto v = static_cast<ASTPrint*>(statement);
             TValue result = InterpretExpression(v->expr);
             if(result.type == TValue::ValueType::Integer)
             {
@@ -228,92 +239,116 @@ InterpretStatementList(ASTNode* statements)
     for (const auto& s : v->statements)
     {
         InterpretStatement(s);
+        if (returnRequestedFlag) return;
     }
 }
 
-
-
-static i8 printAstIndent = 0;
-static void
-PrintAST(ASTNode* ast)
+static TValue
+InterpretProcedureCall(ASTProcedureCall* procedureCall)
 {
-    printAstIndent += 3;
-    if(ast == nullptr)
-    {
-        printf("%s\n", (std::string(printAstIndent, ' ') + std::string("null")).c_str());
-        printAstIndent -= 3;
-        return;
-    }
-    switch(ast->GetType())
-    {
-        case ASTNodeType::ASSIGN:  {
-            auto v = static_cast<ASTAssignment*>(ast);
-            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("assign ")).c_str());
-            PrintAST(v->id);
-            PrintAST(v->expr);
-        } break;
-        case ASTNodeType::RETURN: {
-            auto v = static_cast<ASTReturn*>(ast);
-            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("return ")).c_str());
-            PrintAST(v->expr);
-        } break;
-        case ASTNodeType::BINOP: {
-            auto v = static_cast<ASTBinOp*>(ast);
-            const char* opName = nullptr;
-            switch (v->op)
-            {
-                case BinOp::Add: opName = "add"; break;
-                case BinOp::Sub: opName = "sub"; break;
-                case BinOp::Mul: opName = "mul"; break;
-                case BinOp::Div: opName = "div"; break;
-            }
-            printf("%s%s%s\n", (std::string(printAstIndent, ' ') + std::string("binop l ")).c_str(), opName, " r");
-            PrintAST(v->left);
-            PrintAST(v->right);
-        } break;
-        case ASTNodeType::RELOP: {
-            auto v = static_cast<ASTRelOp*>(ast);
-            const char* opName = nullptr;
-            switch (v->op)
-            {
-                case RelOp::LT: opName = "less than"; break;
-                case RelOp::GT: opName = "greater than"; break;
-                case RelOp::LE: opName = "less than or equal"; break;
-                case RelOp::GE: opName = "greater than or equal"; break;
-                case RelOp::EQ: opName = "equal"; break;
-                case RelOp::NEQ: opName = "not equal"; break;
-                case RelOp::AND: opName = "and"; break;
-                case RelOp::OR: opName = "or"; break;
-            }
-            printf("%s%s%s\n", (std::string(printAstIndent, ' ') + std::string("relop l ")).c_str(), opName, " r");
-            PrintAST(v->left);
-            PrintAST(v->right);
-        } break;
-        case ASTNodeType::LOGICALNOT: {
-            auto v = static_cast<ASTLogicalNot*>(ast);
-            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("not")).c_str());
-            PrintAST(v->boolExpr);
-        } break;
-        case ASTNodeType::BRANCH: {
-            auto v = static_cast<ASTBranch*>(ast);
-            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("branch (cond, if, else)")).c_str());
-            PrintAST(v->condition);
-            PrintAST(v->if_body);
-            PrintAST(v->else_body);
-        } break;
-        case ASTNodeType::VARIABLE: {
-            auto v = static_cast<ASTVariable*>(ast);
-            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("var ") + v->id).c_str());
-        } break;
-        case ASTNodeType::NUMBER: {
-            auto v = static_cast<ASTNumberTerminal*>(ast);
-            printf("%s%d\n", (std::string(printAstIndent, ' ') + std::string("num ")).c_str(), v->value);
-        } break;
-        case ASTNodeType::BOOLEAN: {
-            auto v = static_cast<ASTBooleanTerminal*>(ast);
-            printf("%s%s\n", (std::string(printAstIndent, ' ') + std::string("bool ")).c_str(), (v->value ? "true" : "false"));
-        } break;
-    }
-    printAstIndent -= 3;
+    // cache variables that will be overwritten/masked by procedure argument symbols
+
+    TValue retval;
+    returnRequestedFlag = false;
+    returnValueSetFlag = false;
+
+    // assign argument symbols (might just be done in parser if parser creates a series of ASTAssignNodes before function body)
+    auto functionVariable = GLOBAL_SCOPE_SYMBOL_TABLE.at(procedureCall->id);
+    auto functionBody = PROCEDURES_DATABASE.At((unsigned int)functionVariable.procedureId);
+    InterpretStatementList(functionBody);
+
+    if (returnValueSetFlag) retval = returnValue;
+
+    returnRequestedFlag = false;
+    returnValueSetFlag = false;
+
+    // restore variables that were overwritten/masked
+
+    return retval;
 }
+
+
+//static i8 printAstIndent = 0;
+//static void
+//PrintAST(ASTNode* ast)
+//{
+//    printAstIndent += 3;
+//    if(ast == nullptr)
+//    {
+//        printf("%s\n", (std::string(printAstIndent, ' ') + std::string("null")).c_str());
+//        printAstIndent -= 3;
+//        return;
+//    }
+//    switch(ast->GetType())
+//    {
+//        case ASTNodeType::ASSIGN:  {
+//            auto v = static_cast<ASTAssignment*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("assign ")).c_str());
+//            PrintAST(v->id);
+//            PrintAST(v->expr);
+//        } break;
+//        case ASTNodeType::RETURN: {
+//            auto v = static_cast<ASTReturn*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("return ")).c_str());
+//            PrintAST(v->expr);
+//        } break;
+//        case ASTNodeType::BINOP: {
+//            auto v = static_cast<ASTBinOp*>(ast);
+//            const char* opName = nullptr;
+//            switch (v->op)
+//            {
+//                case BinOp::Add: opName = "add"; break;
+//                case BinOp::Sub: opName = "sub"; break;
+//                case BinOp::Mul: opName = "mul"; break;
+//                case BinOp::Div: opName = "div"; break;
+//            }
+//            printf("%s%s%s\n", (std::string(printAstIndent, ' ') + std::string("binop l ")).c_str(), opName, " r");
+//            PrintAST(v->left);
+//            PrintAST(v->right);
+//        } break;
+//        case ASTNodeType::RELOP: {
+//            auto v = static_cast<ASTRelOp*>(ast);
+//            const char* opName = nullptr;
+//            switch (v->op)
+//            {
+//                case RelOp::LT: opName = "less than"; break;
+//                case RelOp::GT: opName = "greater than"; break;
+//                case RelOp::LE: opName = "less than or equal"; break;
+//                case RelOp::GE: opName = "greater than or equal"; break;
+//                case RelOp::EQ: opName = "equal"; break;
+//                case RelOp::NEQ: opName = "not equal"; break;
+//                case RelOp::AND: opName = "and"; break;
+//                case RelOp::OR: opName = "or"; break;
+//            }
+//            printf("%s%s%s\n", (std::string(printAstIndent, ' ') + std::string("relop l ")).c_str(), opName, " r");
+//            PrintAST(v->left);
+//            PrintAST(v->right);
+//        } break;
+//        case ASTNodeType::LOGICALNOT: {
+//            auto v = static_cast<ASTLogicalNot*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("not")).c_str());
+//            PrintAST(v->boolExpr);
+//        } break;
+//        case ASTNodeType::BRANCH: {
+//            auto v = static_cast<ASTBranch*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("branch (cond, if, else)")).c_str());
+//            PrintAST(v->condition);
+//            PrintAST(v->if_body);
+//            PrintAST(v->else_body);
+//        } break;
+//        case ASTNodeType::VARIABLE: {
+//            auto v = static_cast<ASTVariable*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("var ") + v->id).c_str());
+//        } break;
+//        case ASTNodeType::NUMBER: {
+//            auto v = static_cast<ASTNumberTerminal*>(ast);
+//            printf("%s%d\n", (std::string(printAstIndent, ' ') + std::string("num ")).c_str(), v->value);
+//        } break;
+//        case ASTNodeType::BOOLEAN: {
+//            auto v = static_cast<ASTBooleanTerminal*>(ast);
+//            printf("%s%s\n", (std::string(printAstIndent, ' ') + std::string("bool ")).c_str(), (v->value ? "true" : "false"));
+//        } break;
+//    }
+//    printAstIndent -= 3;
+//}
 

@@ -332,8 +332,7 @@ ASTNode* Parser::factor()
         auto nextToken = tokens.at(currentTokenIndex + 1);
         if (nextToken.type == TokenType::LParen)
         {
-            // procedure call symbol
-            procedure_call();
+            node = procedure_call();
         }
         else
         {
