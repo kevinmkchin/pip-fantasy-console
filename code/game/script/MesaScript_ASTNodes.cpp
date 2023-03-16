@@ -56,6 +56,7 @@ public:
     ASTProcedureCall(const std::string& id);
 public:
     std::string id;
+    std::vector<ASTNode*> argsExpressions;
 };
 
 class ASTReturn : public ASTNode

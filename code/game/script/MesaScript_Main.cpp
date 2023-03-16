@@ -8,8 +8,6 @@
 #include <vector>
 
 /** TODO
-    - procedure return values
-    - procedure arguments
     - scopes and symbol tables
 
     - floats
@@ -98,9 +96,15 @@ struct Token
 #include "MesaScript_Lexer.cpp"
 #include "MesaScript_ASTNodes.cpp"
 
+struct ProcedureDefinition
+{
+    std::vector<std::string> args; // todo(kevin): could just be a pointer to address in linear allocator with count
+    ASTStatementList* body;
+};
+
 typedef size_t PID;
 #define PID_MAX 256
-NiceArray<ASTStatementList*, PID_MAX> PROCEDURES_DATABASE;
+NiceArray<ProcedureDefinition, PID_MAX> PROCEDURES_DATABASE;
 
 struct TValue
 {
@@ -177,28 +181,28 @@ void TestProc()
 //                        "   }  "
 //                        "   return x "
 //                        "} ");
+    auto result = Lexer(" "
+                        "A(){ "
+                        "  x = square"
+                        "  x = x(6)"
+                        "  print x"
+                        "}"
+                        ""
+                        "square(n){"
+                        "  return n*n"
+                        "}"
+                        "");
 //    auto result = Lexer(" "
 //                        "A(){ "
 //                        "  x = B"
-//                        "  x()"
-//                        "  print x"
+//                        "  print x()"
 //                        "}"
 //                        ""
 //                        "B(){"
 //                        "  x = 42"
+//                        "  return x + 80"
 //                        "}"
 //                        "");
-    auto result = Lexer(" "
-                        "A(){ "
-                        "  x = B"
-                        "  print x()"
-                        "}"
-                        ""
-                        "B(){"
-                        "  x = 42"
-                        "  return x + 80"
-                        "}"
-                        "");
     auto parser = Parser(result);
     parser.parse();
     ASTProcedureCall pcall = ASTProcedureCall("A");

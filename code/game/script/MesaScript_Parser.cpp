@@ -56,14 +56,19 @@ PID Parser::procedure()
 
     eat(TokenType::Identifier);
     eat(TokenType::LParen);
-//    while(currentToken.type != TokenType::RParen)
-//    {
-//        eat(TokenType::Identifier);
-//    }
+
+    PROCEDURES_DATABASE.PushBack(ProcedureDefinition());
+    const PID createdProcedureId = PROCEDURES_DATABASE.count - 1;
+    auto& argsVector = PROCEDURES_DATABASE.At((unsigned int)createdProcedureId).args;
+
+    while(currentToken.type != TokenType::RParen)
+    {
+        argsVector.push_back(currentToken.text);
+        eat(TokenType::Identifier);
+    }
     eat(TokenType::RParen);
 
-    PROCEDURES_DATABASE.PushBack(statement_list());
-    const PID createdProcedureId = PROCEDURES_DATABASE.count - 1;
+    PROCEDURES_DATABASE.At((unsigned int)createdProcedureId).body = statement_list();
 
     TValue functionVariable = { .procedureId=createdProcedureId, .type=TValue::ValueType::Function };
 
@@ -84,10 +89,19 @@ ASTNode* Parser::procedure_call()
     auto procSymbol = currentToken;
     eat(TokenType::Identifier);
     eat(TokenType::LParen);
-    eat(TokenType::RParen);
+
     auto node =
             new (MemoryLinearAllocate(&astBuffer, sizeof(ASTProcedureCall), alignof(ASTProcedureCall)))
                     ASTProcedureCall(procSymbol.text);
+
+    while(currentToken.type != TokenType::RParen)
+    {
+        node->argsExpressions.push_back(cond_expr());
+        if (currentToken.type != TokenType::RParen) eat(TokenType::Comma);
+    }
+
+    eat(TokenType::RParen);
+
     return node;
 }
 

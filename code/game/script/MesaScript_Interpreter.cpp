@@ -208,15 +208,15 @@ InterpretStatement(ASTNode* statement)
             TValue result = InterpretExpression(v->expr);
             if(result.type == TValue::ValueType::Integer)
             {
-                printf("returned %lld\n", result.integerValue);
+                printf("printed %lld\n", result.integerValue);
             }
             else if (result.type == TValue::ValueType::Boolean)
             {
-                printf("returned %s\n", (result.boolValue ? "true" : "false"));
+                printf("printed %s\n", (result.boolValue ? "true" : "false"));
             }
             else if (result.type == TValue::ValueType::Real)
             {
-                printf("returned %f\n", result.realValue);
+                printf("printed %f\n", result.realValue);
             }
         } break;
         case ASTNodeType::BRANCH: {
@@ -246,23 +246,30 @@ InterpretStatementList(ASTNode* statements)
 static TValue
 InterpretProcedureCall(ASTProcedureCall* procedureCall)
 {
-    // cache variables that will be overwritten/masked by procedure argument symbols
+    // todo cache variables that will be overwritten/masked by procedure argument symbols
 
     TValue retval;
     returnRequestedFlag = false;
     returnValueSetFlag = false;
 
-    // assign argument symbols (might just be done in parser if parser creates a series of ASTAssignNodes before function body)
-    auto functionVariable = GLOBAL_SCOPE_SYMBOL_TABLE.at(procedureCall->id);
-    auto functionBody = PROCEDURES_DATABASE.At((unsigned int)functionVariable.procedureId);
-    InterpretStatementList(functionBody);
+    auto procedureVariable = GLOBAL_SCOPE_SYMBOL_TABLE.at(procedureCall->id);
+    auto procedureDefinition = PROCEDURES_DATABASE.At((unsigned int)procedureVariable.procedureId);
+    for (int arg = 0; arg < procedureDefinition.args.size(); ++arg) // todo replace hacky way of assigning argument values
+    {
+        auto argn = procedureDefinition.args[arg];
+        auto argv = procedureCall->argsExpressions[arg];
+        ASTVariable argvar = ASTVariable(argn);
+        ASTAssignment argAssignment = ASTAssignment(&argvar, argv);
+        InterpretStatement(&argAssignment);
+    }
+    InterpretStatementList(procedureDefinition.body);
 
     if (returnValueSetFlag) retval = returnValue;
 
     returnRequestedFlag = false;
     returnValueSetFlag = false;
 
-    // restore variables that were overwritten/masked
+    // todo restore variables that were overwritten/masked
 
     return retval;
 }

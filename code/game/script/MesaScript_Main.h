@@ -4,7 +4,7 @@
 //      program : global variable assignment (program)*
 //      program : procedure_call
 
-// todo procedure : SYMBOL LPAREN (SYMBOL)* RPAREN statement_list
+// procedure : SYMBOL LPAREN (SYMBOL)* RPAREN statement_list
 
 // statement_list : LBRACE statement* RBRACE
 
@@ -32,8 +32,7 @@
 // factor : TRUE|FALSE
 // factor : procedure_call
 
-// procedure_call : PROCEDURESYMBOL LPAREN RPAREN
-// todo procedure_call : PROCEDURESYMBOL LPAREN (cond_or (COMMA cond_or)*)? RPAREN
+// procedure_call : PROCEDURESYMBOL LPAREN (cond_or (COMMA cond_or)*)? RPAREN
 // before procedure call, if arguments will overwrite existing variables, then cache those variables in a stack, then
 // bring them back after procedure call.
 
@@ -41,8 +40,7 @@
 
 // expr : term ((PLUS | MINUS) term)*
 
-
-
+// Requires definition of keywords and operators (e.g. what does "return" do? it ends the current procedure etc.)
 
 void TestProc();
 
