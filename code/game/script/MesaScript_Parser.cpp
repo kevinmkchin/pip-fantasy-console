@@ -45,8 +45,6 @@ ASTStatementList* Parser::parse()
 
 ASTStatementList* Parser::statement_list()
 {
-    // statement_list : LBRACE statement* RBRACE
-
     auto statement_list = new (MemoryLinearAllocate(&astBuffer, sizeof(ASTStatementList), alignof(ASTStatementList)))
             ASTStatementList();
     eat(TokenType::LBrace);
@@ -60,12 +58,6 @@ ASTStatementList* Parser::statement_list()
 
 ASTNode* Parser::statement()
 {
-    // statement : IDENTIFIER ASSIGN cond_or
-    // statement : RETURN cond_or
-    // statement : expr  // this is valid because a statement can be a function call
-    // statement : IF cond_or statement_list (ELSE statement_list)? // todo change statement to statement sequence
-    // todo : WHILE cond_or (statement sequence)
-
     if (currentToken.type == TokenType::Identifier)
     {
         auto t = currentToken;
@@ -112,8 +104,6 @@ ASTNode* Parser::statement()
 
 ASTNode* Parser::cond_expr()
 {
-    // cond_expr : expr ((< | > | <= | =>) expr)?
-
     auto node = expr();
 
     if(ISANYOF4(currentToken.type, TokenType::LessThan, TokenType::LessThanOrEqual,
@@ -153,11 +143,6 @@ ASTNode* Parser::cond_expr()
 
 ASTNode* Parser::cond_equal()
 {
-    // cond_equal : cond_expr ((== | !=) cond_expr)?
-    // cond_equal : LPAREN cond_or RPAREN
-    // cond_equal : NOT LPAREN cond_or RPAREN
-    // cond_equal : NOT factor
-
     ASTNode* node = nullptr;
 
     if (currentToken.type == TokenType::LParen)
@@ -215,8 +200,6 @@ ASTNode* Parser::cond_equal()
 
 ASTNode* Parser::cond_and()
 {
-    // cond_and : cond_equal (AND cond_equal)?
-
     auto node = cond_equal();
 
     if(currentToken.type == TokenType::LogicalAnd)
@@ -233,8 +216,6 @@ ASTNode* Parser::cond_and()
 
 ASTNode* Parser::cond_or()
 {
-    // cond_or : cond_and (OR cond_and)?
-
     auto node = cond_and();
 
     if(currentToken.type == TokenType::LogicalOr)
@@ -251,12 +232,6 @@ ASTNode* Parser::cond_or()
 
 ASTNode* Parser::factor()
 {
-    // factor : NUMBER
-    // factor : LPAREN expr RPAREN
-    // factor : VARIABLEIDENTIFIER
-    // factor : TRUE|FALSE
-    // todo : function calls
-
     auto t = currentToken;
     ASTNode* node = nullptr;
 
@@ -305,8 +280,6 @@ ASTNode* Parser::factor()
 
 ASTNode* Parser::term()
 {
-    // term : factor ((MUL | DIV) factor)*
-
     auto node = factor();
 
     while(ISANYOF2(currentToken.type, TokenType::MulOperator, TokenType::DivOperator))
@@ -335,8 +308,6 @@ ASTNode* Parser::term()
 
 ASTNode* Parser::expr()
 {
-    // expr : term ((PLUS | MINUS) term)*
-
     auto node = term();
 
     while(ISANYOF2(currentToken.type, TokenType::AddOperator, TokenType::SubOperator))

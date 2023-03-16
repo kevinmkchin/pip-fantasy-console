@@ -9,11 +9,14 @@
 
 /** TODO
     - procedures and invoking procedure calls
+    - scopes and symbol tables
+
+    - floats
+
     - elif
     - while
     - for
-    - scopes and symbol tables
-    - floats
+
     - use custom assert for mesascript
     - replace all std::vectors with custom data struct
 */
@@ -32,19 +35,6 @@
  *
  * */
 
-//if b statementx
-//if b statementx else statementy
-//if b (statementx) else (if c (statementy) else (if d statementz else (statementa)))
-//if b
-//    statementx
-//else if c
-//    statementy
-//else if d
-//    statementz
-//else
-//    statementa
-// maybe we only need one "end"?
-
 // returns the x-th fibonnaci number
 static const char* script0 =
         //"proc fib(int x)\n"
@@ -55,6 +45,8 @@ static const char* script0 =
         "\n"
         //"end\n"
         "";
+
+// 
 
 enum class TokenType
 {
@@ -211,38 +203,6 @@ void TestProc()
 //    proc_definition proc = procedure_definitions.At(pid);
 //    std::string code = proc.proc_code;
 //
-//    while (!code.empty())
-//    {
-//        std::string line = GetLine(&code);
-//        if (line.empty()) continue;
-//
-//        // go through line and replace all identifiers with their constant value
-//        // go through line and reduce operations to constant value
-//        //   e.g. false or 3 <= (4 + 2)  -->  true
-//        //        6 + 3 * 2  -->  12
-//
-//
-//        std::string token = GetToken(&line);
-//        if (token == "if")
-//        {
-//            // evaluate condition
-//            // if true then look for else/end and do everything before it
-//            // if false then look for else (if exist, then skip to else)
-//            //   if found end instead, then skip to end
-//        }
-//        else if (token == "else")
-//        {
-//
-//        }
-//        else if (token == "ret")
-//        {
-//
-//        }
-//        else if (token == "<")
-//        {
-//
-//        }
-//        else
 //        {
 //            u32 processToCall = pname_to_pid["fib"];
 //
@@ -255,10 +215,6 @@ void TestProc()
 //            base_ptr = base_ptr - sizeOfLocalsOfStackFrame - proc.arg_size;
 //        }
 //    }
-//
-//    // if token is "if" then check condition, if condition is false, skip all code
-//    code.get
-//}
 //
 //void InterpretScript0()
 //{
