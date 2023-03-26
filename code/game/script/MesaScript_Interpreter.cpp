@@ -26,19 +26,31 @@ InterpretExpression(ASTNode* ast)
                 case BinOp::Add: {
                     if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
                     {
-                        return { .integerValue=l.integerValue + r.integerValue, .type=TValue::ValueType::Integer };
+                        TValue result;
+                        result.integerValue = l.integerValue + r.integerValue;
+                        result.type = TValue::ValueType::Integer;
+                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
                     {
-                        return { .realValue=l.realValue + r.integerValue, .type=TValue::ValueType::Real };
+                        TValue result;
+                        result.realValue = l.realValue + r.integerValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
                     }
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
                     {
-                        return { .realValue=l.integerValue + r.realValue, .type=TValue::ValueType::Real };
+                        TValue result;
+                        result.realValue = l.integerValue + r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
-                        return { .realValue=l.realValue + r.realValue, .type=TValue::ValueType::Real };
+                        TValue result;
+                        result.realValue = l.realValue + r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
                     }
                     else
                     {
@@ -48,19 +60,31 @@ InterpretExpression(ASTNode* ast)
                 case BinOp::Sub: {
                     if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
                     {
-                        return { .integerValue=l.integerValue - r.integerValue, .type=TValue::ValueType::Integer };
+                        TValue result;
+                        result.integerValue = l.integerValue - r.integerValue;
+                        result.type = TValue::ValueType::Integer;
+                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
                     {
-                        return { .realValue=l.realValue - r.integerValue, .type=TValue::ValueType::Real };
+                        TValue result;
+                        result.realValue = l.realValue - r.integerValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
                     }
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
                     {
-                        return { .realValue=l.integerValue - r.realValue, .type=TValue::ValueType::Real };
+                        TValue result;
+                        result.realValue = l.integerValue - r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
-                        return { .realValue=l.realValue - r.realValue, .type=TValue::ValueType::Real };
+                        TValue result;
+                        result.realValue = l.realValue - r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
                     }
                     else
                     {
@@ -70,19 +94,31 @@ InterpretExpression(ASTNode* ast)
                 case BinOp::Mul: {
                     if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
                     {
-                        return { .integerValue=l.integerValue * r.integerValue, .type=TValue::ValueType::Integer };
+                        TValue result;
+                        result.integerValue = l.integerValue * r.integerValue;
+                        result.type = TValue::ValueType::Integer;
+                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
                     {
-                        return { .realValue=l.realValue * r.integerValue, .type=TValue::ValueType::Real };
+                        TValue result;
+                        result.realValue = l.realValue * r.integerValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
                     }
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
                     {
-                        return { .realValue=l.integerValue * r.realValue, .type=TValue::ValueType::Real };
+                        TValue result;
+                        result.realValue = l.integerValue * r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
-                        return { .realValue=l.realValue * r.realValue, .type=TValue::ValueType::Real };
+                        TValue result;
+                        result.realValue = l.realValue * r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
                     }
                     else
                     {
@@ -92,19 +128,31 @@ InterpretExpression(ASTNode* ast)
                 case BinOp::Div: {
                     if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
                     {
-                        return { .integerValue=l.integerValue / r.integerValue, .type=TValue::ValueType::Integer };
+                        TValue result;
+                        result.integerValue = l.integerValue / r.integerValue;
+                        result.type = TValue::ValueType::Integer;
+                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
                     {
-                        return { .realValue=l.realValue / r.integerValue, .type=TValue::ValueType::Real };
+                        TValue result;
+                        result.realValue = l.realValue / r.integerValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
                     }
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
                     {
-                        return { .realValue=l.integerValue / r.realValue, .type=TValue::ValueType::Real };
+                        TValue result;
+                        result.realValue = l.integerValue / r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
-                        return { .realValue=l.realValue / r.realValue, .type=TValue::ValueType::Real };
+                        TValue result;
+                        result.realValue = l.realValue / r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
                     }
                     else
                     {
@@ -139,14 +187,48 @@ InterpretExpression(ASTNode* ast)
             }
             switch (v->op)
             {
-                case RelOp::LT: return { .boolValue=l.realValue < r.realValue, .type=TValue::ValueType::Boolean };
-                case RelOp::GT: return { .boolValue=l.realValue > r.realValue, .type=TValue::ValueType::Boolean };
-                case RelOp::LE: return { .boolValue=l.realValue <= r.realValue, .type=TValue::ValueType::Boolean };
-                case RelOp::GE: return { .boolValue=l.realValue >= r.realValue, .type=TValue::ValueType::Boolean };
-                case RelOp::EQ: return { .boolValue=l.realValue == r.realValue, .type=TValue::ValueType::Boolean };
-                case RelOp::NEQ: return { .boolValue=l.realValue != r.realValue, .type=TValue::ValueType::Boolean };
-                case RelOp::AND: return { .boolValue=(l.realValue == 1.f && r.realValue == 1.f), .type=TValue::ValueType::Boolean };
-                case RelOp::OR: return { .boolValue=(l.realValue == 1.f || r.realValue == 1.f), .type=TValue::ValueType::Boolean };
+                case RelOp::LT: {
+                    TValue result;
+                    result.boolValue = l.realValue < r.realValue;
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break; 
+                case RelOp::LE: {
+                    TValue result;
+                    result.boolValue = l.realValue <= r.realValue;
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
+                case RelOp::GE: {
+                    TValue result;
+                    result.boolValue = l.realValue >= r.realValue;
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
+                case RelOp::EQ: {
+                    TValue result;
+                    result.boolValue = l.realValue == r.realValue;
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
+                case RelOp::NEQ: {
+                    TValue result;
+                    result.boolValue = l.realValue != r.realValue;
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
+                case RelOp::AND: {
+                    TValue result;
+                    result.boolValue = (l.realValue == 1.f && r.realValue == 1.f);
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
+                case RelOp::OR: {
+                    TValue result;
+                    result.boolValue = (l.realValue == 1.f || r.realValue == 1.f);
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
             }
         } break;
         case ASTNodeType::LOGICALNOT: {
@@ -165,11 +247,17 @@ InterpretExpression(ASTNode* ast)
         } break;
         case ASTNodeType::NUMBER: {
             auto v = static_cast<ASTNumberTerminal*>(ast);
-            return { .integerValue=v->value, .type=TValue::ValueType::Integer };
+            TValue result;
+            result.integerValue = v->value;
+            result.type = TValue::ValueType::Integer;
+            return result;
         } break;
         case ASTNodeType::BOOLEAN: {
             auto v = static_cast<ASTBooleanTerminal*>(ast);
-            return { .boolValue = v->value, .type=TValue::ValueType::Boolean };
+            TValue result;
+            result.boolValue = v->value;
+            result.type = TValue::ValueType::Boolean;
+            return result;
         } break;
         case ASTNodeType::PROCEDURECALL: {
             auto v = static_cast<ASTProcedureCall*>(ast);
