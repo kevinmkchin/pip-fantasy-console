@@ -204,7 +204,7 @@ void TestProc()
                                  "}"
                                  ""
                                  "call_fib () {"
-                                 "  print fib(9)"
+                                 "  print fib(10)"
                                  "}"
                                  ""
                                  "";

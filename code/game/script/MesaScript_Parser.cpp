@@ -70,7 +70,9 @@ PID Parser::procedure()
 
     PROCEDURES_DATABASE.At((unsigned int)createdProcedureId).body = statement_list();
 
-    TValue functionVariable = { .procedureId=createdProcedureId, .type=TValue::ValueType::Function };
+    TValue functionVariable;
+    functionVariable.procedureId = createdProcedureId;
+    functionVariable.type = TValue::ValueType::Function;
 
     if (GLOBAL_SCOPE_SYMBOL_TABLE.find(procedureNameToken.text) == GLOBAL_SCOPE_SYMBOL_TABLE.end())
     {

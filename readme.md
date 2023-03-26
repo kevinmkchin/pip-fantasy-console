@@ -41,6 +41,11 @@ Missing from Cute or Ascent
 - Sound effects and music system
 
 
+## Build on Windows
+
+### Visual Studio
+Open repo directory with Visual Studio (requires Cmake tools for VS to be installed).
+Right click on CMakeLists.txt from the solution explorerer and "Set as Startup Item".
 
 
 ## Build on Mac

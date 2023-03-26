@@ -2,6 +2,9 @@
 
 #include <SDL.h>
 
+
+#define GL3W_IMPLEMENTATION
+#include <gl3w.h>
 #include "ArcadiaOpenGL.h"
 #include "ArcadiaUtility.h"
 #include "CorePrintLog.h"
@@ -43,14 +46,13 @@ static const char* __finalpass_shader_fs =
 
 bool CoreRenderer::Init()
 {
-#ifdef KEVIN_USING_GLEW
-    glewExperimental = GL_TRUE;
-    if (glewInit() != GLEW_OK)
+#ifdef MESA_USING_GL3W
+    if (gl3w_init())
     {
-        PrintLog.Error("GLEW failed to initialize.");
+        fprintf(stderr, "Failed to initialize OpenGL\n");
         return false;
     }
-    PrintLog.Message("GLEW initialized.");
+    PrintLog.Message("OpenGL initialized.");
 #endif
     s_ActiveSDLWindow = SDL_GL_GetCurrentWindow();
 

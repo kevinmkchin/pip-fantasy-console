@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 set (CMAKE_CXX_STANDARD 14)
 
-project(arcadia_fantasy_console)
+project(mesa_fantasy_console)
+
+
+set(PROJECT_WORKING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/wd")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ext/cmake_project_path.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/ext/cmake_project_path.h")
 
 
 set(SOURCE_FILES
@@ -22,32 +26,55 @@ set(SOURCE_FILES
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-set(MY_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/wd")
-
 
 # Build options, additional include directories, library linking, copying DLLs to executable directory
 
+## Windows
+if(WIN32)
+
+    if(MSVC)
+      add_definitions(/MP)
+    endif()
+
+    # Find OpenGL
+    find_package(OpenGL REQUIRED)
+    if (OPENGL_FOUND)
+       target_include_directories(${PROJECT_NAME} PUBLIC ${OPENGL_INCLUDE_DIR})
+       target_link_libraries(${PROJECT_NAME} PUBLIC ${OPENGL_gl_LIBRARY})
+    endif()
+
+    set(SDL2_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/include/SDL")
+    set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x64.lib;${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2main-x64.lib")
+    set(SDL_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x64.dll")
+
+    # Copy and rename dlls
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${SDL_DLL}"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/SDL2.dll")
+
+    target_compile_options(${PROJECT_NAME} PUBLIC "/W3" "/EHsc" "/we4239")
+    target_include_directories(${PROJECT_NAME} PUBLIC ${SDL2_INCLUDE_DIRS} ext/gl3w)
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${SDL2_LIBRARIES})
+
 ## MacOS
+else(APPLE)
 
-#set_target_properties(${PROJECT_NAME} PROPERTIES
-#        MACOSX_BUNDLE TRUE
-#        MACOSX_FRAMEWORK_IDENTIFIER org.cmake.${PROJECT_NAME}
-#        XCODE_GENERATE_SCHEME TRUE
-#        XCODE_SCHEME_WORKING_DIRECTORY ${MY_WORKING_DIRECTORY})
+    find_package(SDL2 REQUIRED)
+    if(SDL2_FOUND)
+        message(STATUS "SDL2 found.")
+        include_directories(${SDL2_INCLUDE_DIRS})
+        target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES})
+    else()
+    	message(FATAL_ERROR "CMake couldn't find SDL2 on MacOSX.")
+    endif()
 
-find_package(SDL2 REQUIRED)
-if(SDL2_FOUND)
-    message(STATUS "SDL2 found.")
-    include_directories(${SDL2_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARIES})
-else()
-	message(FATAL_ERROR "CMake couldn't find SDL2 on MacOSX.")
-endif()
+    find_package(OpenGL REQUIRED)
+    if(OpenGL_FOUND)
+        message(STATUS "OpenGL found.")
+        target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
+    else()
+        message(FATAL_ERROR "CMake couldn't find OpenGL on MacOSX.")
+    endif()
 
-find_package(OpenGL REQUIRED)
-if(OpenGL_FOUND)
-    message(STATUS "OpenGL found.")
-    target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
-else()
-    message(FATAL_ERROR "CMake couldn't find OpenGL on MacOSX.")
 endif()

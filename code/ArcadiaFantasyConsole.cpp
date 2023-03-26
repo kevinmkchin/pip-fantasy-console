@@ -95,7 +95,7 @@ static void LoadFantasyConsole()
     StartEditor();
 }
 
-int main()
+int main(int argc, char* argv[])
 {
 	InitializeEverything();
 
