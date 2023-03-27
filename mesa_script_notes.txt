@@ -12,6 +12,10 @@ function Update()
 
 end
 
+If the cringey std library memory manipulation happens on the part of the heap that is not reserved for other parts of the engine, then
+the cringey std lib memory fuck ups only affect that non-reserved portion, thus only the systems that use the cringey std stuff.
+
+
 
 > Player.arcscript -> it's just a human readable and editable string...so simple to work with
 
