@@ -35,7 +35,7 @@ static bool InitializeEverything()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-    g_SDLWindow = SDL_CreateWindow("ARCADIA Fantasy Console",
+    g_SDLWindow = SDL_CreateWindow("Mesa Fantasy Console",
                                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H,
                                    SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);// | SDL_WINDOW_RESIZABLE);
 

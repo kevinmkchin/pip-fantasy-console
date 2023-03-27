@@ -74,13 +74,13 @@ PID Parser::procedure()
     functionVariable.procedureId = createdProcedureId;
     functionVariable.type = TValue::ValueType::Function;
 
-    if (GLOBAL_SCOPE_SYMBOL_TABLE.find(procedureNameToken.text) == GLOBAL_SCOPE_SYMBOL_TABLE.end())
+    if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(procedureNameToken.text))
     {
-        GLOBAL_SCOPE_SYMBOL_TABLE.emplace(procedureNameToken.text, functionVariable);
+        MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(procedureNameToken.text) = functionVariable;
     }
     else
     {
-        GLOBAL_SCOPE_SYMBOL_TABLE.at(procedureNameToken.text) = functionVariable;
+        MESASCRIPT_SCOPE.GLOBAL_TABLE.TableCreateElement(procedureNameToken.text, functionVariable);
     }
 
     return createdProcedureId;

@@ -240,7 +240,18 @@ InterpretExpression(ASTNode* ast)
         case ASTNodeType::VARIABLE: {
             auto v = static_cast<ASTVariable*>(ast);
             try {
-                return GLOBAL_SCOPE_SYMBOL_TABLE.at(v->id);
+                if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(v->id))
+                {
+                    return MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(v->id);
+                }
+                else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(v->id))
+                {
+                    return MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(v->id);
+                }
+                else
+                {
+                    // error;
+                }
             } catch (const std::exception& e) {
                 // todo error
             }
@@ -269,53 +280,62 @@ InterpretExpression(ASTNode* ast)
 static void
 InterpretStatement(ASTNode* statement)
 {
-    switch(statement->GetType())
+    switch (statement->GetType())
     {
-        case ASTNodeType::PROCEDURECALL: {
-            auto v = static_cast<ASTProcedureCall*>(statement);
-            InterpretProcedureCall(v);
-        } break;
-        case ASTNodeType::ASSIGN: {
-            auto v = static_cast<ASTAssignment*>(statement);
-            auto result = InterpretExpression(v->expr);
-            ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
-            if(GLOBAL_SCOPE_SYMBOL_TABLE.find(static_cast<ASTVariable*>(v->id)->id) == GLOBAL_SCOPE_SYMBOL_TABLE.end())
-                GLOBAL_SCOPE_SYMBOL_TABLE.emplace(static_cast<ASTVariable*>(v->id)->id, result);
-            else
-                GLOBAL_SCOPE_SYMBOL_TABLE.at(static_cast<ASTVariable*>(v->id)->id) = result;
-        } break;
-        case ASTNodeType::RETURN: {
-            auto v = static_cast<ASTReturn*>(statement);
-            TValue result = InterpretExpression(v->expr);
-            returnValue = result;
-            returnValueSetFlag = true;
-            returnRequestedFlag = true;
-        } break;
-        case ASTNodeType::PRINT: {
-            auto v = static_cast<ASTPrint*>(statement);
-            TValue result = InterpretExpression(v->expr);
-            if(result.type == TValue::ValueType::Integer)
-            {
-                printf("printed %lld\n", result.integerValue);
-            }
-            else if (result.type == TValue::ValueType::Boolean)
-            {
-                printf("printed %s\n", (result.boolValue ? "true" : "false"));
-            }
-            else if (result.type == TValue::ValueType::Real)
-            {
-                printf("printed %f\n", result.realValue);
-            }
-        } break;
-        case ASTNodeType::BRANCH: {
-            auto v = static_cast<ASTBranch*>(statement);
-            auto condition = InterpretExpression(v->condition);
-            ASSERT(condition.type == TValue::ValueType::Boolean);
-            if(condition.boolValue)
-                InterpretStatementList(v->if_body);
-            else
-                InterpretStatementList(v->else_body);
-        } break;
+    case ASTNodeType::PROCEDURECALL: {
+        auto v = static_cast<ASTProcedureCall*>(statement);
+        InterpretProcedureCall(v);
+    } break;
+    case ASTNodeType::ASSIGN: {
+        auto v = static_cast<ASTAssignment*>(statement);
+        auto result = InterpretExpression(v->expr);
+        ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
+        std::string key = static_cast<ASTVariable*>(v->id)->id;
+        if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(key))
+        {
+            MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(key) = result;
+        }
+        else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(key))
+        {
+            MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(key) = result;
+        }
+        else
+        {
+            MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.EmplaceNewElement(key, result);
+        }
+    } break;
+    case ASTNodeType::RETURN: {
+        auto v = static_cast<ASTReturn*>(statement);
+        TValue result = InterpretExpression(v->expr);
+        returnValue = result;
+        returnValueSetFlag = true;
+        returnRequestedFlag = true;
+    } break;
+    case ASTNodeType::PRINT: {
+        auto v = static_cast<ASTPrint*>(statement);
+        TValue result = InterpretExpression(v->expr);
+        if (result.type == TValue::ValueType::Integer)
+        {
+            printf("printed %lld\n", result.integerValue);
+        }
+        else if (result.type == TValue::ValueType::Boolean)
+        {
+            printf("printed %s\n", (result.boolValue ? "true" : "false"));
+        }
+        else if (result.type == TValue::ValueType::Real)
+        {
+            printf("printed %f\n", result.realValue);
+        }
+    } break;
+    case ASTNodeType::BRANCH: {
+        auto v = static_cast<ASTBranch*>(statement);
+        auto condition = InterpretExpression(v->condition);
+        ASSERT(condition.type == TValue::ValueType::Boolean);
+        if (condition.boolValue)
+            InterpretStatementList(v->if_body);
+        else
+            InterpretStatementList(v->else_body);
+    } break;
     }
 }
 
@@ -336,31 +356,38 @@ NiceArray<TValue, 256> valueCache;
 static TValue
 InterpretProcedureCall(ASTProcedureCall* procedureCall)
 {
-    auto procedureVariable = GLOBAL_SCOPE_SYMBOL_TABLE.at(procedureCall->id);
+    TValue procedureVariable;
+    if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(procedureCall->id))
+    {
+        procedureVariable = MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(procedureCall->id);
+    }
+    else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(procedureCall->id))
+    {
+        procedureVariable = MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(procedureCall->id);
+    }
     auto procedureDefinition = PROCEDURES_DATABASE.At((unsigned int)procedureVariable.procedureId);
 
-    // todo cache variables but less hacky
+
+    MesaScript_Table functionScope;
     for (int i = 0; i < procedureDefinition.args.size(); ++i)
     {
         auto argn = procedureDefinition.args[i];
-        if(GLOBAL_SCOPE_SYMBOL_TABLE.find(argn) == GLOBAL_SCOPE_SYMBOL_TABLE.end())
-            valueCache.PushBack(TValue());
-        else
-            valueCache.PushBack(GLOBAL_SCOPE_SYMBOL_TABLE.at(argn));
+        auto argexpr = procedureCall->argsExpressions[i];
+        TValue argv = InterpretExpression(argexpr);
+        functionScope.TableCreateElement(argn, argv);
+    }
+    MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.PushScope(functionScope);
+
+    for (int arg = 0; arg < procedureDefinition.args.size(); ++arg) // todo replace hacky way of assigning argument values
+    {
+        auto argn = procedureDefinition.args[arg];
+        auto argv = procedureCall->argsExpressions[arg];
     }
 
     TValue retval;
     returnRequestedFlag = false;
     returnValueSetFlag = false;
 
-    for (int arg = 0; arg < procedureDefinition.args.size(); ++arg) // todo replace hacky way of assigning argument values
-    {
-        auto argn = procedureDefinition.args[arg];
-        auto argv = procedureCall->argsExpressions[arg];
-        ASTVariable argvar = ASTVariable(argn);
-        ASTAssignment argAssignment = ASTAssignment(&argvar, argv);
-        InterpretStatement(&argAssignment);
-    }
     InterpretStatementList(procedureDefinition.body);
 
     if (returnValueSetFlag) retval = returnValue;
@@ -368,16 +395,7 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
     returnRequestedFlag = false;
     returnValueSetFlag = false;
 
-    // todo restore variables but less hacky
-    for (int i = procedureDefinition.args.size() - 1; i >= 0; --i)
-    {
-        auto argn = procedureDefinition.args[i];
-        if(GLOBAL_SCOPE_SYMBOL_TABLE.find(argn) == GLOBAL_SCOPE_SYMBOL_TABLE.end())
-            GLOBAL_SCOPE_SYMBOL_TABLE.emplace(argn, valueCache.Back());
-        else
-            GLOBAL_SCOPE_SYMBOL_TABLE.at(argn) = valueCache.Back();
-        --valueCache.count;
-    }
+    MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.PopScope();
 
     return retval;
 }
