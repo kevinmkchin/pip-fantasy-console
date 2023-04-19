@@ -1,10 +1,42 @@
 #pragma once
 
-// todo program : procedure (program)*
-//      program : global variable assignment (program)*
-//      program : procedure_call
+/** TODO
+    - floats
+    - tables
+    - garbage collecting
 
-// procedure : SYMBOL LPAREN (SYMBOL)* RPAREN statement_list
+    - elif
+    - while
+    - for
+
+    - use custom assert for mesascript
+    - replace all std::vectors with custom data struct
+    - REFACTOR
+*/
+
+/*
+ * stuff can be one of :
+ * - keyword
+ *   - if, ret, else, proc, end, int, float, bool, struct, string, while, for, array, list
+ * - identifier
+ *   - x, y, fib, Start, Update
+ * - terminal
+ *   - 2, 514, 3.14, "hello world", true, false
+ * - operator
+ *   - +, -, *, /, <, >, is, <=, >=, isnt, and, or
+ *   - = assignment operator
+ *
+ * */
+
+// -- FORMAL GRAMMAR --
+
+// program : procedure_decl (program)*
+// program : procedure_call
+// TODO program : global variable assignment (program)*
+
+// procedure_decl : SYMBOL LPAREN (SYMBOL)* RPAREN statement_list
+
+// procedure_call : PROCEDURESYMBOL LPAREN (cond_or (COMMA cond_or)*)? RPAREN
 
 // statement_list : LBRACE statement* RBRACE
 
@@ -32,15 +64,11 @@
 // factor : TRUE|FALSE
 // factor : procedure_call
 
-// procedure_call : PROCEDURESYMBOL LPAREN (cond_or (COMMA cond_or)*)? RPAREN
-// before procedure call, if arguments will overwrite existing variables, then cache those variables in a stack, then
-// bring them back after procedure call.
-
 // term : factor ((MUL | DIV) factor)*
 
 // expr : term ((PLUS | MINUS) term)*
 
 // Requires definition of keywords and operators (e.g. what does "return" do? it ends the current procedure etc.)
 
-void TestProc();
+void RunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir);
 

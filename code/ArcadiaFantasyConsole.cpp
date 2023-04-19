@@ -97,45 +97,49 @@ static void LoadFantasyConsole()
 
 int main(int argc, char* argv[])
 {
-	InitializeEverything();
 
-    LoadFantasyConsole();
-
-    TestProc();
-
-    while (!g_ProgramShouldShutdown)
+    if (argc > 1)
     {
-        if (Time.UpdateDeltaTime() > 0.1f) { continue; } // if delta time is too large, will cause glitches
-
-        ARCGUI::NewFrame();
-        ProcessSDLEvents();
-
-        auto sty = ARCGUI::GetActiveUIStyleCopy();
-        sty.textColor = vec4(0.f,0.f,0.f,1.f);
-        //ARCGUI::PushUIStyle(sty);
-        ARCGUI::DoTextUnformatted(30, 30, 16, ARCGUI::TextAlignment::Left, "JOURNEY");
-        ARCGUI::DoTextUnformatted(130, 30, 16, ARCGUI::TextAlignment::Left, "COMET");
-        ARCGUI::DoTextUnformatted(230, 30, 16, ARCGUI::TextAlignment::Left, "MESA");
-        ARCGUI::DoTextUnformatted(330, 30, 16, ARCGUI::TextAlignment::Left, "STAR");
-        ARCGUI::DoTextUnformatted(430, 30, 16, ARCGUI::TextAlignment::Left, "HEART");
-        ARCGUI::DoTextUnformatted(30, 60, 16, ARCGUI::TextAlignment::Left, "Start Editor");
-        ARCGUI::DoTextUnformatted(30, 90, 16, ARCGUI::TextAlignment::Left, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!");
-        //ARCGUI::DoButton(ARCGUI::FreshID(), ARCGUI::UIRect(30, 90, 100, 30), vec4(0,0,0,1), vec4(0.5,0.5,0.5,1), vec4(1.f, 1.f, 1.f, 1.f));
-        ARCGUI::EditorBeginWindow(ARCGUI::UIRect(30, 120, 200, 200));
-        ARCGUI::EditorLabelledButton("Insert Cartridge");
-        ARCGUI::EditorEndWindow();
-        //ARCGUI::PopUIStyle();
-
-//        console_update(Time.unscaledDeltaTime);
-//        editorRuntime.UpdateEditor(); //game->Update();
-//        DrawProfilerGUI();
-        g_gfx.Render();
-        SDL_GL_SwapWindow(g_SDLWindow);
-        Input.ResetInputStatesAtEndOfFrame();
+        RunMesaScriptInterpreterOnFile(argv[1]);
     }
 
-    SDL_DestroyWindow(g_SDLWindow);
-    SDL_GL_DeleteContext(g_SDLGLContext);
-    SDL_Quit();
+//	InitializeEverything();
+//
+//    LoadFantasyConsole();
+//
+//    while (!g_ProgramShouldShutdown)
+//    {
+//        if (Time.UpdateDeltaTime() > 0.1f) { continue; } // if delta time is too large, will cause glitches
+//
+//        ARCGUI::NewFrame();
+//        ProcessSDLEvents();
+//
+//        auto sty = ARCGUI::GetActiveUIStyleCopy();
+//        sty.textColor = vec4(0.f,0.f,0.f,1.f);
+//        //ARCGUI::PushUIStyle(sty);
+//        ARCGUI::DoTextUnformatted(30, 30, 16, ARCGUI::TextAlignment::Left, "JOURNEY");
+//        ARCGUI::DoTextUnformatted(130, 30, 16, ARCGUI::TextAlignment::Left, "COMET");
+//        ARCGUI::DoTextUnformatted(230, 30, 16, ARCGUI::TextAlignment::Left, "MESA");
+//        ARCGUI::DoTextUnformatted(330, 30, 16, ARCGUI::TextAlignment::Left, "STAR");
+//        ARCGUI::DoTextUnformatted(430, 30, 16, ARCGUI::TextAlignment::Left, "HEART");
+//        ARCGUI::DoTextUnformatted(30, 60, 16, ARCGUI::TextAlignment::Left, "Start Editor");
+//        ARCGUI::DoTextUnformatted(30, 90, 16, ARCGUI::TextAlignment::Left, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!");
+//        //ARCGUI::DoButton(ARCGUI::FreshID(), ARCGUI::UIRect(30, 90, 100, 30), vec4(0,0,0,1), vec4(0.5,0.5,0.5,1), vec4(1.f, 1.f, 1.f, 1.f));
+//        ARCGUI::EditorBeginWindow(ARCGUI::UIRect(30, 120, 200, 200));
+//        ARCGUI::EditorLabelledButton("Insert Cartridge");
+//        ARCGUI::EditorEndWindow();
+//        //ARCGUI::PopUIStyle();
+//
+////        console_update(Time.unscaledDeltaTime);
+////        editorRuntime.UpdateEditor(); //game->Update();
+////        DrawProfilerGUI();
+//        g_gfx.Render();
+//        SDL_GL_SwapWindow(g_SDLWindow);
+//        Input.ResetInputStatesAtEndOfFrame();
+//    }
+//
+//    SDL_DestroyWindow(g_SDLWindow);
+//    SDL_GL_DeleteContext(g_SDLGLContext);
+//    SDL_Quit();
     return EXIT_SUCCESS;
 }

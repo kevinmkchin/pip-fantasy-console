@@ -25,7 +25,7 @@ private:
 
     ASTNode* statement();
     ASTStatementList* statement_list();
-    PID procedure();
+    PID procedure_decl();
 
 
 private:
@@ -44,16 +44,22 @@ void Parser::parse()
 {
     while (currentToken.type != TokenType::EndOfFile)
     {
-        procedure();
+        if (currentToken.type == TokenType::FunctionDecl)
+        {
+            procedure_decl();
+        }
+        else if (currentToken.type == TokenType::Identifier)
+        {
+            SCRIPT_PROCEDURE_EXECUTION_QUEUE.push_back(static_cast<ASTProcedureCall*>(procedure_call()));
+        }
     }
 }
 
-PID Parser::procedure()
+PID Parser::procedure_decl()
 {
+    eat(TokenType::FunctionDecl);
     ASSERT(currentToken.type == TokenType::Identifier);
-
     auto procedureNameToken = currentToken;
-
     eat(TokenType::Identifier);
     eat(TokenType::LParen);
 
