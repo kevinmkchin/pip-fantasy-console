@@ -1,6 +1,7 @@
 #pragma once
 
 /** TODO
+
     - floats
     - tables
     - garbage collecting
@@ -8,7 +9,8 @@
     - elif
     - while
     - for
-
+    
+ Way the fuck down the line:
     - use custom assert for mesascript
     - replace all std::vectors with custom data struct
     - REFACTOR
@@ -27,6 +29,7 @@
  *   - = assignment operator
  *
  * */
+
 
 // -- FORMAL GRAMMAR --
 

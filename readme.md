@@ -1,4 +1,4 @@
-# ARCADIA Fantasy Console
+# Mesa Fantasy Console
 ### By Kevin Myungkeon Chin
 
 - Easy to learn
@@ -6,6 +6,10 @@
 - Limitations to scope ambition (USEFUL CONSTRAINTS - "useful" for gamedev)
 - Engine is only as good as its tools, documentation, and error messages
 - For Mac, Windows, Linux
+
+## What is it?
+
+The **Mesa Computer** is a game development environment.
 
 ## Todo
 

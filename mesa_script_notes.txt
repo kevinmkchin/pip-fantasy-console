@@ -1,4 +1,5 @@
-x = 7 + 11
+THIS SHITS ALL SO OUTDATED
+
 
 function Update()
     --print("This is Entity 1 Update\n")
