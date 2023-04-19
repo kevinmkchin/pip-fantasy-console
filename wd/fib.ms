@@ -17,6 +17,8 @@ printv(fib(10))
 printv(add(add(4, 2), 8))
 
 `
+~ the user could create levels in sprites (one sprite per layer) where color determines tile
+
 fn mesa_init ()
 {
     // setup collision relationships
@@ -36,7 +38,9 @@ fn mesa_tick ()
 
 fn mesa_draw()
 {
-
+    // draw level
+    // draw player
+    // draw enemies
 }
 `
 
