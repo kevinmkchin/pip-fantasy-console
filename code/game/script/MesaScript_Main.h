@@ -2,9 +2,11 @@
 
 /** TODO
 
-    - floats
-    - tables
+    - tables (require gc)
+    - strings (require gc)
     - garbage collecting
+
+    - floats
 
     - elif
     - while
