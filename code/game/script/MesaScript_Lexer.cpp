@@ -150,6 +150,10 @@ std::vector<Token> Lexer(const std::string& code)
             {
                 retval.push_back({ TokenType::Else, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
             }
+            else if (word == "fn")
+            {
+                retval.push_back({ TokenType::FunctionDecl,code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
             else // otherwise, word is function call or identifier
             {
                 retval.push_back({ TokenType::Identifier, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });

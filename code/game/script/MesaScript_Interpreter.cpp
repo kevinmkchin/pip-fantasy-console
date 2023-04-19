@@ -351,11 +351,23 @@ InterpretStatementList(ASTNode* statements)
     }
 }
 
-NiceArray<TValue, 256> valueCache;
+TValue CPPBOUND_MESASCRIPT_Add(TValue arg0, TValue arg1)
+{
+    ASSERT(arg0.type == TValue::ValueType::Integer);
+    ASSERT(arg1.type == TValue::ValueType::Integer);
+
+    TValue result;
+    result.type = TValue::ValueType::Integer;
+    result.integerValue = arg0.integerValue + arg1.integerValue;
+    return result;
+}
 
 static TValue
 InterpretProcedureCall(ASTProcedureCall* procedureCall)
 {
+    // If ProcedureCall is C++ bound function, then call that.
+    // TValue result = cpp_fn(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
+
     TValue procedureVariable;
     if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(procedureCall->id))
     {
@@ -364,6 +376,14 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
     else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(procedureCall->id))
     {
         procedureVariable = MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(procedureCall->id);
+    }
+    else
+    {
+        if (procedureCall->id == "add")
+        {
+            ASSERT(procedureCall->argsExpressions.size() == 2);
+            return CPPBOUND_MESASCRIPT_Add(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
+        }
     }
     auto procedureDefinition = PROCEDURES_DATABASE.At((unsigned int)procedureVariable.procedureId);
 

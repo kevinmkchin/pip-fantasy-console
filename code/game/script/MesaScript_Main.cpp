@@ -8,34 +8,6 @@
 #include <vector>
 #include <map>
 
-/** TODO
-    - scopes and symbol tables
-
-    - floats
-
-    - elif
-    - while
-    - for
-
-    - use custom assert for mesascript
-    - replace all std::vectors with custom data struct
-    - REFACTOR
-*/
-
-/*
- * stuff can be one of :
- * - keyword
- *   - if, ret, else, proc, end, int, float, bool, struct, string, while, for, array, list
- * - identifier
- *   - x, y, fib, Start, Update
- * - terminal
- *   - 2, 514, 3.14, "hello world", true, false
- * - operator
- *   - +, -, *, /, <, >, is, <=, >=, isnt, and, or
- *   - = assignment operator
- *
- * */
-
 enum class TokenType
 {
     Default,
@@ -60,6 +32,8 @@ enum class TokenType
     True,
     False,
     Identifier,
+
+    FunctionDecl,
 
     LParen,
     RParen,
@@ -95,6 +69,7 @@ struct ProcedureDefinition
 typedef size_t PID;
 #define PID_MAX 256
 NiceArray<ProcedureDefinition, PID_MAX> PROCEDURES_DATABASE;
+std::vector<ASTProcedureCall*> SCRIPT_PROCEDURE_EXECUTION_QUEUE;
 
 struct TValue
 {
@@ -104,7 +79,8 @@ struct TValue
         Integer,
         Real,
         Boolean,
-        Function
+        Function,
+        //Table
     };
 
     union
@@ -113,6 +89,7 @@ struct TValue
         float realValue;
         bool boolValue;
         PID procedureId;
+        //MesaScript_Table table;
     };
 
     ValueType type = ValueType::Invalid;
@@ -178,7 +155,7 @@ struct MesaScript_ScriptObject
 
     bool KeyExists(const std::string& key)
     {
-        for (int back = scopes.size() - 1; back >= 0; --back)
+        for (int back = int(scopes.size()) - 1; back >= 0; --back)
         {
             MesaScript_Table& scope = scopes.at(back);
             if (scope.TableContainsKey(key))
@@ -191,7 +168,7 @@ struct MesaScript_ScriptObject
 
     TValue& AccessAtKey(const std::string& key)
     {
-        for (int back = scopes.size() - 1; back >= 0; --back)
+        for (int back = int(scopes.size()) - 1; back >= 0; --back)
         {
             MesaScript_Table& scope = scopes.at(back);
             if (scope.TableContainsKey(key))
@@ -234,100 +211,29 @@ static MesaScript_Scope MESASCRIPT_SCOPE;
 #include "MesaScript_Parser.cpp"
 #include "MesaScript_Interpreter.cpp"
 
+#include "../../core/CoreFileSystem.h"
 
-void TestProc()
+void RunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir)
 {
+    std::string fileStr = ReadFileString(wd_path(pathFromWorkingDir).c_str());
+
     MemoryLinearInitialize(&astBuffer, 4096);
 
-    //auto result = Lexer("return 7 - (4 + 3) ");
-    //auto result = Lexer(" return 2 +3*-7 - 1 ");
-    //auto result = Lexer(" x = 2 + 3 * y - z\n  return x");
-    //auto result = Lexer(" x = (3 >= y) and (2 == 4 or true)\n  return x");
-    //auto result = Lexer("((false)) or 4 + y > 7 - (4 + 3) and 45 != z\n"
-    //                    "x = (3 >= y) and (2 == 4 or true)\n"
-    //                    "return !(4 < (3 + 2)) and false");
-    //                    "return x");
-    //auto result = Lexer("if false return x else if false return y else if true return z");
-    //auto result = Lexer("return ! (4 < (3 + 2)) and false");
+    //printf("%ld", sizeof(MesaScript_Table));
 
-    //auto result = Lexer(" return -170*3*5+4-2+1");
-    // if x < 3 { do_x do_y do_z }
-//    auto result = Lexer(" "
-//                        "if (4 < 32) "
-//                        "   if (false) "
-//                        "       return 3 "
-//                        "   else "
-//                        "       return 7 "
-//                        "else "
-//                        "   return -2 - 4 ");
-//    auto result = Lexer(""
-//                        "x = false  "
-//                        "y = 3 + 7 * 32   "
-//                        "if(x) "
-//                        "   return x "
-//                        "else "
-//                        "   return y");
-//    auto result = Lexer(" "
-//                        "{ "
-//                        "   x = 11  "
-//                        "   if false "
-//                        "   { "
-//                        "       y = 3   "
-//                        "       x = y "
-//                        "   } "
-//                        "   else "
-//                        "   { "
-//                        "       y = 9  "
-//                        "       x = x + y "
-//                        "   }  "
-//                        "   return x "
-//                        "} ");
-//    auto result = Lexer(" "
-//                        "A(){ "
-//                        "  x = B"
-//                        "  print x()"
-//                        "}"
-//                        ""
-//                        "B(){"
-//                        "  x = 42"
-//                        "  return x + 80"
-//                        "}"
-//                        "");
-//    auto result = Lexer(" "
-//                        "A(){ "
-//                        "  x = square"
-//                        "  x = x(6)"
-//                        "  print x"
-//                        "}"
-//                        ""
-//                        "square(n){"
-//                        "  return n*n"
-//                        "}"
-//                        "");
+    static const char* mesaScriptSetupCode = "fn printv(v) { print v }";
 
-    // returns n-th fibonnacci number
-    static const char* script0 = ""
-                                 "fib (n) {"
-                                 "  if (n < 2) {"
-                                 "    return n"
-                                 "  } else {"
-                                 "    return fib(n - 1) + fib(n - 2)"
-                                 "  }"
-                                 "}"
-                                 ""
-                                 "call_fib () {"
-                                 "  print fib(10)"
-                                 "}"
-                                 ""
-                                 "";
+    auto setupTokens = Lexer(std::string(mesaScriptSetupCode));
+    auto setupParser = Parser(setupTokens);
+    setupParser.parse();
 
-    auto result = Lexer(script0);
+    auto result = Lexer(fileStr.c_str());
     auto parser = Parser(result);
     parser.parse();
-    ASTProcedureCall pcall = ASTProcedureCall("call_fib");
-//    ASTNumberTerminal pargnum = ASTNumberTerminal(3);
-//    pcall.argsExpressions.push_back(&pargnum);
-    InterpretProcedureCall(&pcall);
 
+    for (auto& procCallNode : SCRIPT_PROCEDURE_EXECUTION_QUEUE)
+    {
+        InterpretProcedureCall(procCallNode);
+    }
 }
 
