@@ -54,6 +54,24 @@ std::vector<Token> Lexer(const std::string& code)
                 retval.push_back({ TokenType::SubOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
             }
         }
+        else if (lookAhead == '`') // block comments
+        {
+            ++currentIndex;
+            while (currentIndex < (code.length() - 1) && code.at(currentIndex) != '`')
+            {
+                ++currentIndex;
+            }
+            ++currentIndex;
+        }
+        else if (lookAhead == '~') // line comments
+        {
+            ++currentIndex;
+            while (currentIndex < (code.length() - 1) && code.at(currentIndex) != '\n')
+            {
+                ++currentIndex;
+            }
+            ++currentIndex;
+        }
         else if(lookAhead == '<' || lookAhead == '>' || lookAhead == '!' || lookAhead == '=')
         {
             ++currentIndex;
