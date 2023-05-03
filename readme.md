@@ -11,30 +11,6 @@
 
 The **Mesa Computer** is a game development environment.
 
-## Todo
-
-- GUI incorrect zones when window resize
-  - prob cuz mouse x y will be incorrect.
-- Make sure vertext height thing didn't regress (text height inconsistency for loading vs forming vertices)
-- Game GUI atomics
-- Editor camera & game camera
-- Pixel perfect AABB Collision checks -> GJK&EPA
-  - Select collider type from AABB, Sphere, and Convex point cloud
-- Sprite sheet & animations
-- Sprite batch rendering
-- Game file management
-  - meta data (Title, Cover art, Author, etc.)
-  - everything needed to play or edit the game
-- Screen system
-- Object system
-- Script interpreter
-
-Missing from Cute or Ascent
-- ECS + components
-- Asset management
-- Console
-
-
 ## MVP
 - Sprites and import pngs (objects?)
 - Game logic scripting engine
