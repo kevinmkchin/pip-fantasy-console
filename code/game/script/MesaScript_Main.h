@@ -1,23 +1,5 @@
 #pragma once
 
-/** TODO
-
-    - tables (require gc)
-    - strings (require gc)
-    - garbage collecting
-
-    - floats
-
-    - elif
-    - while
-    - for
-    
- Way the fuck down the line:
-    - use custom assert for mesascript
-    - replace all std::vectors with custom data struct
-    - REFACTOR
-*/
-
 /*
  * stuff can be one of :
  * - keyword
@@ -34,6 +16,55 @@
 
 
 // -- FORMAL GRAMMAR --
+
+/*
+
+VALUE 0
+
+a = VALUE
+b = a
+
+a = OTHERVALUE
+b = OTHERVALUE
+
+
+fn (a)
+{
+  
+}
+
+
+
+var = "some string " + 32
+
+
+t = {  } ~then t is the first reference of the table, if we assign another value to t and t is still the only reference, then we deallocate the table
+t = {x, 32}.x
+
+t@0
+t@1
+
+t@(1) + 2
+
+
+list@1
+
+list@i = fef
+
+
+t[2]
+
+t
+
+table : L  RSQBRACKET
+
+
+
+TABLEIDENTIFIER.VARIABLEIDENTIFIER
+
+
+
+*/
 
 // program : procedure_decl (program)*
 // program : procedure_call

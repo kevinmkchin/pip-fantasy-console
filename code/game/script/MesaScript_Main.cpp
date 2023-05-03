@@ -80,7 +80,7 @@ struct TValue
         Real,
         Boolean,
         Function,
-        //Table
+        GCObject
     };
 
     union
@@ -89,7 +89,7 @@ struct TValue
         float realValue;
         bool boolValue;
         PID procedureId;
-        //MesaScript_Table table;
+        i64 GCReferenceObject;
     };
 
     ValueType type = ValueType::Invalid;
@@ -103,7 +103,12 @@ struct CompareFirstChar : public std::binary_function<std::string, std::string, 
     }
 };
 
-struct MesaScript_Table
+struct MesaGCObject
+{
+    u32 refCount = 0;
+};
+
+struct MesaScript_Table : MesaGCObject
 {
     // add new pair
     // overwrite existing pair
@@ -147,6 +152,42 @@ private:
     //std::vector<TValue> array;
     std::map<std::string, TValue, CompareFirstChar> table;
 };
+
+
+
+// mesa_script_table , ref count
+
+i64 ticker = 0;
+std::unordered_map<u64, MesaGCObject*> GCOBJECTS_DATABASE;
+
+MesaGCObject* GetRefExistingGCObject(u64 gcObjectId)
+{
+    MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
+    gcobj->refCount++;
+    return gcobj;
+}
+
+void ReleaseRefGCObject(i64 gcObjectId)
+{
+    MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
+    gcobj->refCount--;
+    if (gcobj->refCount == 0)
+    {
+        delete gcobj;
+        GCOBJECTS_DATABASE.erase(gcObjectId);
+    }
+}
+
+i64 RequestNewGCObject()
+{
+    MesaGCObject* gcobj = new MesaScript_Table();
+    gcobj->refCount++;
+    GCOBJECTS_DATABASE.insert_or_assign(ticker, gcobj);
+    return ticker++;
+}
+
+
+
 
 
 struct MesaScript_ScriptObject

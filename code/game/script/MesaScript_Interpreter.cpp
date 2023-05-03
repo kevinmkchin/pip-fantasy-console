@@ -384,6 +384,7 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
             ASSERT(procedureCall->argsExpressions.size() == 2);
             return CPPBOUND_MESASCRIPT_Add(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
         }
+        // else error
     }
     auto procedureDefinition = PROCEDURES_DATABASE.At((unsigned int)procedureVariable.procedureId);
 
@@ -416,6 +417,7 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
     returnValueSetFlag = false;
 
     MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.PopScope();
+    // TODO(Kevin): When we pop this scope, we should ReleaseRefGCObject on all gc objects in this scope
 
     return retval;
 }
