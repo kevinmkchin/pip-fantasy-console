@@ -97,8 +97,7 @@ static void LoadFantasyConsole()
 
 int main(int argc, char* argv[])
 {
-
-    //RunMesaScriptInterpreterOnFile("fib.ms");
+    RunMesaScriptInterpreterOnFile("fib.ms");
 
     // if (argc > 1)
     // {

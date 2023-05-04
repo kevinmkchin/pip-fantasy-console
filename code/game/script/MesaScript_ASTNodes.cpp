@@ -13,7 +13,10 @@ enum class ASTNodeType
     BINOP,
     RELOP,
     LOGICALNOT,
-    BRANCH
+    BRANCH,
+    CREATETABLE,
+    ASSIGNTABLEELEMENT,
+    ACCESSTABLEELEMENT
 };
 
 class ASTNode
@@ -73,6 +76,45 @@ public:
     ASTPrint(ASTNode* expr);
 public:
     ASTNode* expr;
+};
+
+class ASTCreateTable : public ASTNode
+{
+public:
+    ASTCreateTable(ASTNode* id)
+        : ASTNode(ASTNodeType::CREATETABLE)
+        , variableId(id)
+    {}
+public:
+    ASTNode* variableId;
+};
+
+class ASTAssignTableElement : public ASTNode
+{
+public:
+    ASTAssignTableElement(ASTNode* id, ASTNode* indexExpr, ASTNode* valueExpr)
+        : ASTNode(ASTNodeType::ASSIGNTABLEELEMENT)
+        , tableVariableName(id)
+        , indexExpression(indexExpr)
+        , valueExpression(valueExpr)
+    {}
+public:
+    ASTNode* tableVariableName;
+    ASTNode* indexExpression;
+    ASTNode* valueExpression;
+};
+
+class ASTAccessTableElement : public ASTNode
+{
+public:
+    ASTAccessTableElement(ASTNode* id, ASTNode* indexExpr)
+        : ASTNode(ASTNodeType::ACCESSTABLEELEMENT)
+        , tableVariableName(id)
+        , indexExpression(indexExpr)
+    {}
+public:
+    ASTNode* tableVariableName;
+    ASTNode* indexExpression;
 };
 
 class ASTWhile : public ASTNode

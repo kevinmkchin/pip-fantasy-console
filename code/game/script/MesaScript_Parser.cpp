@@ -135,18 +135,59 @@ ASTNode* Parser::statement()
         {
             return procedure_call();
         }
+        else if (nextToken.type == TokenType::LSqBrack)
+        {
+            // id["x"] = ? | id[0] = ? | id[i] = ?
+            auto t = currentToken;
+
+            eat(TokenType::Identifier);
+            eat(TokenType::LSqBrack);
+
+            auto indexExpr = expr();
+
+            eat(TokenType::RSqBrack);
+            eat(TokenType::AssignmentOperator);
+
+            auto valueExpr = cond_or();
+
+            auto varNode =
+                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                            ASTVariable(t.text);
+            auto node =
+                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignTableElement), alignof(ASTAssignTableElement)))
+                            ASTAssignTableElement(varNode, indexExpr, valueExpr);
+            return node;
+        }
         else
         {
             auto t = currentToken;
             eat(TokenType::Identifier);
             eat(TokenType::AssignmentOperator);
-            auto varNode =
-                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
-                            ASTVariable(t.text);
-            auto node =
-                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignment), alignof(ASTAssignment)))
-                            ASTAssignment(varNode, cond_or());
-            return node;
+
+            if (currentToken.type == TokenType::LBrace)
+            {
+                // id = {}
+                eat(TokenType::LBrace);
+                eat(TokenType::RBrace);
+                auto varNode =
+                        new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                                ASTVariable(t.text);
+                auto node =
+                        new (MemoryLinearAllocate(&astBuffer, sizeof(ASTCreateTable), alignof(ASTCreateTable)))
+                                ASTCreateTable(varNode);
+                return node;
+            }
+            else
+            {
+                // id = cond_or
+                auto varNode =
+                        new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                                ASTVariable(t.text);
+                auto node =
+                        new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignment), alignof(ASTAssignment)))
+                                ASTAssignment(varNode, cond_or());
+                return node;
+            }
         }
     }
     else if (currentToken.type == TokenType::Return)
@@ -352,9 +393,28 @@ ASTNode* Parser::factor()
     else if (t.type == TokenType::Identifier)
     {
         auto nextToken = tokens.at(currentTokenIndex + 1);
+
         if (nextToken.type == TokenType::LParen)
         {
             node = procedure_call();
+        }
+        else if (nextToken.type == TokenType::LSqBrack)
+        {
+            auto t = currentToken;
+
+            eat(TokenType::Identifier);
+            eat(TokenType::LSqBrack);
+
+            auto indexExpr = expr();
+
+            eat(TokenType::RSqBrack);
+
+            auto varNode =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                ASTVariable(t.text);
+            node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAccessTableElement), alignof(ASTAccessTableElement)))
+                ASTAccessTableElement(varNode, indexExpr);
         }
         else
         {

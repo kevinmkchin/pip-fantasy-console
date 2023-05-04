@@ -1,25 +1,28 @@
-## Todo
+# todo
 
-/** TODO
+### Language features
 
-   - account for GCObject TValue type in interpreter and parser
+- tables (require gc)
+    - index tables with strings <
+    - account for GCObject TValue type in interpreter and parser
+    - add relops for GCObject type TValues. for other ops, just crash? 
+    - actual array implementation
+    - initialize table elements like so { 0, 1, c, 3, "e" }
 
-    - tables (require gc)
-    - strings (require gc)
-    - garbage collecting
+- strings
 
-    - floats
+- while loops
+- for loops
+- floats
+- elifs
 
-    - elif
-    - while
-    - for
-    
- Way the fuck down the line:
-    - use custom assert for mesascript
-    - replace all std::vectors with custom data struct
-    - REFACTOR
-*/
+Way the fuck down the line:
+- use custom assert for mesascript
+- replace all std data structs with alternate optimized implementations in C?
+- REFACTOR
 
+
+### Uncategorized
 
 - GUI incorrect zones when window resize
   - prob cuz mouse x y will be incorrect.
