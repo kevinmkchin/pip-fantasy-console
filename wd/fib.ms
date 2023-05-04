@@ -1,5 +1,22 @@
 
+fn test()
+{
+  a = {}
+  b = a
 
+  v = 32
+
+  b[0] = 16 + v
+
+  printv(b[0])
+
+  ~printv(b == a)
+  ~printv(b.x == a.x)
+}
+
+test()
+
+`
 fn fib (n) 
 {
   if (n < 2) 
@@ -15,6 +32,7 @@ fn fib (n)
 printv(fib(10))
 ~printv(fib(4))
 printv(add(add(4, 2), 8))
+`
 
 `
 ~ the user could create levels in sprites (one sprite per layer) where color determines tile

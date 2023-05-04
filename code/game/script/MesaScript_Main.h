@@ -33,42 +33,57 @@ fn (a)
   
 }
 
-
-
 var = "some string " + 32
-
 
 t = {  } ~then t is the first reference of the table, if we assign another value to t and t is still the only reference, then we deallocate the table
 t = {x, 32}.x
-
 t@0
 t@1
-
 t@(1) + 2
-
-
 list@1
-
 list@i = fef
-
-
 t[2]
-
 t
 
-table : L  RSQBRACKET
+
+something : IDENTIFIER_table PERIOD string_without_quotations
+TABLEIDENTIFIER["integer"] == TABLEIDENTIFIER[integer]
+TABLEIDENTIFIER["VARIABLEIDENTIFIER"] == TABLEIDENTIFIER.VARIABLEIDENTIFIER
+
+
+for (i is 0 to 100)
+{
+    
+}
+for (declare variables; exit condition; do at end of every loop) { loop }
+for (i = 0; i < 100; i = i + 1)
+{
+    
+}
+i = 0
+while (i < 100)
+{
+    i = i + 1
+}
 
 
 
-TABLEIDENTIFIER.VARIABLEIDENTIFIER
 
+table : LBRACE ()* RBRACE
+table : IDENTIFIER_table
+statement : variable ASSIGN (table | cond_or)
+variable : IDENTIFIER_table LSQBRACK (expr | string) RSQBRACK
+variable : IDENTIFIER_table PERIOD string_without_quotations
+variable : IDENTIFIER_numbersandshit
 
+IDENTIFIER["integer"] == IDENTIFIER[integer]
+IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 
 */
 
 // program : procedure_decl (program)*
 // program : procedure_call
-// TODO program : global variable assignment (program)*
+// todo program : global variable assignment (program)*
 
 // procedure_decl : SYMBOL LPAREN (SYMBOL)* RPAREN statement_list
 
@@ -76,11 +91,11 @@ TABLEIDENTIFIER.VARIABLEIDENTIFIER
 
 // statement_list : LBRACE statement* RBRACE
 
-// statement : IDENTIFIER ASSIGN cond_or
+// statement : IDENTIFIER (LSQBRACK expr RSQBRACK)? ASSIGN (cond_or | LBRACE RBRACE)
 // statement : RETURN cond_or
 // statement : PRINT cond_or
 // statement : procedure_call
-// statement : IF cond_or statement_list (ELSE statement_list)?
+// statement : IF cond_or statement_list /*todo (ELIF statement_list)* */ (ELSE statement_list)?
 // todo : WHILE cond_or (statement sequence)
 
 // cond_expr : expr ((< | > | <= | =>) expr)?
@@ -96,7 +111,7 @@ TABLEIDENTIFIER.VARIABLEIDENTIFIER
 
 // factor : NUMBER
 // factor : LPAREN expr RPAREN
-// factor : VARIABLEIDENTIFIER
+// factor : IDENTIFIER (LSQBRACK expr RSQBRACK)?
 // factor : TRUE|FALSE
 // factor : procedure_call
 

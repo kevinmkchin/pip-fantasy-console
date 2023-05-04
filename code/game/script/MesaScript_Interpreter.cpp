@@ -237,6 +237,7 @@ InterpretExpression(ASTNode* ast)
             result.boolValue = !result.boolValue;
             return result;
         } break;
+
         case ASTNodeType::VARIABLE: {
             auto v = static_cast<ASTVariable*>(ast);
             try {
@@ -256,6 +257,38 @@ InterpretExpression(ASTNode* ast)
                 // todo error
             }
         } break;
+        case ASTNodeType::ACCESSTABLEELEMENT: {
+            auto v = static_cast<ASTAccessTableElement*>(ast);
+
+            auto indexTValue = InterpretExpression(v->indexExpression);
+            ASSERT(indexTValue.type == TValue::ValueType::Integer /*|| indexTValue.type == TValue::ValueType::String*/);
+
+            ASSERT(v->tableVariableName->GetType() == ASTNodeType::VARIABLE);
+            std::string tableVariableKey = static_cast<ASTVariable*>(v->tableVariableName)->id;
+
+            u64 gcObjectId = 0;
+            if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(tableVariableKey))
+            {
+                TValue& tableGCObj = MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(tableVariableKey);
+                ASSERT(tableGCObj.type == TValue::ValueType::GCObject);
+                gcObjectId = tableGCObj.GCReferenceObject;
+            }
+            else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(tableVariableKey))
+            {
+                TValue& tableGCObj = MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(tableVariableKey);
+                ASSERT(tableGCObj.type == TValue::ValueType::GCObject);
+                gcObjectId = tableGCObj.GCReferenceObject;
+            }
+            else
+            {
+                // error
+                ASSERT(0);
+            }
+
+            MesaScript_Table* table = static_cast<MesaScript_Table*>(GCOBJECTS_DATABASE.at(gcObjectId));
+            return table->ArrayAccessElementByKey(indexTValue.integerValue);
+        } break;
+
         case ASTNodeType::NUMBER: {
             auto v = static_cast<ASTNumberTerminal*>(ast);
             TValue result;
@@ -282,13 +315,18 @@ InterpretStatement(ASTNode* statement)
 {
     switch (statement->GetType())
     {
+
     case ASTNodeType::PROCEDURECALL: {
         auto v = static_cast<ASTProcedureCall*>(statement);
         InterpretProcedureCall(v);
     } break;
+
+    // TODO(Kevin): in these assignments, make sure to release reference of overwritten variable
     case ASTNodeType::ASSIGN: {
         auto v = static_cast<ASTAssignment*>(statement);
+
         auto result = InterpretExpression(v->expr);
+
         ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
         std::string key = static_cast<ASTVariable*>(v->id)->id;
         if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(key))
@@ -304,6 +342,71 @@ InterpretStatement(ASTNode* statement)
             MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.EmplaceNewElement(key, result);
         }
     } break;
+    case ASTNodeType::CREATETABLE: {
+        auto v = static_cast<ASTCreateTable*>(statement);
+
+        TValue result;
+        result.type = TValue::ValueType::GCObject;
+        result.GCReferenceObject = RequestNewGCObject();
+
+        ASSERT(v->variableId->GetType() == ASTNodeType::VARIABLE);
+        std::string key = static_cast<ASTVariable*>(v->variableId)->id;
+        if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(key))
+        {
+            MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(key) = result;
+        }
+        else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(key))
+        {
+            MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(key) = result;
+        }
+        else
+        {
+            MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.EmplaceNewElement(key, result);
+        }
+    } break;
+    case ASTNodeType::ASSIGNTABLEELEMENT: {
+        auto v = static_cast<ASTAssignTableElement*>(statement);
+
+        auto indexTValue = InterpretExpression(v->indexExpression);
+        ASSERT(indexTValue.type == TValue::ValueType::Integer /*|| indexTValue.type == TValue::ValueType::String*/);
+
+        ASSERT(v->tableVariableName->GetType() == ASTNodeType::VARIABLE);
+        std::string tableVariableKey = static_cast<ASTVariable*>(v->tableVariableName)->id;
+
+        u64 gcObjectId = 0;
+        if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(tableVariableKey))
+        {
+            TValue& tableGCObj = MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(tableVariableKey);
+            ASSERT(tableGCObj.type == TValue::ValueType::GCObject);
+            gcObjectId = tableGCObj.GCReferenceObject;
+        }
+        else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(tableVariableKey))
+        {
+            TValue& tableGCObj = MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(tableVariableKey);
+            ASSERT(tableGCObj.type == TValue::ValueType::GCObject);
+            gcObjectId = tableGCObj.GCReferenceObject;
+        }
+        else
+        {
+            // error
+            ASSERT(0);
+        }
+
+        auto valueTValue = InterpretExpression(v->valueExpression);
+
+        MesaScript_Table* tableToModify = static_cast<MesaScript_Table*>(GCOBJECTS_DATABASE.at(gcObjectId));
+        if(tableToModify->ArrayContainsKey(indexTValue.integerValue))
+        {
+            TValue& tableElementToSet = tableToModify->ArrayAccessElementByKey(indexTValue.integerValue);
+            tableElementToSet = valueTValue;
+        }
+        else
+        {
+            tableToModify->ArrayInsertElementAtKey(indexTValue.integerValue, valueTValue);
+        }
+
+    } break;
+
     case ASTNodeType::RETURN: {
         auto v = static_cast<ASTReturn*>(statement);
         TValue result = InterpretExpression(v->expr);
@@ -311,6 +414,7 @@ InterpretStatement(ASTNode* statement)
         returnValueSetFlag = true;
         returnRequestedFlag = true;
     } break;
+
     case ASTNodeType::PRINT: {
         auto v = static_cast<ASTPrint*>(statement);
         TValue result = InterpretExpression(v->expr);
@@ -327,6 +431,7 @@ InterpretStatement(ASTNode* statement)
             printf("printed %f\n", result.realValue);
         }
     } break;
+
     case ASTNodeType::BRANCH: {
         auto v = static_cast<ASTBranch*>(statement);
         auto condition = InterpretExpression(v->condition);

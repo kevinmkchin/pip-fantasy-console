@@ -35,6 +35,9 @@ enum class TokenType
 
     FunctionDecl,
 
+    LSqBrack,
+    RSqBrack,
+
     LParen,
     RParen,
     LBrace,
@@ -105,7 +108,9 @@ struct CompareFirstChar : public std::binary_function<std::string, std::string, 
 
 struct MesaGCObject
 {
-    u32 refCount = 0;
+    i32 refCount = 0;
+
+    // NOTE(Kevin): I could have a type field here similar to ASTNodes if I want different GCObjects from tables
 };
 
 struct MesaScript_Table : MesaGCObject
@@ -125,11 +130,25 @@ struct MesaScript_Table : MesaGCObject
     //    return array.size();
     //}
 
-    //TValue& AccessArrayElement(size_t index)
-    //{
-    //    return array.at(index);
-    //    // todo(kevin): out of range error
-    //}
+
+    bool ArrayContainsKey(const i64 integerKey)
+    {
+        return TableContainsKey(std::to_string(integerKey));
+    }
+
+    TValue& ArrayInsertElementAtKey(const i64 integerKey, const TValue value)
+    {
+        return TableCreateElement(std::to_string(integerKey), value);
+    }
+
+    TValue& ArrayAccessElementByKey(const i64 integerKey)
+    {
+        // for now, just fucking convert to a string
+        return TableAccessElement(std::to_string(integerKey));
+
+       // return array.at(index);
+       // todo(kevin): out of range error
+    }
 
     bool TableContainsKey(const std::string& key)
     {
@@ -157,7 +176,7 @@ private:
 
 // mesa_script_table , ref count
 
-i64 ticker = 0;
+u64 ticker = 0;
 std::unordered_map<u64, MesaGCObject*> GCOBJECTS_DATABASE;
 
 MesaGCObject* GetRefExistingGCObject(u64 gcObjectId)
@@ -167,7 +186,7 @@ MesaGCObject* GetRefExistingGCObject(u64 gcObjectId)
     return gcobj;
 }
 
-void ReleaseRefGCObject(i64 gcObjectId)
+void ReleaseRefGCObject(u64 gcObjectId)
 {
     MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
     gcobj->refCount--;
@@ -178,7 +197,7 @@ void ReleaseRefGCObject(i64 gcObjectId)
     }
 }
 
-i64 RequestNewGCObject()
+u64 RequestNewGCObject()
 {
     MesaGCObject* gcobj = new MesaScript_Table();
     gcobj->refCount++;
