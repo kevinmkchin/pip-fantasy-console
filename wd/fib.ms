@@ -7,8 +7,12 @@ fn test()
   v = 32
 
   b[0] = 16 + v
+  a[1] = {}
 
-  printv(b[0])
+  ~b = a[1]
+  ~b[1] = 4
+
+  printv(b[1])
 
   ~printv(b == a)
   ~printv(b.x == a.x)
@@ -61,5 +65,3 @@ fn mesa_draw()
     // draw enemies
 }
 `
-
-printv(32)
