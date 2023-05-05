@@ -22,6 +22,7 @@ private:
     ASTNode* cond_equal();
     ASTNode* cond_and();
     ASTNode* cond_or();
+    ASTNode* table_or_cond_or();
 
     ASTNode* statement();
     ASTStatementList* statement_list();
@@ -126,6 +127,25 @@ ASTStatementList* Parser::statement_list()
     return statement_list;
 }
 
+ASTNode* Parser::table_or_cond_or()
+{
+    ASTNode* value = nullptr;
+    if (currentToken.type == TokenType::LBrace)
+    {
+        eat(TokenType::LBrace);
+        eat(TokenType::RBrace);
+
+        value =
+            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTCreateTable), alignof(ASTCreateTable)))
+            ASTCreateTable();
+    }
+    else
+    {
+        value = cond_or();
+    }
+    return value;
+}
+
 ASTNode* Parser::statement()
 {
     if (currentToken.type == TokenType::Identifier)
@@ -148,7 +168,7 @@ ASTNode* Parser::statement()
             eat(TokenType::RSqBrack);
             eat(TokenType::AssignmentOperator);
 
-            auto valueExpr = cond_or();
+            auto valueExpr = table_or_cond_or();
 
             auto varNode =
                     new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
@@ -164,30 +184,14 @@ ASTNode* Parser::statement()
             eat(TokenType::Identifier);
             eat(TokenType::AssignmentOperator);
 
-            if (currentToken.type == TokenType::LBrace)
-            {
-                // id = {}
-                eat(TokenType::LBrace);
-                eat(TokenType::RBrace);
-                auto varNode =
-                        new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
-                                ASTVariable(t.text);
-                auto node =
-                        new (MemoryLinearAllocate(&astBuffer, sizeof(ASTCreateTable), alignof(ASTCreateTable)))
-                                ASTCreateTable(varNode);
-                return node;
-            }
-            else
-            {
-                // id = cond_or
-                auto varNode =
-                        new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
-                                ASTVariable(t.text);
-                auto node =
-                        new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignment), alignof(ASTAssignment)))
-                                ASTAssignment(varNode, cond_or());
-                return node;
-            }
+            auto varNode =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                ASTVariable(t.text);
+
+            auto node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignment), alignof(ASTAssignment)))
+                ASTAssignment(varNode, table_or_cond_or());
+            return node;
         }
     }
     else if (currentToken.type == TokenType::Return)

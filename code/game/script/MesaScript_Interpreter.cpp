@@ -289,6 +289,14 @@ InterpretExpression(ASTNode* ast)
             return table->ArrayAccessElementByKey(indexTValue.integerValue);
         } break;
 
+        case ASTNodeType::CREATETABLE: {
+            //auto v = static_cast<ASTCreateTable*>(ast);
+            TValue result;
+            result.type = TValue::ValueType::GCObject;
+            result.GCReferenceObject = RequestNewGCObject();
+            return result;
+        } break;
+
         case ASTNodeType::NUMBER: {
             auto v = static_cast<ASTNumberTerminal*>(ast);
             TValue result;
@@ -329,28 +337,6 @@ InterpretStatement(ASTNode* statement)
 
         ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
         std::string key = static_cast<ASTVariable*>(v->id)->id;
-        if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(key))
-        {
-            MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(key) = result;
-        }
-        else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(key))
-        {
-            MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(key) = result;
-        }
-        else
-        {
-            MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.EmplaceNewElement(key, result);
-        }
-    } break;
-    case ASTNodeType::CREATETABLE: {
-        auto v = static_cast<ASTCreateTable*>(statement);
-
-        TValue result;
-        result.type = TValue::ValueType::GCObject;
-        result.GCReferenceObject = RequestNewGCObject();
-
-        ASSERT(v->variableId->GetType() == ASTNodeType::VARIABLE);
-        std::string key = static_cast<ASTVariable*>(v->variableId)->id;
         if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(key))
         {
             MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(key) = result;
@@ -429,6 +415,29 @@ InterpretStatement(ASTNode* statement)
         else if (result.type == TValue::ValueType::Real)
         {
             printf("printed %f\n", result.realValue);
+        }
+        else if (result.type == TValue::ValueType::GCObject)
+        {
+            printf("printing table\n");
+            for (const auto& pair : static_cast<MesaScript_Table*>(GCOBJECTS_DATABASE.at(result.GCReferenceObject))->table)
+            {
+                if (pair.second.type == TValue::ValueType::Integer)
+                {
+                    printf("    %s : %lld\n", pair.first.c_str(), pair.second.integerValue);
+                }
+                else if (pair.second.type == TValue::ValueType::Boolean)
+                {
+                    printf("    %s : %s\n", pair.first.c_str(), (pair.second.boolValue ? "true" : "false"));
+                }
+                else if (pair.second.type == TValue::ValueType::Real)
+                {
+                    printf("    %s : %f\n", pair.first.c_str(), pair.second.realValue);
+                }
+                else if (pair.second.type == TValue::ValueType::GCObject)
+                {
+                    printf("    %s : table\n", pair.first.c_str());
+                }
+            }
         }
     } break;
 

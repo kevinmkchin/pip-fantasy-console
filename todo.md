@@ -3,15 +3,19 @@
 ### Language features
 
 - tables (require gc)
-    - table[index] = {}
     - index tables with strings <
-    - account for GCObject TValue type in interpreter and parser
     - add relops for GCObject type TValues. for other ops, just crash? 
-    - actual array implementation <- MAYBE JUST MAKE AN ENTIRE NEW ARRAY TYPE??? THAT MIGHT BE SO MUCH CLEANER AND NICER -> is there ANY reason to use a table as also an array?
-    - initialize table elements like so { 0, 1, c, 3, "e" }
+    - only increment refcount for gc obj upon assignment to a variable. that means, if we create a table, we don't auto set refcount to 1, and also must instantly delete if we don't assign to a variable at all.
+    - release GC reference if lose reference, and then propagate to element gc objects
+    
     - need way to delete a table entry <- could be a standard library function
+    - actual array implementation <- MAYBE JUST MAKE AN ENTIRE NEW ARRAY TYPE??? THAT MIGHT BE SO MUCH CLEANER AND NICER -> is there ANY reason to use a table as also an array?
+
+    - initialize array elements like so { 0, 1, c, 3, "e" }
+    - initialize table elements like so { 0 = 3, m = y, "e" = x }
 
 - strings
+
 
 - while loops & break
 - for loops

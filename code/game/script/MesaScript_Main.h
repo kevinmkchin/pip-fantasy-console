@@ -81,6 +81,10 @@ IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 
 */
 
+// rvalue nodes can go on the right hand side of an assignment expression
+
+
+
 // program : procedure_decl (program)*
 // program : procedure_call
 // todo program : global variable assignment (program)*
@@ -91,7 +95,7 @@ IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 
 // statement_list : LBRACE statement* RBRACE
 
-// statement : IDENTIFIER (LSQBRACK expr RSQBRACK)? ASSIGN (cond_or | LBRACE RBRACE)
+// statement : IDENTIFIER (LSQBRACK expr RSQBRACK)? ASSIGN table_or_cond_or
 // statement : RETURN cond_or
 // statement : PRINT cond_or
 // statement : procedure_call
@@ -108,6 +112,8 @@ IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 // cond_and : cond_equal (AND cond_equal)?
 
 // cond_or : cond_and (OR cond_and)?
+
+// table_or_cond_or : (LBRACE  RBRACE | cond_or)
 
 // factor : NUMBER
 // factor : LPAREN expr RPAREN
