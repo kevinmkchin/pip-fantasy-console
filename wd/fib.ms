@@ -9,10 +9,10 @@ fn test()
   b[0] = 16 + v
   a[1] = {}
 
-  ~b = a[1]
-  ~b[1] = 4
+  b = a[1]
+  b[1] = 4
 
-  printv(b[1])
+  printv(a)
 
   ~printv(b == a)
   ~printv(b.x == a.x)

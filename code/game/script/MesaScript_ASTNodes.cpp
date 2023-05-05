@@ -32,7 +32,7 @@ class ASTStatementList : public ASTNode
 {
 public:
     ASTStatementList();
-public:
+
     std::vector<ASTNode*> statements;
 };
 
@@ -40,7 +40,7 @@ class ASTAssignment : public ASTNode
 {
 public:
     ASTAssignment(ASTNode* id, ASTNode* expr);
-public:
+
     ASTNode* id;
     ASTNode* expr;
 };
@@ -49,7 +49,7 @@ class ASTVariable : public ASTNode
 {
 public:
     ASTVariable(const std::string& id);
-public:
+
     std::string id;
 };
 
@@ -57,7 +57,7 @@ class ASTProcedureCall : public ASTNode
 {
 public:
     ASTProcedureCall(const std::string& id);
-public:
+
     std::string id;
     std::vector<ASTNode*> argsExpressions;
 };
@@ -66,7 +66,7 @@ class ASTReturn : public ASTNode
 {
 public:
     ASTReturn(ASTNode* expr);
-public:
+
     ASTNode* expr;
 };
 
@@ -74,19 +74,16 @@ class ASTPrint : public ASTNode
 {
 public:
     ASTPrint(ASTNode* expr);
-public:
+
     ASTNode* expr;
 };
 
 class ASTCreateTable : public ASTNode
 {
 public:
-    ASTCreateTable(ASTNode* id)
+    ASTCreateTable()
         : ASTNode(ASTNodeType::CREATETABLE)
-        , variableId(id)
     {}
-public:
-    ASTNode* variableId;
 };
 
 class ASTAssignTableElement : public ASTNode
@@ -98,7 +95,7 @@ public:
         , indexExpression(indexExpr)
         , valueExpression(valueExpr)
     {}
-public:
+
     ASTNode* tableVariableName;
     ASTNode* indexExpression;
     ASTNode* valueExpression;
@@ -112,7 +109,7 @@ public:
         , tableVariableName(id)
         , indexExpression(indexExpr)
     {}
-public:
+
     ASTNode* tableVariableName;
     ASTNode* indexExpression;
 };
@@ -121,7 +118,7 @@ class ASTWhile : public ASTNode
 {
 public:
     ASTWhile();
-public:
+
     ASTNode* condition;
     ASTNode* body;
 };
@@ -130,7 +127,7 @@ class ASTNumberTerminal : public ASTNode
 {
 public:
     ASTNumberTerminal(i32 num);
-public:
+
     i32 value;
 };
 
@@ -138,7 +135,7 @@ class ASTBooleanTerminal : public ASTNode
 {
 public:
     ASTBooleanTerminal(bool v);
-public:
+
     bool value;
 };
 
@@ -154,7 +151,7 @@ class ASTBinOp : public ASTNode
 {
 public:
     ASTBinOp(BinOp op, ASTNode* left, ASTNode* right);
-public:
+
     BinOp op;
     ASTNode* left;
     ASTNode* right;
@@ -176,7 +173,7 @@ class ASTRelOp : public ASTNode
 {
 public:
     ASTRelOp(RelOp op, ASTNode* left, ASTNode* right);
-public:
+
     RelOp op;
     ASTNode* left;
     ASTNode* right;
@@ -186,7 +183,7 @@ class ASTLogicalNot : public ASTNode
 {
 public:
     ASTLogicalNot(ASTNode* boolExpr);
-public:
+
     ASTNode* boolExpr;
 };
 
@@ -194,7 +191,7 @@ class ASTBranch : public ASTNode
 {
 public:
     ASTBranch(ASTNode* condition, ASTNode* if_case, ASTNode* else_case);
-public:
+
     ASTNode* condition;
     ASTNode* if_body;
     ASTNode* else_body;

@@ -167,7 +167,6 @@ struct MesaScript_Table : MesaGCObject
         return table.at(key);
     }
 
-private:
     //std::vector<TValue> array;
     std::map<std::string, TValue, CompareFirstChar> table;
 };
