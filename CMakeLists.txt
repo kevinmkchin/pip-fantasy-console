@@ -20,7 +20,7 @@ set(SOURCE_FILES
         code/core/ArcadiaIMGUI.cpp
         code/core/CoreMemoryAllocator.cpp
 
-        code/game/script/MesaScript_Main.cpp
+        code/game/script/MesaScript.cpp
         )
 
 
