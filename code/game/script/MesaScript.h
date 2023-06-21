@@ -67,6 +67,9 @@ while (i < 100)
 }
 
 
+a = "aefjioawjlfkaw"
+
+a[0]
 
 
 table : LBRACE ()* RBRACE

@@ -1,0 +1,1917 @@
+#include "MesaScript.h"
+
+#include "../../core/CoreCommon.h"
+#include "../../core/ArcadiaUtility.h"
+#include "../../core/CoreMemoryAllocator.h"
+#include "../../core/CoreFileSystem.h"
+
+#include <unordered_map>
+#include <vector>
+#include <map>
+
+enum class TokenType
+{
+    Default,
+
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+    Equal,
+    NotEqual,
+    LogicalAnd,
+    LogicalOr,
+    LogicalNegation,
+
+    AddOperator,
+    SubOperator,
+    MulOperator,
+    DivOperator,
+    AssignmentOperator,
+
+    NumberLiteral,
+    True,
+    False,
+    Identifier,
+
+    FunctionDecl,
+
+    LSqBrack,
+    RSqBrack,
+
+    LParen,
+    RParen,
+    LBrace,
+    RBrace,
+    DoubleQuote,
+    Comma,
+
+    If,
+    Else,
+
+    Return,
+    Print, // temporary
+    EndOfLine,
+    EndOfFile
+};
+
+struct Token
+{
+    TokenType type = TokenType::Default;
+    std::string text;
+    u32 startPos = 0;
+};
+
+#pragma region LEXER
+
+bool IsValueType(TokenType type)
+{
+    return
+            type == TokenType::NumberLiteral ||
+            type == TokenType::Identifier ||
+            type == TokenType::RParen;
+}
+
+// char -> bool
+// return true if char is one of [0, 9]
+bool IsDigit(char c)
+{
+    return ('0' <= c && c <= '9');
+}
+
+bool IsCharacter(char c)
+{
+    return
+            ('a' <= c && c <= 'z') ||
+            ('A' <= c && c <= 'Z') ||
+            ('_' == c);
+}
+
+bool IsWhitespace(char c)
+{
+    return c == ' ' /* or some other shit*/;
+}
+
+// string -> list of Token
+std::vector<Token> Lexer(const std::string& code)
+{
+    std::vector<Token> retval;
+    u32 currentIndex = 0;
+
+    bool flag_NegativeNumberAhead = false;
+    while(currentIndex < code.length())
+    {
+        u32 tokenStartIndex = currentIndex;
+        char lookAhead = code.at(currentIndex);
+        if(IsWhitespace(lookAhead))
+        {
+            ++currentIndex;
+        }
+        else if(lookAhead == '-')
+        {
+            ++currentIndex;
+            if (!IsValueType(retval.back().type) && currentIndex < code.length() && IsDigit(code.at(currentIndex)))
+            {
+                flag_NegativeNumberAhead = true;
+            }
+            else
+            {
+                retval.push_back({ TokenType::SubOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+        }
+        else if (lookAhead == '`') // block comments
+        {
+            ++currentIndex;
+            while (currentIndex < (code.length() - 1) && code.at(currentIndex) != '`')
+            {
+                ++currentIndex;
+            }
+            ++currentIndex;
+        }
+        else if (lookAhead == '~') // line comments
+        {
+            ++currentIndex;
+            while (currentIndex < (code.length() - 1) && code.at(currentIndex) != '\n')
+            {
+                ++currentIndex;
+            }
+            ++currentIndex;
+        }
+        else if(lookAhead == '<' || lookAhead == '>' || lookAhead == '!' || lookAhead == '=')
+        {
+            ++currentIndex;
+            if (currentIndex < code.length() && code.at(currentIndex) == '=') // check if next char is =
+            {
+                ++currentIndex;
+                if (lookAhead == '<')
+                {
+                    retval.push_back({ TokenType::LessThanOrEqual, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                }
+                else if (lookAhead == '>')
+                {
+                    retval.push_back({ TokenType::GreaterThanOrEqual, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                }
+                else if (lookAhead == '!')
+                {
+                    retval.push_back({ TokenType::NotEqual, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                }
+                else if (lookAhead == '=')
+                {
+                    retval.push_back({ TokenType::Equal, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                }
+            }
+            else if (lookAhead == '<')
+            {
+                retval.push_back({ TokenType::LessThan, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (lookAhead == '>')
+            {
+                retval.push_back({ TokenType::GreaterThan, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (lookAhead == '=')
+            {
+                retval.push_back({ TokenType::AssignmentOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (lookAhead == '!')
+            {
+                retval.push_back({TokenType::LogicalNegation, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+        }
+        else if(IsDigit(lookAhead))
+        {
+            if (flag_NegativeNumberAhead)
+            {
+                tokenStartIndex -= 1;
+                flag_NegativeNumberAhead = false;
+            }
+            while (currentIndex < code.length() && IsDigit(code.at(currentIndex)))
+            {
+                ++currentIndex;
+            }
+            retval.push_back({ TokenType::NumberLiteral, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+        }
+        else if(IsCharacter(lookAhead))
+        {
+            NiceArray<char, 65> wordCharsBuffer; // then collect string of character to form word
+            wordCharsBuffer.ResetToZero();
+            while(currentIndex < code.length() && (IsCharacter(code.at(currentIndex)) || IsDigit(code.at(currentIndex))))
+            {
+                wordCharsBuffer.PushBack(code.at(currentIndex));
+                ++currentIndex;
+            } // at this point, we have a fully formed word
+
+            auto word = std::string(wordCharsBuffer.data);
+            if (word == "return")
+            {
+                retval.push_back({ TokenType::Return, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (word == "print")
+            {
+                retval.push_back({ TokenType::Print, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (word == "true")
+            {
+                retval.push_back({ TokenType::True, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (word == "false")
+            {
+                retval.push_back({ TokenType::False, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (word == "and")
+            {
+                retval.push_back({TokenType::LogicalAnd, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (word == "or")
+            {
+                retval.push_back({TokenType::LogicalOr, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (word == "if")
+            {
+                retval.push_back({ TokenType::If, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (word == "else")
+            {
+                retval.push_back({ TokenType::Else, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else if (word == "fn")
+            {
+                retval.push_back({ TokenType::FunctionDecl,code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+            else // otherwise, word is function call or identifier
+            {
+                retval.push_back({ TokenType::Identifier, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            }
+        }
+        else
+        {
+            ++currentIndex;
+            TokenType tokenType;
+            switch(lookAhead)
+            {
+                case '+': { tokenType = TokenType::AddOperator; } break;
+                case '*': { tokenType = TokenType::MulOperator; } break;
+                case '/': { tokenType = TokenType::DivOperator; } break;
+                case '(': { tokenType = TokenType::LParen; } break;
+                case ')': { tokenType = TokenType::RParen; } break;
+                case '{': { tokenType = TokenType::LBrace; } break;
+                case '}': { tokenType = TokenType::RBrace; } break;
+                case '[': { tokenType = TokenType::LSqBrack; } break;
+                case ']': { tokenType = TokenType::RSqBrack; } break;
+                case '"': { tokenType = TokenType::DoubleQuote; } break;
+                case ',': { tokenType = TokenType::Comma; } break;
+                case '\n': { continue; /*tokenType = TokenType::EndOfLine;*/ } break;
+                default:{
+                    printf("error: unrecognized character in Lexer");
+                    continue;
+                }
+            }
+            retval.push_back({ tokenType, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+        }
+    }
+    retval.push_back({TokenType::EndOfFile, "<EOF>", (u32)code.length()});
+    return retval;
+}
+
+#pragma endregion
+
+
+enum class ASTNodeType
+{
+    STATEMENTLIST,
+    ASSIGN,
+    VARIABLE,
+    PROCEDURECALL,
+    RETURN,
+    PRINT,
+    WHILE,
+    NUMBER,
+    BOOLEAN,
+    BINOP,
+    RELOP,
+    LOGICALNOT,
+    BRANCH,
+    CREATETABLE,
+    ASSIGNTABLEELEMENT,
+    ACCESSTABLEELEMENT
+};
+
+class ASTNode
+{
+public:
+    ASTNode(ASTNodeType type);
+    inline ASTNodeType GetType() { return nodeType; }
+private:
+    ASTNodeType nodeType;
+};
+
+class ASTStatementList : public ASTNode
+{
+public:
+    ASTStatementList();
+
+    std::vector<ASTNode*> statements;
+};
+
+class ASTAssignment : public ASTNode
+{
+public:
+    ASTAssignment(ASTNode* id, ASTNode* expr);
+
+    ASTNode* id;
+    ASTNode* expr;
+};
+
+class ASTVariable : public ASTNode
+{
+public:
+    ASTVariable(const std::string& id);
+
+    std::string id;
+};
+
+class ASTProcedureCall : public ASTNode
+{
+public:
+    ASTProcedureCall(const std::string& id);
+
+    std::string id;
+    std::vector<ASTNode*> argsExpressions;
+};
+
+class ASTReturn : public ASTNode
+{
+public:
+    ASTReturn(ASTNode* expr);
+
+    ASTNode* expr;
+};
+
+class ASTPrint : public ASTNode
+{
+public:
+    ASTPrint(ASTNode* expr);
+
+    ASTNode* expr;
+};
+
+class ASTCreateTable : public ASTNode
+{
+public:
+    ASTCreateTable()
+        : ASTNode(ASTNodeType::CREATETABLE)
+    {}
+};
+
+class ASTAssignTableElement : public ASTNode
+{
+public:
+    ASTAssignTableElement(ASTNode* id, ASTNode* indexExpr, ASTNode* valueExpr)
+        : ASTNode(ASTNodeType::ASSIGNTABLEELEMENT)
+        , tableVariableName(id)
+        , indexExpression(indexExpr)
+        , valueExpression(valueExpr)
+    {}
+
+    ASTNode* tableVariableName;
+    ASTNode* indexExpression;
+    ASTNode* valueExpression;
+};
+
+class ASTAccessTableElement : public ASTNode
+{
+public:
+    ASTAccessTableElement(ASTNode* id, ASTNode* indexExpr)
+        : ASTNode(ASTNodeType::ACCESSTABLEELEMENT)
+        , tableVariableName(id)
+        , indexExpression(indexExpr)
+    {}
+
+    ASTNode* tableVariableName;
+    ASTNode* indexExpression;
+};
+
+class ASTWhile : public ASTNode
+{
+public:
+    ASTWhile();
+
+    ASTNode* condition;
+    ASTNode* body;
+};
+
+class ASTNumberTerminal : public ASTNode
+{
+public:
+    ASTNumberTerminal(i32 num);
+
+    i32 value;
+};
+
+class ASTBooleanTerminal : public ASTNode
+{
+public:
+    ASTBooleanTerminal(bool v);
+
+    bool value;
+};
+
+enum class BinOp
+{
+    Add,
+    Sub,
+    Mul,
+    Div
+};
+
+class ASTBinOp : public ASTNode
+{
+public:
+    ASTBinOp(BinOp op, ASTNode* left, ASTNode* right);
+
+    BinOp op;
+    ASTNode* left;
+    ASTNode* right;
+};
+
+enum class RelOp
+{
+    LT,
+    GT,
+    LE,
+    GE,
+    EQ,
+    NEQ,
+    AND, // and logical AND OR
+    OR
+};
+
+class ASTRelOp : public ASTNode
+{
+public:
+    ASTRelOp(RelOp op, ASTNode* left, ASTNode* right);
+
+    RelOp op;
+    ASTNode* left;
+    ASTNode* right;
+};
+
+class ASTLogicalNot : public ASTNode
+{
+public:
+    ASTLogicalNot(ASTNode* boolExpr);
+
+    ASTNode* boolExpr;
+};
+
+class ASTBranch : public ASTNode
+{
+public:
+    ASTBranch(ASTNode* condition, ASTNode* if_case, ASTNode* else_case);
+
+    ASTNode* condition;
+    ASTNode* if_body;
+    ASTNode* else_body;
+};
+
+ASTNode::ASTNode(ASTNodeType type)
+    : nodeType(type)
+{}
+
+ASTStatementList::ASTStatementList()
+    : ASTNode(ASTNodeType::STATEMENTLIST)
+{}
+
+ASTAssignment::ASTAssignment(ASTNode* id, ASTNode* expr)
+    : ASTNode(ASTNodeType::ASSIGN)
+    , id(id)
+    , expr(expr)
+{}
+
+ASTVariable::ASTVariable(const std::string& id)
+    : ASTNode(ASTNodeType::VARIABLE)
+    , id(id)
+{}
+
+ASTProcedureCall::ASTProcedureCall(const std::string& id)
+        : ASTNode(ASTNodeType::PROCEDURECALL)
+        , id(id)
+{}
+
+ASTReturn::ASTReturn(ASTNode* expr)
+    : ASTNode(ASTNodeType::RETURN)
+    , expr(expr)
+{}
+
+ASTPrint::ASTPrint(ASTNode* expr)
+        : ASTNode(ASTNodeType::PRINT)
+        , expr(expr)
+{}
+
+ASTNumberTerminal::ASTNumberTerminal(i32 num)
+    : ASTNode(ASTNodeType::NUMBER)
+    , value(num)
+{}
+
+ASTBooleanTerminal::ASTBooleanTerminal(bool v)
+    : ASTNode(ASTNodeType::BOOLEAN)
+    , value(v)
+{}
+
+ASTBinOp::ASTBinOp(BinOp op, ASTNode* left, ASTNode* right)
+    : ASTNode(ASTNodeType::BINOP)
+    , op(op)
+    , left(left)
+    , right(right)
+{}
+
+ASTRelOp::ASTRelOp(RelOp op, ASTNode* left, ASTNode* right)
+    : ASTNode(ASTNodeType::RELOP)
+    , op(op)
+    , left(left)
+    , right(right)
+{}
+
+ASTLogicalNot::ASTLogicalNot(ASTNode* boolExpr)
+    : ASTNode(ASTNodeType::LOGICALNOT)
+    , boolExpr(boolExpr)
+{}
+
+ASTBranch::ASTBranch(ASTNode* condition, ASTNode* if_case, ASTNode* else_case)
+        : ASTNode(ASTNodeType::BRANCH)
+        , condition(condition)
+        , if_body(if_case)
+        , else_body(else_case)
+{}
+
+
+struct ProcedureDefinition
+{
+    std::vector<std::string> args; // todo(kevin): could just be a pointer to address in linear allocator with count
+    ASTStatementList* body;
+};
+
+typedef size_t PID;
+#define PID_MAX 256
+NiceArray<ProcedureDefinition, PID_MAX> PROCEDURES_DATABASE;
+std::vector<ASTProcedureCall*> SCRIPT_PROCEDURE_EXECUTION_QUEUE;
+
+struct TValue
+{
+    enum class ValueType
+    {
+        Invalid,
+        Integer,
+        Real,
+        Boolean,
+        Function,
+        GCObject
+    };
+
+    union
+    {
+        i64 integerValue;
+        float realValue;
+        bool boolValue;
+        PID procedureId;
+        i64 GCReferenceObject;
+    };
+
+    ValueType type = ValueType::Invalid;
+};
+
+struct CompareFirstChar : public std::binary_function<std::string, std::string, bool>
+{
+    bool operator()(const std::string& lhs, const std::string& rhs) const
+    {
+        return lhs.front() < rhs.front();
+    }
+};
+
+struct MesaGCObject
+{
+    i32 refCount = 0;
+
+    // NOTE(Kevin): I could have a type field here similar to ASTNodes if I want different GCObjects from tables
+};
+
+struct MesaScript_Table : MesaGCObject
+{
+    // add new pair
+    // overwrite existing pair
+    // delete existing pair
+
+    //void ArrayAddElement();
+    //void ArrayInsert();
+
+    //void ArrayFront();
+    //void ArrayBack();
+
+    //size_t ArrayLength()
+    //{
+    //    return array.size();
+    //}
+
+
+    bool ArrayContainsKey(const i64 integerKey)
+    {
+        return TableContainsKey(std::to_string(integerKey));
+    }
+
+    TValue& ArrayInsertElementAtKey(const i64 integerKey, const TValue value)
+    {
+        return TableCreateElement(std::to_string(integerKey), value);
+    }
+
+    TValue& ArrayAccessElementByKey(const i64 integerKey)
+    {
+        // for now, just fucking convert to a string
+        return TableAccessElement(std::to_string(integerKey));
+
+       // return array.at(index);
+       // todo(kevin): out of range error
+    }
+
+    bool TableContainsKey(const std::string& key)
+    {
+        auto elemIterator = table.find(key);
+        return elemIterator != table.end();
+    }
+
+    TValue& TableAccessElement(const std::string& key)
+    {
+        return table.at(key);
+    }
+
+    TValue& TableCreateElement(const std::string& key, const TValue value)
+    {
+        table.emplace(key, value);
+        return table.at(key);
+    }
+
+    //std::vector<TValue> array;
+    std::map<std::string, TValue, CompareFirstChar> table;
+};
+
+
+
+// mesa_script_table , ref count
+
+u64 ticker = 0;
+std::unordered_map<u64, MesaGCObject*> GCOBJECTS_DATABASE;
+
+MesaGCObject* GetRefExistingGCObject(u64 gcObjectId)
+{
+    MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
+    gcobj->refCount++;
+    return gcobj;
+}
+
+void ReleaseRefGCObject(u64 gcObjectId)
+{
+    MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
+    gcobj->refCount--;
+    if (gcobj->refCount == 0)
+    {
+        delete gcobj;
+        GCOBJECTS_DATABASE.erase(gcObjectId);
+    }
+}
+
+u64 RequestNewGCObject()
+{
+    MesaGCObject* gcobj = new MesaScript_Table();
+    gcobj->refCount++;
+    GCOBJECTS_DATABASE.insert_or_assign(ticker, gcobj);
+    return ticker++;
+}
+
+
+
+
+
+struct MesaScript_ScriptObject
+{
+    //TValue& GetAtIndex(size_t index);
+
+    bool KeyExists(const std::string& key)
+    {
+        for (int back = int(scopes.size()) - 1; back >= 0; --back)
+        {
+            MesaScript_Table& scope = scopes.at(back);
+            if (scope.TableContainsKey(key))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    TValue& AccessAtKey(const std::string& key)
+    {
+        for (int back = int(scopes.size()) - 1; back >= 0; --back)
+        {
+            MesaScript_Table& scope = scopes.at(back);
+            if (scope.TableContainsKey(key))
+            {   
+                return scope.TableAccessElement(key);
+            }
+        }        
+    }
+
+    void EmplaceNewElement(std::string key, TValue value)
+    {
+        scopes.back().TableCreateElement(key, value);
+    }
+
+    void PushScope(const MesaScript_Table& scope)
+    {
+        scopes.push_back(scope);
+    }
+
+    void PopScope()
+    {
+        scopes.pop_back();
+    }
+
+private:
+    std::vector<MesaScript_Table> scopes;
+};
+
+
+struct MesaScript_Scope
+{
+    MesaScript_Table GLOBAL_TABLE;
+    MesaScript_ScriptObject ACTIVE_SCRIPT_TABLE;
+};
+
+static MesaScript_Scope MESASCRIPT_SCOPE;
+
+//static std::unordered_map<std::string, TValue> GLOBAL_SCOPE_SYMBOL_TABLE;
+
+
+static MemoryLinearBuffer astBuffer;
+
+class Parser
+{
+public:
+    Parser(std::vector<Token> _tokens);
+
+    void parse();
+
+private:
+    void error();
+
+    void eat(TokenType tpe);
+
+    ASTNode* procedure_call();
+    ASTNode* factor();
+    ASTNode* term();
+    ASTNode* expr();
+
+    ASTNode* cond_expr();
+    ASTNode* cond_equal();
+    ASTNode* cond_and();
+    ASTNode* cond_or();
+    ASTNode* table_or_cond_or();
+
+    ASTNode* statement();
+    ASTStatementList* statement_list();
+    PID procedure_decl();
+
+
+private:
+    std::vector<Token> tokens;
+    Token currentToken;
+    size_t currentTokenIndex;
+};
+
+Parser::Parser(std::vector<Token> _tokens)
+        : tokens(_tokens)
+        , currentToken(tokens.front())
+        , currentTokenIndex(0)
+{}
+
+void Parser::parse()
+{
+    while (currentToken.type != TokenType::EndOfFile)
+    {
+        if (currentToken.type == TokenType::FunctionDecl)
+        {
+            procedure_decl();
+        }
+        else if (currentToken.type == TokenType::Identifier)
+        {
+            SCRIPT_PROCEDURE_EXECUTION_QUEUE.push_back(static_cast<ASTProcedureCall*>(procedure_call()));
+        }
+    }
+}
+
+PID Parser::procedure_decl()
+{
+    eat(TokenType::FunctionDecl);
+    ASSERT(currentToken.type == TokenType::Identifier);
+    auto procedureNameToken = currentToken;
+    eat(TokenType::Identifier);
+    eat(TokenType::LParen);
+
+    PROCEDURES_DATABASE.PushBack(ProcedureDefinition());
+    const PID createdProcedureId = PROCEDURES_DATABASE.count - 1;
+    auto& argsVector = PROCEDURES_DATABASE.At((unsigned int)createdProcedureId).args;
+
+    while(currentToken.type != TokenType::RParen)
+    {
+        argsVector.push_back(currentToken.text);
+        eat(TokenType::Identifier);
+    }
+    eat(TokenType::RParen);
+
+    PROCEDURES_DATABASE.At((unsigned int)createdProcedureId).body = statement_list();
+
+    TValue functionVariable;
+    functionVariable.procedureId = createdProcedureId;
+    functionVariable.type = TValue::ValueType::Function;
+
+    if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(procedureNameToken.text))
+    {
+        MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(procedureNameToken.text) = functionVariable;
+    }
+    else
+    {
+        MESASCRIPT_SCOPE.GLOBAL_TABLE.TableCreateElement(procedureNameToken.text, functionVariable);
+    }
+
+    return createdProcedureId;
+}
+
+ASTNode* Parser::procedure_call()
+{
+    auto procSymbol = currentToken;
+    eat(TokenType::Identifier);
+    eat(TokenType::LParen);
+
+    auto node =
+            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTProcedureCall), alignof(ASTProcedureCall)))
+                    ASTProcedureCall(procSymbol.text);
+
+    while(currentToken.type != TokenType::RParen)
+    {
+        node->argsExpressions.push_back(cond_expr());
+        if (currentToken.type != TokenType::RParen) eat(TokenType::Comma);
+    }
+
+    eat(TokenType::RParen);
+
+    return node;
+}
+
+ASTStatementList* Parser::statement_list()
+{
+    auto statement_list = new (MemoryLinearAllocate(&astBuffer, sizeof(ASTStatementList), alignof(ASTStatementList)))
+            ASTStatementList();
+    eat(TokenType::LBrace);
+    while(currentToken.type != TokenType::RBrace)
+    {
+        statement_list->statements.push_back(statement());
+    }
+    eat(TokenType::RBrace);
+    return statement_list;
+}
+
+ASTNode* Parser::table_or_cond_or()
+{
+    ASTNode* value = nullptr;
+    if (currentToken.type == TokenType::LBrace)
+    {
+        eat(TokenType::LBrace);
+        eat(TokenType::RBrace);
+
+        value =
+            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTCreateTable), alignof(ASTCreateTable)))
+            ASTCreateTable();
+    }
+    else
+    {
+        value = cond_or();
+    }
+    return value;
+}
+
+ASTNode* Parser::statement()
+{
+    if (currentToken.type == TokenType::Identifier)
+    {
+        auto nextToken = tokens.at(currentTokenIndex + 1);
+        if (nextToken.type == TokenType::LParen)
+        {
+            return procedure_call();
+        }
+        else if (nextToken.type == TokenType::LSqBrack)
+        {
+            // id["x"] = ? | id[0] = ? | id[i] = ?
+            auto t = currentToken;
+
+            eat(TokenType::Identifier);
+            eat(TokenType::LSqBrack);
+
+            auto indexExpr = expr();
+
+            eat(TokenType::RSqBrack);
+            eat(TokenType::AssignmentOperator);
+
+            auto valueExpr = table_or_cond_or();
+
+            auto varNode =
+                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                            ASTVariable(t.text);
+            auto node =
+                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignTableElement), alignof(ASTAssignTableElement)))
+                            ASTAssignTableElement(varNode, indexExpr, valueExpr);
+            return node;
+        }
+        else
+        {
+            auto t = currentToken;
+            eat(TokenType::Identifier);
+            eat(TokenType::AssignmentOperator);
+
+            auto varNode =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                ASTVariable(t.text);
+
+            auto node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignment), alignof(ASTAssignment)))
+                ASTAssignment(varNode, table_or_cond_or());
+            return node;
+        }
+    }
+    else if (currentToken.type == TokenType::Return)
+    {
+        eat(TokenType::Return);
+        auto node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTReturn), alignof(ASTReturn)))
+                        ASTReturn(cond_or());
+        return node;
+    }
+    else if (currentToken.type == TokenType::Print)
+    {
+        eat(TokenType::Print);
+        auto node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTPrint), alignof(ASTPrint)))
+                        ASTPrint(cond_or());
+        return node;
+    }
+    else if (currentToken.type == TokenType::If)
+    {
+        eat(TokenType::If);
+        ASTNode* condition = cond_or();
+        ASTNode* ifCase = statement_list();
+        ASTNode* elseCase = nullptr;
+        if (currentToken.type == TokenType::Else)
+        {
+            eat(TokenType::Else);
+            elseCase = statement_list();
+        }
+
+        auto node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTBranch), alignof(ASTBranch)))
+                        ASTBranch(condition, ifCase, elseCase);
+        return node;
+    }
+    else
+    {
+        error();
+    }
+
+    error();
+    return nullptr;
+}
+
+ASTNode* Parser::cond_expr()
+{
+    auto node = expr();
+
+    if(ISANYOF4(currentToken.type, TokenType::LessThan, TokenType::LessThanOrEqual,
+                TokenType::GreaterThan, TokenType::GreaterThanOrEqual))
+    {
+        auto t = currentToken;
+        RelOp op = RelOp::LT;
+
+        if (t.type == TokenType::LessThan)
+        {
+            eat(TokenType::LessThan);
+            op = RelOp::LT;
+        }
+        else if (t.type == TokenType::LessThanOrEqual)
+        {
+            eat(TokenType::LessThanOrEqual);
+            op = RelOp::LE;
+        }
+        else if (t.type == TokenType::GreaterThan)
+        {
+            eat(TokenType::GreaterThan);
+            op = RelOp::GT;
+        }
+        else if (t.type == TokenType::GreaterThanOrEqual)
+        {
+            eat(TokenType::GreaterThanOrEqual);
+            op = RelOp::GE;
+        }
+
+        node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
+                        ASTRelOp(op, node, expr());
+    }
+
+    return node;
+}
+
+ASTNode* Parser::cond_equal()
+{
+    ASTNode* node = nullptr;
+
+    if (currentToken.type == TokenType::LParen)
+    {
+        eat(TokenType::LParen);
+        node = cond_or();
+        eat(TokenType::RParen);
+        return node;
+    }
+    else if (currentToken.type == TokenType::LogicalNegation)
+    {
+        eat(TokenType::LogicalNegation);
+        if(currentToken.type == TokenType::LParen)
+        {
+            eat(TokenType::LParen);
+            node =
+                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTLogicalNot), alignof(ASTLogicalNot)))
+                            ASTLogicalNot(cond_or());
+            eat(TokenType::RParen);
+        }
+        else
+        {
+            node =
+                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTLogicalNot), alignof(ASTLogicalNot)))
+                            ASTLogicalNot(factor());
+        }
+        return node;
+    }
+
+    node = cond_expr();
+
+    if(ISANYOF2(currentToken.type, TokenType::Equal, TokenType::NotEqual))
+    {
+        auto t = currentToken;
+        RelOp op = RelOp::EQ;
+
+        if (t.type == TokenType::Equal)
+        {
+            eat(TokenType::Equal);
+            op = RelOp::EQ;
+        }
+        else if (t.type == TokenType::NotEqual)
+        {
+            eat(TokenType::NotEqual);
+            op = RelOp::NEQ;
+        }
+
+        node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
+                        ASTRelOp(op, node, cond_expr());
+    }
+
+    return node;
+}
+
+ASTNode* Parser::cond_and()
+{
+    auto node = cond_equal();
+
+    if(currentToken.type == TokenType::LogicalAnd)
+    {
+        eat(TokenType::LogicalAnd);
+
+        node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
+                        ASTRelOp(RelOp::AND, node, cond_equal());
+    }
+
+    return node;
+}
+
+ASTNode* Parser::cond_or()
+{
+    auto node = cond_and();
+
+    if(currentToken.type == TokenType::LogicalOr)
+    {
+        eat(TokenType::LogicalOr);
+
+        node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
+                        ASTRelOp(RelOp::OR, node, cond_and());
+    }
+
+    return node;
+}
+
+ASTNode* Parser::factor()
+{
+    auto t = currentToken;
+    ASTNode* node = nullptr;
+
+    if (t.type == TokenType::NumberLiteral)
+    {
+        eat(TokenType::NumberLiteral);
+        node =
+                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTNumberTerminal), alignof(ASTNumberTerminal)))
+                        ASTNumberTerminal(atoi(t.text.c_str()));
+        return node;
+    }
+    else if (t.type == TokenType::True)
+    {
+        eat(TokenType::True);
+        node =
+                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
+                        ASTBooleanTerminal(true);
+    }
+    else if (t.type == TokenType::False)
+    {
+        eat(TokenType::False);
+        node =
+                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
+                        ASTBooleanTerminal(false);
+    }
+    else if (t.type == TokenType::LParen)
+    {
+        eat(TokenType::LParen);
+        node = expr();
+        eat(TokenType::RParen);
+    }
+    else if (t.type == TokenType::Identifier)
+    {
+        auto nextToken = tokens.at(currentTokenIndex + 1);
+
+        if (nextToken.type == TokenType::LParen)
+        {
+            node = procedure_call();
+        }
+        else if (nextToken.type == TokenType::LSqBrack)
+        {
+            auto t = currentToken;
+
+            eat(TokenType::Identifier);
+            eat(TokenType::LSqBrack);
+
+            auto indexExpr = expr();
+
+            eat(TokenType::RSqBrack);
+
+            auto varNode =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                ASTVariable(t.text);
+            node =
+                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAccessTableElement), alignof(ASTAccessTableElement)))
+                ASTAccessTableElement(varNode, indexExpr);
+        }
+        else
+        {
+            eat(TokenType::Identifier);
+            node =
+                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                            ASTVariable(t.text);
+        }
+    }
+    else
+    {
+        error();
+    }
+
+    return node;
+}
+
+ASTNode* Parser::term()
+{
+    auto node = factor();
+
+    while(ISANYOF2(currentToken.type, TokenType::MulOperator, TokenType::DivOperator))
+    {
+        auto t = currentToken;
+        BinOp op = BinOp::Mul;
+
+        if (t.type == TokenType::MulOperator)
+        {
+            eat(TokenType::MulOperator);
+            op = BinOp::Mul;
+        }
+        else if (t.type == TokenType::DivOperator)
+        {
+            eat(TokenType::DivOperator);
+            op = BinOp::Div;
+        }
+
+        node =
+                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBinOp), alignof(ASTBinOp)))
+                        ASTBinOp(op, node, factor());
+    }
+
+    return node;
+}
+
+ASTNode* Parser::expr()
+{
+    auto node = term();
+
+    while(ISANYOF2(currentToken.type, TokenType::AddOperator, TokenType::SubOperator))
+    {
+        auto t = currentToken;
+        BinOp op = BinOp::Add;
+
+        if (t.type == TokenType::AddOperator)
+        {
+            eat(TokenType::AddOperator);
+            op = BinOp::Add;
+        }
+        else if (t.type == TokenType::SubOperator)
+        {
+            eat(TokenType::SubOperator);
+            op = BinOp::Sub;
+        }
+
+        node =
+                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBinOp), alignof(ASTBinOp)))
+                        ASTBinOp(op, node, term());
+    }
+
+    return node;
+}
+
+void Parser::error()
+{
+    printf("oof\n");
+    ASSERT(0);
+}
+
+void Parser::eat(TokenType tpe)
+{
+    // compare the current token type with the passed token
+    // type and if they match then "eat" the current token
+    // and assign the next token to currentToken, otherwise
+    // error.
+
+    if(currentToken.type == tpe)
+    {
+        currentToken = tokens[++currentTokenIndex];
+    }
+    else
+    {
+        error();
+    }
+}
+
+static TValue returnValue;
+static bool returnValueSetFlag = false;
+static bool returnRequestedFlag = false;
+
+static void
+InterpretStatementList(ASTNode* statements);
+
+static TValue
+InterpretProcedureCall(ASTProcedureCall* procedureCall);
+
+static TValue
+InterpretExpression(ASTNode* ast)
+{
+    switch(ast->GetType())
+    {
+        case ASTNodeType::BINOP: {
+            auto v = static_cast<ASTBinOp*>(ast);
+            TValue l = InterpretExpression(v->left);
+            TValue r = InterpretExpression(v->right);
+            // both integer, then integer
+            // both float, then float
+            // one int, one float, then float
+            TValue::ValueType retValType = TValue::ValueType::Integer;
+            switch (v->op)
+            {
+                case BinOp::Add: {
+                    if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
+                    {
+                        TValue result;
+                        result.integerValue = l.integerValue + r.integerValue;
+                        result.type = TValue::ValueType::Integer;
+                        return result;
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
+                    {
+                        TValue result;
+                        result.realValue = l.realValue + r.integerValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
+                    }
+                    else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
+                    {
+                        TValue result;
+                        result.realValue = l.integerValue + r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
+                    {
+                        TValue result;
+                        result.realValue = l.realValue + r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
+                    }
+                    else
+                    {
+                        // todo error
+                    }
+                } break;
+                case BinOp::Sub: {
+                    if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
+                    {
+                        TValue result;
+                        result.integerValue = l.integerValue - r.integerValue;
+                        result.type = TValue::ValueType::Integer;
+                        return result;
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
+                    {
+                        TValue result;
+                        result.realValue = l.realValue - r.integerValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
+                    }
+                    else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
+                    {
+                        TValue result;
+                        result.realValue = l.integerValue - r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
+                    {
+                        TValue result;
+                        result.realValue = l.realValue - r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
+                    }
+                    else
+                    {
+                        // todo error
+                    }
+                } break;
+                case BinOp::Mul: {
+                    if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
+                    {
+                        TValue result;
+                        result.integerValue = l.integerValue * r.integerValue;
+                        result.type = TValue::ValueType::Integer;
+                        return result;
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
+                    {
+                        TValue result;
+                        result.realValue = l.realValue * r.integerValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
+                    }
+                    else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
+                    {
+                        TValue result;
+                        result.realValue = l.integerValue * r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
+                    {
+                        TValue result;
+                        result.realValue = l.realValue * r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
+                    }
+                    else
+                    {
+                        // todo error
+                    }
+                } break;
+                case BinOp::Div: {
+                    if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
+                    {
+                        TValue result;
+                        result.integerValue = l.integerValue / r.integerValue;
+                        result.type = TValue::ValueType::Integer;
+                        return result;
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
+                    {
+                        TValue result;
+                        result.realValue = l.realValue / r.integerValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
+                    }
+                    else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
+                    {
+                        TValue result;
+                        result.realValue = l.integerValue / r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
+                    }
+                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
+                    {
+                        TValue result;
+                        result.realValue = l.realValue / r.realValue;
+                        result.type = TValue::ValueType::Real;
+                        return result;
+                    }
+                    else
+                    {
+                        // todo error
+                    }
+                } break;
+            }
+        } break;
+        case ASTNodeType::RELOP: {
+            auto v = static_cast<ASTRelOp*>(ast);
+            TValue l = InterpretExpression(v->left);
+            TValue r = InterpretExpression(v->right);
+            if (l.type == TValue::ValueType::Integer)
+            {
+                l.realValue = float(l.integerValue);
+                l.type = TValue::ValueType::Real;
+            }
+            else if (l.type == TValue::ValueType::Boolean)
+            {
+                l.realValue = l.boolValue ? 1.f : 0.f;
+                l.type = TValue::ValueType::Real;
+            }
+            if (r.type == TValue::ValueType::Integer)
+            {
+                r.realValue = float(r.integerValue);
+                r.type = TValue::ValueType::Real;
+            }
+            else if (r.type == TValue::ValueType::Boolean)
+            {
+                r.realValue = l.boolValue ? 1.f : 0.f;
+                r.type = TValue::ValueType::Real;
+            }
+            switch (v->op)
+            {
+                case RelOp::LT: {
+                    TValue result;
+                    result.boolValue = l.realValue < r.realValue;
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break; 
+                case RelOp::LE: {
+                    TValue result;
+                    result.boolValue = l.realValue <= r.realValue;
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
+                case RelOp::GE: {
+                    TValue result;
+                    result.boolValue = l.realValue >= r.realValue;
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
+                case RelOp::EQ: {
+                    TValue result;
+                    result.boolValue = l.realValue == r.realValue;
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
+                case RelOp::NEQ: {
+                    TValue result;
+                    result.boolValue = l.realValue != r.realValue;
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
+                case RelOp::AND: {
+                    TValue result;
+                    result.boolValue = (l.realValue == 1.f && r.realValue == 1.f);
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
+                case RelOp::OR: {
+                    TValue result;
+                    result.boolValue = (l.realValue == 1.f || r.realValue == 1.f);
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
+            }
+        } break;
+        case ASTNodeType::LOGICALNOT: {
+            auto v = static_cast<ASTLogicalNot*>(ast);
+            auto result = InterpretExpression(v->boolExpr);
+            result.boolValue = !result.boolValue;
+            return result;
+        } break;
+
+        case ASTNodeType::VARIABLE: {
+            auto v = static_cast<ASTVariable*>(ast);
+            try {
+                if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(v->id))
+                {
+                    return MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(v->id);
+                }
+                else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(v->id))
+                {
+                    return MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(v->id);
+                }
+                else
+                {
+                    // error;
+                }
+            } catch (const std::exception& e) {
+                // todo error
+            }
+        } break;
+        case ASTNodeType::ACCESSTABLEELEMENT: {
+            auto v = static_cast<ASTAccessTableElement*>(ast);
+
+            auto indexTValue = InterpretExpression(v->indexExpression);
+            ASSERT(indexTValue.type == TValue::ValueType::Integer /*|| indexTValue.type == TValue::ValueType::String*/);
+
+            ASSERT(v->tableVariableName->GetType() == ASTNodeType::VARIABLE);
+            std::string tableVariableKey = static_cast<ASTVariable*>(v->tableVariableName)->id;
+
+            u64 gcObjectId = 0;
+            if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(tableVariableKey))
+            {
+                TValue& tableGCObj = MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(tableVariableKey);
+                ASSERT(tableGCObj.type == TValue::ValueType::GCObject);
+                gcObjectId = tableGCObj.GCReferenceObject;
+            }
+            else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(tableVariableKey))
+            {
+                TValue& tableGCObj = MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(tableVariableKey);
+                ASSERT(tableGCObj.type == TValue::ValueType::GCObject);
+                gcObjectId = tableGCObj.GCReferenceObject;
+            }
+            else
+            {
+                // error
+                ASSERT(0);
+            }
+
+            MesaScript_Table* table = static_cast<MesaScript_Table*>(GCOBJECTS_DATABASE.at(gcObjectId));
+            return table->ArrayAccessElementByKey(indexTValue.integerValue);
+        } break;
+
+        case ASTNodeType::CREATETABLE: {
+            //auto v = static_cast<ASTCreateTable*>(ast);
+            TValue result;
+            result.type = TValue::ValueType::GCObject;
+            result.GCReferenceObject = RequestNewGCObject();
+            return result;
+        } break;
+
+        case ASTNodeType::NUMBER: {
+            auto v = static_cast<ASTNumberTerminal*>(ast);
+            TValue result;
+            result.integerValue = v->value;
+            result.type = TValue::ValueType::Integer;
+            return result;
+        } break;
+        case ASTNodeType::BOOLEAN: {
+            auto v = static_cast<ASTBooleanTerminal*>(ast);
+            TValue result;
+            result.boolValue = v->value;
+            result.type = TValue::ValueType::Boolean;
+            return result;
+        } break;
+        case ASTNodeType::PROCEDURECALL: {
+            auto v = static_cast<ASTProcedureCall*>(ast);
+            return InterpretProcedureCall(v);
+        } break;
+    }
+}
+
+static void
+InterpretStatement(ASTNode* statement)
+{
+    switch (statement->GetType())
+    {
+
+    case ASTNodeType::PROCEDURECALL: {
+        auto v = static_cast<ASTProcedureCall*>(statement);
+        InterpretProcedureCall(v);
+    } break;
+
+    // TODO(Kevin): in these assignments, make sure to release reference of overwritten variable
+    case ASTNodeType::ASSIGN: {
+        auto v = static_cast<ASTAssignment*>(statement);
+
+        auto result = InterpretExpression(v->expr);
+
+        ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
+        std::string key = static_cast<ASTVariable*>(v->id)->id;
+        if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(key))
+        {
+            MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(key) = result;
+        }
+        else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(key))
+        {
+            MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(key) = result;
+        }
+        else
+        {
+            MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.EmplaceNewElement(key, result);
+        }
+    } break;
+    case ASTNodeType::ASSIGNTABLEELEMENT: {
+        auto v = static_cast<ASTAssignTableElement*>(statement);
+
+        auto indexTValue = InterpretExpression(v->indexExpression);
+        ASSERT(indexTValue.type == TValue::ValueType::Integer /*|| indexTValue.type == TValue::ValueType::String*/);
+
+        ASSERT(v->tableVariableName->GetType() == ASTNodeType::VARIABLE);
+        std::string tableVariableKey = static_cast<ASTVariable*>(v->tableVariableName)->id;
+
+        u64 gcObjectId = 0;
+        if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(tableVariableKey))
+        {
+            TValue& tableGCObj = MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(tableVariableKey);
+            ASSERT(tableGCObj.type == TValue::ValueType::GCObject);
+            gcObjectId = tableGCObj.GCReferenceObject;
+        }
+        else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(tableVariableKey))
+        {
+            TValue& tableGCObj = MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(tableVariableKey);
+            ASSERT(tableGCObj.type == TValue::ValueType::GCObject);
+            gcObjectId = tableGCObj.GCReferenceObject;
+        }
+        else
+        {
+            // error
+            ASSERT(0);
+        }
+
+        auto valueTValue = InterpretExpression(v->valueExpression);
+
+        MesaScript_Table* tableToModify = static_cast<MesaScript_Table*>(GCOBJECTS_DATABASE.at(gcObjectId));
+        if(tableToModify->ArrayContainsKey(indexTValue.integerValue))
+        {
+            TValue& tableElementToSet = tableToModify->ArrayAccessElementByKey(indexTValue.integerValue);
+            tableElementToSet = valueTValue;
+        }
+        else
+        {
+            tableToModify->ArrayInsertElementAtKey(indexTValue.integerValue, valueTValue);
+        }
+
+    } break;
+
+    case ASTNodeType::RETURN: {
+        auto v = static_cast<ASTReturn*>(statement);
+        TValue result = InterpretExpression(v->expr);
+        returnValue = result;
+        returnValueSetFlag = true;
+        returnRequestedFlag = true;
+    } break;
+
+    case ASTNodeType::PRINT: {
+        auto v = static_cast<ASTPrint*>(statement);
+        TValue result = InterpretExpression(v->expr);
+        if (result.type == TValue::ValueType::Integer)
+        {
+            printf("printed %lld\n", result.integerValue);
+        }
+        else if (result.type == TValue::ValueType::Boolean)
+        {
+            printf("printed %s\n", (result.boolValue ? "true" : "false"));
+        }
+        else if (result.type == TValue::ValueType::Real)
+        {
+            printf("printed %f\n", result.realValue);
+        }
+        else if (result.type == TValue::ValueType::GCObject)
+        {
+            printf("printing table\n");
+            for (const auto& pair : static_cast<MesaScript_Table*>(GCOBJECTS_DATABASE.at(result.GCReferenceObject))->table)
+            {
+                if (pair.second.type == TValue::ValueType::Integer)
+                {
+                    printf("    %s : %lld\n", pair.first.c_str(), pair.second.integerValue);
+                }
+                else if (pair.second.type == TValue::ValueType::Boolean)
+                {
+                    printf("    %s : %s\n", pair.first.c_str(), (pair.second.boolValue ? "true" : "false"));
+                }
+                else if (pair.second.type == TValue::ValueType::Real)
+                {
+                    printf("    %s : %f\n", pair.first.c_str(), pair.second.realValue);
+                }
+                else if (pair.second.type == TValue::ValueType::GCObject)
+                {
+                    printf("    %s : table\n", pair.first.c_str());
+                }
+            }
+        }
+    } break;
+
+    case ASTNodeType::BRANCH: {
+        auto v = static_cast<ASTBranch*>(statement);
+        auto condition = InterpretExpression(v->condition);
+        ASSERT(condition.type == TValue::ValueType::Boolean);
+        if (condition.boolValue)
+            InterpretStatementList(v->if_body);
+        else
+            InterpretStatementList(v->else_body);
+    } break;
+    }
+}
+
+static void
+InterpretStatementList(ASTNode* statements)
+{
+    ASSERT(statements->GetType() == ASTNodeType::STATEMENTLIST);
+    auto v = static_cast<ASTStatementList*>(statements);
+    for (const auto& s : v->statements)
+    {
+        InterpretStatement(s);
+        if (returnRequestedFlag) return;
+    }
+}
+
+TValue CPPBOUND_MESASCRIPT_Add(TValue arg0, TValue arg1)
+{
+    ASSERT(arg0.type == TValue::ValueType::Integer);
+    ASSERT(arg1.type == TValue::ValueType::Integer);
+
+    TValue result;
+    result.type = TValue::ValueType::Integer;
+    result.integerValue = arg0.integerValue + arg1.integerValue;
+    return result;
+}
+
+static TValue
+InterpretProcedureCall(ASTProcedureCall* procedureCall)
+{
+    // If ProcedureCall is C++ bound function, then call that.
+    // TValue result = cpp_fn(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
+
+    TValue procedureVariable;
+    if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(procedureCall->id))
+    {
+        procedureVariable = MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(procedureCall->id);
+    }
+    else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(procedureCall->id))
+    {
+        procedureVariable = MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(procedureCall->id);
+    }
+    else
+    {
+        if (procedureCall->id == "add")
+        {
+            ASSERT(procedureCall->argsExpressions.size() == 2);
+            return CPPBOUND_MESASCRIPT_Add(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
+        }
+        // else error
+    }
+    auto procedureDefinition = PROCEDURES_DATABASE.At((unsigned int)procedureVariable.procedureId);
+
+
+    MesaScript_Table functionScope;
+    for (int i = 0; i < procedureDefinition.args.size(); ++i)
+    {
+        auto argn = procedureDefinition.args[i];
+        auto argexpr = procedureCall->argsExpressions[i];
+        TValue argv = InterpretExpression(argexpr);
+        functionScope.TableCreateElement(argn, argv);
+    }
+    MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.PushScope(functionScope);
+
+    for (int arg = 0; arg < procedureDefinition.args.size(); ++arg) // todo replace hacky way of assigning argument values
+    {
+        auto argn = procedureDefinition.args[arg];
+        auto argv = procedureCall->argsExpressions[arg];
+    }
+
+    TValue retval;
+    returnRequestedFlag = false;
+    returnValueSetFlag = false;
+
+    InterpretStatementList(procedureDefinition.body);
+
+    if (returnValueSetFlag) retval = returnValue;
+
+    returnRequestedFlag = false;
+    returnValueSetFlag = false;
+
+    MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.PopScope();
+    // TODO(Kevin): When we pop this scope, we should ReleaseRefGCObject on all gc objects in this scope
+
+    return retval;
+}
+
+
+//static i8 printAstIndent = 0;
+//static void
+//PrintAST(ASTNode* ast)
+//{
+//    printAstIndent += 3;
+//    if(ast == nullptr)
+//    {
+//        printf("%s\n", (std::string(printAstIndent, ' ') + std::string("null")).c_str());
+//        printAstIndent -= 3;
+//        return;
+//    }
+//    switch(ast->GetType())
+//    {
+//        case ASTNodeType::ASSIGN:  {
+//            auto v = static_cast<ASTAssignment*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("assign ")).c_str());
+//            PrintAST(v->id);
+//            PrintAST(v->expr);
+//        } break;
+//        case ASTNodeType::RETURN: {
+//            auto v = static_cast<ASTReturn*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("return ")).c_str());
+//            PrintAST(v->expr);
+//        } break;
+//        case ASTNodeType::BINOP: {
+//            auto v = static_cast<ASTBinOp*>(ast);
+//            const char* opName = nullptr;
+//            switch (v->op)
+//            {
+//                case BinOp::Add: opName = "add"; break;
+//                case BinOp::Sub: opName = "sub"; break;
+//                case BinOp::Mul: opName = "mul"; break;
+//                case BinOp::Div: opName = "div"; break;
+//            }
+//            printf("%s%s%s\n", (std::string(printAstIndent, ' ') + std::string("binop l ")).c_str(), opName, " r");
+//            PrintAST(v->left);
+//            PrintAST(v->right);
+//        } break;
+//        case ASTNodeType::RELOP: {
+//            auto v = static_cast<ASTRelOp*>(ast);
+//            const char* opName = nullptr;
+//            switch (v->op)
+//            {
+//                case RelOp::LT: opName = "less than"; break;
+//                case RelOp::GT: opName = "greater than"; break;
+//                case RelOp::LE: opName = "less than or equal"; break;
+//                case RelOp::GE: opName = "greater than or equal"; break;
+//                case RelOp::EQ: opName = "equal"; break;
+//                case RelOp::NEQ: opName = "not equal"; break;
+//                case RelOp::AND: opName = "and"; break;
+//                case RelOp::OR: opName = "or"; break;
+//            }
+//            printf("%s%s%s\n", (std::string(printAstIndent, ' ') + std::string("relop l ")).c_str(), opName, " r");
+//            PrintAST(v->left);
+//            PrintAST(v->right);
+//        } break;
+//        case ASTNodeType::LOGICALNOT: {
+//            auto v = static_cast<ASTLogicalNot*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("not")).c_str());
+//            PrintAST(v->boolExpr);
+//        } break;
+//        case ASTNodeType::BRANCH: {
+//            auto v = static_cast<ASTBranch*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("branch (cond, if, else)")).c_str());
+//            PrintAST(v->condition);
+//            PrintAST(v->if_body);
+//            PrintAST(v->else_body);
+//        } break;
+//        case ASTNodeType::VARIABLE: {
+//            auto v = static_cast<ASTVariable*>(ast);
+//            printf("%s\n", (std::string(printAstIndent, ' ') + std::string("var ") + v->id).c_str());
+//        } break;
+//        case ASTNodeType::NUMBER: {
+//            auto v = static_cast<ASTNumberTerminal*>(ast);
+//            printf("%s%d\n", (std::string(printAstIndent, ' ') + std::string("num ")).c_str(), v->value);
+//        } break;
+//        case ASTNodeType::BOOLEAN: {
+//            auto v = static_cast<ASTBooleanTerminal*>(ast);
+//            printf("%s%s\n", (std::string(printAstIndent, ' ') + std::string("bool ")).c_str(), (v->value ? "true" : "false"));
+//        } break;
+//    }
+//    printAstIndent -= 3;
+//}
+
+void RunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir)
+{
+    std::string fileStr = ReadFileString(wd_path(pathFromWorkingDir).c_str());
+
+    MemoryLinearInitialize(&astBuffer, 4096);
+
+    //printf("%ld", sizeof(MesaScript_Table));
+
+    static const char* mesaScriptSetupCode = "fn printv(v) { print v }";
+
+    auto setupTokens = Lexer(std::string(mesaScriptSetupCode));
+    auto setupParser = Parser(setupTokens);
+    setupParser.parse();
+
+    auto result = Lexer(fileStr.c_str());
+    auto parser = Parser(result);
+    parser.parse();
+
+    for (auto& procCallNode : SCRIPT_PROCEDURE_EXECUTION_QUEUE)
+    {
+        InterpretProcedureCall(procCallNode);
+    }
+}
+

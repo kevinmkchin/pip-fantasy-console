@@ -1,4 +1,10 @@
 
+
+fn dosmth(table)
+{
+    table[69] = v
+}
+
 fn test()
 {
   a = {}
@@ -11,6 +17,8 @@ fn test()
 
   b = a[1]
   b[1] = 4
+
+  dosmth(a)
 
   printv(a)
 
