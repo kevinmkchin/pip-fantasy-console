@@ -1,4 +1,35 @@
+`
+LIST:
+access element with a non negative integer like so:
+    fruits[0]
+    fruits[2]
 
+fruits = {'orange', 'apple', 'pear', 'banana', 'kiwi', 'apple', 'banana'}
+count(fruits, 'apple')
+    > gives 2
+index(fruits, 'apple')
+    > gives 1
+
+fruits.reverse()
+fruits.append
+remove
+insert
+
+MAP:
+access element with string like so:
+    map["the key"]
+    map.anotherkey
+    map.keyToFunction();
+
+map = {'jack': 4098, 'sape': {feafe} }
+
+d = {'k1': 1, 'k2': 2, 'k3': 3}
+
+del d['k2']
+print(d)
+# {'k1': 1, 'k3': 3}
+
+`
 
 fn dosmth(table)
 {
@@ -14,22 +45,29 @@ fn test()
   a = {}
   b = a
 
+  v = 32
+
+  li = [ 0, 49, "50", 12390291 ]
+
   a[str] = 77
   a["yolo"] = 33
 
-  v = 32
-
-  ~ b[0] = 16 + v
-  ~ a[1] = {}
+  li[0] = 16 + v
+  li[1] = {}
+  li[3] = 1000
 
   ~ b = a[1]
   ~ b[1] = 4
 
   ~ dosmth(a)
 
+  printv("printing string and table here:")
   printv(str)
   printv(a["bruh"])
   printv(a["yolo"])
+  printv("------")
+  printv("printing list here:")
+  printv(li)
 
   ~printv(b == a)
   ~printv(b.x == a.x)

@@ -103,7 +103,7 @@ IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 
 // statement_list : LBRACE statement* RBRACE
 
-// statement : IDENTIFIER (LSQBRACK expr RSQBRACK)? ASSIGN table_or_cond_or
+// statement : IDENTIFIER (LSQBRACK expr RSQBRACK)? ASSIGN table_or_list_or_cond_or
 // statement : RETURN cond_or
 // statement : PRINT cond_or
 // statement : procedure_call
@@ -121,7 +121,7 @@ IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 
 // cond_or : cond_and (OR cond_and)?
 
-// table_or_cond_or : (LBRACE  RBRACE | cond_or)
+// table_or_list_or_cond_or : (LBRACE (todo)* RBRACE | LSQBRACK (todo)* RSQBRACK | cond_or)
 
 // factor : NUMBER
 // factor : LPAREN expr RPAREN

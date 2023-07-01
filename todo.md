@@ -1,28 +1,25 @@
 # todo
 
 ### Done
-- index tables with strings DONE
+- index tables with strings
+- initialize array elements
+- sort of lists/arrays - actual array implementation <- MAYBE JUST MAKE AN ENTIRE NEW ARRAY TYPE??? THAT MIGHT BE SO MUCH CLEANER AND NICER -> is there ANY reason to use a table as also an array?
 
 ### Language features
 
+- Standardize the terms i'm using. what is access, what is look at, what is get?
 - use custom assert for mesascript (USEFUL ERROR MESSAGES!)
 
-- lists/arrays - indexable by number e.g. list[1]
 - need way to delete a table entry https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
 - rename tables to MAP or DICTIONARY
-- tables (require gc) - indexable by string e.g. table["key"]
-    - STRINGS <
+- tables (require gc)
     - add relops for GCObject type TValues. for other ops, just crash? 
     - only increment refcount for gc obj upon assignment to a variable. that means, if we create a table, we don't auto set refcount to 1, and also must instantly delete if we don't assign to a variable at all.
     - release GC reference if lose reference, and then propagate to element gc objects
 
-    - actual array implementation <- MAYBE JUST MAKE AN ENTIRE NEW ARRAY TYPE??? THAT MIGHT BE SO MUCH CLEANER AND NICER -> is there ANY reason to use a table as also an array?
-
-    - initialize array elements like so { 0, 1, c, 3, "e" }
-    - initialize table elements like so { 0 = 3, m = y, "e" = x }
+    - initialize table elements
 
 - STRINGS <
-
 
 - while loops & break
 - for loops
