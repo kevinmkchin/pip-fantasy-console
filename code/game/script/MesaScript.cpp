@@ -30,6 +30,7 @@ enum class TokenType
     AssignmentOperator,
 
     NumberLiteral,
+    StringLiteral,
     True,
     False,
     Identifier,
@@ -43,7 +44,6 @@ enum class TokenType
     RParen,
     LBrace,
     RBrace,
-    DoubleQuote,
     Comma,
 
     If,
@@ -106,6 +106,20 @@ std::vector<Token> Lexer(const std::string& code)
         if(IsWhitespace(lookAhead))
         {
             ++currentIndex;
+        }
+        else if(lookAhead == '"')
+        {
+            ++currentIndex;
+            while (currentIndex < (code.length() - 1) && code.at(currentIndex) != '"')
+            {
+                ++currentIndex;
+            }
+            Token token;
+            token.type = TokenType::StringLiteral;
+            token.text = code.substr(tokenStartIndex + 1, currentIndex - (tokenStartIndex + 1));
+            token.startPos = tokenStartIndex;
+            ++currentIndex;
+            retval.push_back(token);
         }
         else if(lookAhead == '-')
         {
@@ -257,7 +271,6 @@ std::vector<Token> Lexer(const std::string& code)
                 case '}': { tokenType = TokenType::RBrace; } break;
                 case '[': { tokenType = TokenType::LSqBrack; } break;
                 case ']': { tokenType = TokenType::RSqBrack; } break;
-                case '"': { tokenType = TokenType::DoubleQuote; } break;
                 case ',': { tokenType = TokenType::Comma; } break;
                 case '\n': { continue; /*tokenType = TokenType::EndOfLine;*/ } break;
                 default:{
@@ -285,6 +298,7 @@ enum class ASTNodeType
     PRINT,
     WHILE,
     NUMBER,
+    STRING,
     BOOLEAN,
     BINOP,
     RELOP,
@@ -407,6 +421,14 @@ public:
     i32 value;
 };
 
+class ASTStringTerminal : public ASTNode
+{
+public:
+    ASTStringTerminal(std::string str);
+
+    std::string value;
+};
+
 class ASTBooleanTerminal : public ASTNode
 {
 public:
@@ -512,6 +534,11 @@ ASTNumberTerminal::ASTNumberTerminal(i32 num)
     , value(num)
 {}
 
+ASTStringTerminal::ASTStringTerminal(std::string str)
+    : ASTNode(ASTNodeType::STRING)
+    , value(str)
+{}
+
 ASTBooleanTerminal::ASTBooleanTerminal(bool v)
     : ASTNode(ASTNodeType::BOOLEAN)
     , value(v)
@@ -589,17 +616,35 @@ struct CompareFirstChar : public std::binary_function<std::string, std::string, 
 
 struct MesaGCObject
 {
-    i32 refCount = 0;
+    enum class GCObjectType
+    {
+        Invalid,
+        Table,
+        String
+    };
 
-    // NOTE(Kevin): I could have a type field here similar to ASTNodes if I want different GCObjects from tables
+public:
+    i32 refCount = 0;
+private:
+    GCObjectType type = GCObjectType::Invalid;
+public:
+    MesaGCObject(GCObjectType in_type) { type = in_type; }
+    inline GCObjectType GetType() { return type; }
 };
 
-struct MesaScript_Table : MesaGCObject
+struct MesaScript_String
 {
-    // add new pair
-    // overwrite existing pair
-    // delete existing pair
+    MesaGCObject base;
+    std::string text;
 
+    MesaScript_String()
+        : base(MesaGCObject::GCObjectType::String)
+    {}
+};
+
+/*
+struct MesaScript_List
+{
     //void ArrayAddElement();
     //void ArrayInsert();
 
@@ -609,27 +654,39 @@ struct MesaScript_Table : MesaGCObject
     //size_t ArrayLength()
     //{
     //    return array.size();
-    //}
+    //}    
+};
+*/
 
+struct MesaScript_Table
+{
+    MesaGCObject base;
 
-    bool ArrayContainsKey(const i64 integerKey)
-    {
-        return TableContainsKey(std::to_string(integerKey));
-    }
+    // add new pair
+    // overwrite existing pair
+    // delete existing pair
+    MesaScript_Table()
+        : base(MesaGCObject::GCObjectType::Table)
+    {}
 
-    TValue& ArrayInsertElementAtKey(const i64 integerKey, const TValue value)
-    {
-        return TableCreateElement(std::to_string(integerKey), value);
-    }
+    // bool ArrayContainsKey(const i64 integerKey)
+    // {
+    //     return TableContainsKey(std::to_string(integerKey));
+    // }
 
-    TValue& ArrayAccessElementByKey(const i64 integerKey)
-    {
-        // for now, just fucking convert to a string
-        return TableAccessElement(std::to_string(integerKey));
+    // TValue& ArrayInsertElementAtKey(const i64 integerKey, const TValue value)
+    // {
+    //     return TableCreateElement(std::to_string(integerKey), value);
+    // }
 
-       // return array.at(index);
-       // todo(kevin): out of range error
-    }
+    // TValue& ArrayAccessElementByKey(const i64 integerKey)
+    // {
+    //     // for now, just fucking convert to a string
+    //     return TableAccessElement(std::to_string(integerKey));
+
+    //    // return array.at(index);
+    //    // todo(kevin): out of range error
+    // }
 
     bool TableContainsKey(const std::string& key)
     {
@@ -652,12 +709,26 @@ struct MesaScript_Table : MesaGCObject
     std::map<std::string, TValue, CompareFirstChar> table;
 };
 
-
-
 // mesa_script_table , ref count
 
 u64 ticker = 0;
 std::unordered_map<u64, MesaGCObject*> GCOBJECTS_DATABASE;
+
+MesaGCObject::GCObjectType GetTypeOfGCObject(u64 gcObjectId)
+{
+    MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
+    return gcobj->GetType();
+}
+
+MesaScript_Table* AccessMesaScriptTable(u64 gcObjectId)
+{
+    return (MesaScript_Table*)(GCOBJECTS_DATABASE.at(gcObjectId));
+}
+
+MesaScript_String* AccessMesaScriptString(u64 gcObjectId)
+{
+    return (MesaScript_String*)(GCOBJECTS_DATABASE.at(gcObjectId));
+}
 
 MesaGCObject* GetRefExistingGCObject(u64 gcObjectId)
 {
@@ -677,9 +748,21 @@ void ReleaseRefGCObject(u64 gcObjectId)
     }
 }
 
-u64 RequestNewGCObject()
+u64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType)
 {
-    MesaGCObject* gcobj = new MesaScript_Table();
+    MesaGCObject* gcobj = NULL;
+    switch(gcObjectType)
+    {
+        case MesaGCObject::GCObjectType::Table: {
+            gcobj = (MesaGCObject*) new MesaScript_Table();
+        } break;
+        case MesaGCObject::GCObjectType::String: {
+            gcobj = (MesaGCObject*) new MesaScript_String();
+        } break;
+        case MesaGCObject::GCObjectType::Invalid: {
+            // todo error
+        } break;
+    } 
     gcobj->refCount++;
     GCOBJECTS_DATABASE.insert_or_assign(ticker, gcobj);
     return ticker++;
@@ -1122,24 +1205,27 @@ ASTNode* Parser::factor()
     if (t.type == TokenType::NumberLiteral)
     {
         eat(TokenType::NumberLiteral);
-        node =
-                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTNumberTerminal), alignof(ASTNumberTerminal)))
-                        ASTNumberTerminal(atoi(t.text.c_str()));
+        node = new(MemoryLinearAllocate(&astBuffer, sizeof(ASTNumberTerminal), alignof(ASTNumberTerminal))) 
+            ASTNumberTerminal(atoi(t.text.c_str()));
         return node;
+    }
+    else if (t.type == TokenType::StringLiteral)
+    {
+        eat(TokenType::StringLiteral);
+        node = new(MemoryLinearAllocate(&astBuffer, sizeof(ASTStringTerminal), alignof(ASTStringTerminal))) 
+            ASTStringTerminal(t.text);
     }
     else if (t.type == TokenType::True)
     {
         eat(TokenType::True);
-        node =
-                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
-                        ASTBooleanTerminal(true);
+        node = new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
+            ASTBooleanTerminal(true);
     }
     else if (t.type == TokenType::False)
     {
         eat(TokenType::False);
-        node =
-                new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
-                        ASTBooleanTerminal(false);
+        node = new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
+            ASTBooleanTerminal(false);
     }
     else if (t.type == TokenType::LParen)
     {
@@ -1527,11 +1613,15 @@ InterpretExpression(ASTNode* ast)
                 // todo error
             }
         } break;
+        // TODO: ACCESS LIST ELEMENT
         case ASTNodeType::ACCESSTABLEELEMENT: {
             auto v = static_cast<ASTAccessTableElement*>(ast);
 
             auto indexTValue = InterpretExpression(v->indexExpression);
-            ASSERT(indexTValue.type == TValue::ValueType::Integer /*|| indexTValue.type == TValue::ValueType::String*/);
+            // ASSERT(indexTValue.type == TValue::ValueType::Integer /*|| indexTValue.type == TValue::ValueType::String*/);
+            ASSERT(indexTValue.type == TValue::ValueType::GCObject);
+            ASSERT(GetTypeOfGCObject(indexTValue.GCReferenceObject) == MesaGCObject::GCObjectType::String);
+            MesaScript_String* mesaStringPtr = AccessMesaScriptString(indexTValue.GCReferenceObject);
 
             ASSERT(v->tableVariableName->GetType() == ASTNodeType::VARIABLE);
             std::string tableVariableKey = static_cast<ASTVariable*>(v->tableVariableName)->id;
@@ -1555,15 +1645,16 @@ InterpretExpression(ASTNode* ast)
                 ASSERT(0);
             }
 
-            MesaScript_Table* table = static_cast<MesaScript_Table*>(GCOBJECTS_DATABASE.at(gcObjectId));
-            return table->ArrayAccessElementByKey(indexTValue.integerValue);
+            MesaScript_Table* table = AccessMesaScriptTable(gcObjectId);
+            return table->TableAccessElement(mesaStringPtr->text);
+            //return table->ArrayAccessElementByKey(indexTValue.integerValue);
         } break;
 
         case ASTNodeType::CREATETABLE: {
             //auto v = static_cast<ASTCreateTable*>(ast);
             TValue result;
             result.type = TValue::ValueType::GCObject;
-            result.GCReferenceObject = RequestNewGCObject();
+            result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
             return result;
         } break;
 
@@ -1572,6 +1663,15 @@ InterpretExpression(ASTNode* ast)
             TValue result;
             result.integerValue = v->value;
             result.type = TValue::ValueType::Integer;
+            return result;
+        } break;
+        case ASTNodeType::STRING: {
+            auto v = static_cast<ASTStringTerminal*>(ast);
+            TValue result;
+            result.type = TValue::ValueType::GCObject;
+            result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::String);
+            MesaScript_String* createdString = AccessMesaScriptString(result.GCReferenceObject);
+            createdString->text = v->value;
             return result;
         } break;
         case ASTNodeType::BOOLEAN: {
@@ -1624,7 +1724,9 @@ InterpretStatement(ASTNode* statement)
         auto v = static_cast<ASTAssignTableElement*>(statement);
 
         auto indexTValue = InterpretExpression(v->indexExpression);
-        ASSERT(indexTValue.type == TValue::ValueType::Integer /*|| indexTValue.type == TValue::ValueType::String*/);
+        ASSERT(indexTValue.type == TValue::ValueType::GCObject);
+        ASSERT(GetTypeOfGCObject(indexTValue.GCReferenceObject) == MesaGCObject::GCObjectType::String);
+        const std::string& tableKey = AccessMesaScriptString(indexTValue.GCReferenceObject)->text;
 
         ASSERT(v->tableVariableName->GetType() == ASTNodeType::VARIABLE);
         std::string tableVariableKey = static_cast<ASTVariable*>(v->tableVariableName)->id;
@@ -1650,15 +1752,15 @@ InterpretStatement(ASTNode* statement)
 
         auto valueTValue = InterpretExpression(v->valueExpression);
 
-        MesaScript_Table* tableToModify = static_cast<MesaScript_Table*>(GCOBJECTS_DATABASE.at(gcObjectId));
-        if(tableToModify->ArrayContainsKey(indexTValue.integerValue))
+        MesaScript_Table* tableToModify = AccessMesaScriptTable(gcObjectId);
+        if(tableToModify->TableContainsKey(tableKey))
         {
-            TValue& tableElementToSet = tableToModify->ArrayAccessElementByKey(indexTValue.integerValue);
+            TValue& tableElementToSet = tableToModify->TableAccessElement(tableKey);
             tableElementToSet = valueTValue;
         }
         else
         {
-            tableToModify->ArrayInsertElementAtKey(indexTValue.integerValue, valueTValue);
+            tableToModify->TableCreateElement(tableKey, valueTValue);
         }
 
     } break;
@@ -1688,25 +1790,33 @@ InterpretStatement(ASTNode* statement)
         }
         else if (result.type == TValue::ValueType::GCObject)
         {
-            printf("printing table\n");
-            for (const auto& pair : static_cast<MesaScript_Table*>(GCOBJECTS_DATABASE.at(result.GCReferenceObject))->table)
+            if (GetTypeOfGCObject(result.GCReferenceObject) == MesaGCObject::GCObjectType::Table)
             {
-                if (pair.second.type == TValue::ValueType::Integer)
+                printf("printing table\n");
+                for (const auto& pair : AccessMesaScriptTable(result.GCReferenceObject)->table)
                 {
-                    printf("    %s : %lld\n", pair.first.c_str(), pair.second.integerValue);
+                    if (pair.second.type == TValue::ValueType::Integer)
+                    {
+                        printf("    %s : %lld\n", pair.first.c_str(), pair.second.integerValue);
+                    }
+                    else if (pair.second.type == TValue::ValueType::Boolean)
+                    {
+                        printf("    %s : %s\n", pair.first.c_str(), (pair.second.boolValue ? "true" : "false"));
+                    }
+                    else if (pair.second.type == TValue::ValueType::Real)
+                    {
+                        printf("    %s : %f\n", pair.first.c_str(), pair.second.realValue);
+                    }
+                    else if (pair.second.type == TValue::ValueType::GCObject)
+                    {
+                        printf("    %s : table\n", pair.first.c_str());
+                    }
                 }
-                else if (pair.second.type == TValue::ValueType::Boolean)
-                {
-                    printf("    %s : %s\n", pair.first.c_str(), (pair.second.boolValue ? "true" : "false"));
-                }
-                else if (pair.second.type == TValue::ValueType::Real)
-                {
-                    printf("    %s : %f\n", pair.first.c_str(), pair.second.realValue);
-                }
-                else if (pair.second.type == TValue::ValueType::GCObject)
-                {
-                    printf("    %s : table\n", pair.first.c_str());
-                }
+            }
+            else if (GetTypeOfGCObject(result.GCReferenceObject) == MesaGCObject::GCObjectType::String)
+            {
+                printf("printing string\n");
+                printf("    %s\n", AccessMesaScriptString(result.GCReferenceObject)->text.c_str());
             }
         }
     } break;
@@ -1783,7 +1893,7 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
     }
     MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.PushScope(functionScope);
 
-    for (int arg = 0; arg < procedureDefinition.args.size(); ++arg) // todo replace hacky way of assigning argument values
+    for (int arg = 0; arg < procedureDefinition.args.size(); ++arg) // TODO replace hacky way of assigning argument values
     {
         auto argn = procedureDefinition.args[arg];
         auto argv = procedureCall->argsExpressions[arg];
