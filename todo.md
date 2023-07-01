@@ -7,17 +7,17 @@
 
 ### Language features
 
-- Standardize the terms i'm using. what is access, what is look at, what is get?
 - use custom assert for mesascript (USEFUL ERROR MESSAGES!)
+- release GC reference if lose reference, and then propagate to element gc objects (both lists and maps)
+- only increment refcount for gc obj upon assignment to a variable. that means, if we create a table, we don't auto set refcount to 1, and also must instantly delete if we don't assign to a variable at all.
 
+- Standardize the terms i'm using. what is access, what is look at, what is get?
 - need way to delete a table entry https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
 - rename tables to MAP or DICTIONARY
-- tables (require gc)
-    - add relops for GCObject type TValues. for other ops, just crash? 
-    - only increment refcount for gc obj upon assignment to a variable. that means, if we create a table, we don't auto set refcount to 1, and also must instantly delete if we don't assign to a variable at all.
-    - release GC reference if lose reference, and then propagate to element gc objects
 
-    - initialize table elements
+- add relops for GCObject type TValues. for other ops, just crash? 
+
+- initialize table elements
 
 - STRINGS <
 
