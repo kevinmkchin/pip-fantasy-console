@@ -8,6 +8,7 @@ cmake-build-*/
 .vs/
 .idea/
 *.DS_Store
+*.sublime-workspace
 
 ext/cmake_project_path.h
 CMakeSettings.json
