@@ -9,7 +9,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ext/cmake_project_path.h.in" "${CMAK
 
 
 set(SOURCE_FILES
-	    code/ArcadiaFantasyConsole.cpp
+	    code/MesaFantasyConsole.cpp
         code/core/ArcadiaUtility.cpp
         code/core/ArcadiaTimer.cpp
         code/core/CoreRenderer.cpp
