@@ -8,7 +8,7 @@
 
 ### Language features
 
-- use custom assert for mesascript (USEFUL ERROR MESSAGES!)
+- use custom assert for mesascript runtime
 - release GC reference if lose reference, and then propagate to element gc objects (both lists and maps)
 - only increment refcount for gc obj upon assignment to a variable. that means, if we create a table, we don't auto set refcount to 1, and also must instantly delete if we don't assign to a variable at all.
 

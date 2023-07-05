@@ -60,7 +60,21 @@ struct Token
     TokenType type = TokenType::Default;
     std::string text;
     u32 startPos = 0;
+    u32 line = 0;
 };
+
+
+void SendCompilationError(const char* msg, Token token)
+{
+    printf("MesaScript Error (%d): %s\n", token.line, msg);
+    ASSERT(0);
+}
+
+void SendRuntimeException(const char* msg)
+{
+    printf("Runtime exception: %s\n", msg);
+}
+
 
 #pragma region LEXER
 
@@ -97,6 +111,7 @@ std::vector<Token> Lexer(const std::string& code)
 {
     std::vector<Token> retval;
     u32 currentIndex = 0;
+    u32 currentLine = 1;
 
     bool flag_NegativeNumberAhead = false;
     while(currentIndex < code.length())
@@ -118,6 +133,7 @@ std::vector<Token> Lexer(const std::string& code)
             token.type = TokenType::StringLiteral;
             token.text = code.substr(tokenStartIndex + 1, currentIndex - (tokenStartIndex + 1));
             token.startPos = tokenStartIndex;
+            token.line = currentLine;
             ++currentIndex;
             retval.push_back(token);
         }
@@ -130,7 +146,7 @@ std::vector<Token> Lexer(const std::string& code)
             }
             else
             {
-                retval.push_back({ TokenType::SubOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({ TokenType::SubOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
         }
         else if (lookAhead == '`') // block comments
@@ -138,6 +154,7 @@ std::vector<Token> Lexer(const std::string& code)
             ++currentIndex;
             while (currentIndex < (code.length() - 1) && code.at(currentIndex) != '`')
             {
+                if (code.at(currentIndex) == '\n') ++currentLine;
                 ++currentIndex;
             }
             ++currentIndex;
@@ -150,6 +167,7 @@ std::vector<Token> Lexer(const std::string& code)
                 ++currentIndex;
             }
             ++currentIndex;
+            ++currentLine;
         }
         else if(lookAhead == '<' || lookAhead == '>' || lookAhead == '!' || lookAhead == '=')
         {
@@ -159,36 +177,36 @@ std::vector<Token> Lexer(const std::string& code)
                 ++currentIndex;
                 if (lookAhead == '<')
                 {
-                    retval.push_back({ TokenType::LessThanOrEqual, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                    retval.push_back({ TokenType::LessThanOrEqual, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
                 }
                 else if (lookAhead == '>')
                 {
-                    retval.push_back({ TokenType::GreaterThanOrEqual, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                    retval.push_back({ TokenType::GreaterThanOrEqual, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
                 }
                 else if (lookAhead == '!')
                 {
-                    retval.push_back({ TokenType::NotEqual, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                    retval.push_back({ TokenType::NotEqual, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
                 }
                 else if (lookAhead == '=')
                 {
-                    retval.push_back({ TokenType::Equal, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                    retval.push_back({ TokenType::Equal, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
                 }
             }
             else if (lookAhead == '<')
             {
-                retval.push_back({ TokenType::LessThan, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({ TokenType::LessThan, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else if (lookAhead == '>')
             {
-                retval.push_back({ TokenType::GreaterThan, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({ TokenType::GreaterThan, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else if (lookAhead == '=')
             {
-                retval.push_back({ TokenType::AssignmentOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({ TokenType::AssignmentOperator, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else if (lookAhead == '!')
             {
-                retval.push_back({TokenType::LogicalNegation, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({TokenType::LogicalNegation, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
         }
         else if(IsDigit(lookAhead))
@@ -202,7 +220,7 @@ std::vector<Token> Lexer(const std::string& code)
             {
                 ++currentIndex;
             }
-            retval.push_back({ TokenType::NumberLiteral, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            retval.push_back({ TokenType::NumberLiteral, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
         }
         else if(IsCharacter(lookAhead))
         {
@@ -217,43 +235,43 @@ std::vector<Token> Lexer(const std::string& code)
             auto word = std::string(wordCharsBuffer.data);
             if (word == "return")
             {
-                retval.push_back({ TokenType::Return, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({ TokenType::Return, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else if (word == "print")
             {
-                retval.push_back({ TokenType::Print, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({ TokenType::Print, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else if (word == "true")
             {
-                retval.push_back({ TokenType::True, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({ TokenType::True, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else if (word == "false")
             {
-                retval.push_back({ TokenType::False, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({ TokenType::False, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else if (word == "and")
             {
-                retval.push_back({TokenType::LogicalAnd, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({TokenType::LogicalAnd, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else if (word == "or")
             {
-                retval.push_back({TokenType::LogicalOr, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({TokenType::LogicalOr, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else if (word == "if")
             {
-                retval.push_back({ TokenType::If, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({ TokenType::If, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else if (word == "else")
             {
-                retval.push_back({ TokenType::Else, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({ TokenType::Else, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else if (word == "fn")
             {
-                retval.push_back({ TokenType::FunctionDecl,code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({ TokenType::FunctionDecl,code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else // otherwise, word is function call or identifier
             {
-                retval.push_back({ TokenType::Identifier, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+                retval.push_back({ TokenType::Identifier, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
         }
         else
@@ -272,16 +290,16 @@ std::vector<Token> Lexer(const std::string& code)
                 case '[': { tokenType = TokenType::LSqBrack; } break;
                 case ']': { tokenType = TokenType::RSqBrack; } break;
                 case ',': { tokenType = TokenType::Comma; } break;
-                case '\n': { continue; /*tokenType = TokenType::EndOfLine;*/ } break;
+                case '\n': { ++currentLine; continue; /*tokenType = TokenType::EndOfLine;*/ } break;
                 default:{
                     printf("error: unrecognized character in Lexer");
                     continue;
                 }
             }
-            retval.push_back({ tokenType, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex });
+            retval.push_back({ tokenType, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
         }
     }
-    retval.push_back({TokenType::EndOfFile, "<EOF>", (u32)code.length()});
+    retval.push_back({TokenType::EndOfFile, "<EOF>", (u32)code.length(), currentLine });
     return retval;
 }
 
@@ -796,7 +814,7 @@ u64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType)
             gcobj = (MesaGCObject*) new MesaScript_List();
         } break;
         default: {
-            // todo error
+            SendRuntimeException("Error requesting GCObject. Undefined GCObject type.");
         } break;
     } 
     gcobj->refCount++;
@@ -878,7 +896,7 @@ public:
     void parse();
 
 private:
-    void error();
+    //void error();
 
     void eat(TokenType tpe);
 
@@ -1112,12 +1130,8 @@ ASTNode* Parser::statement()
                         ASTBranch(condition, ifCase, elseCase);
         return node;
     }
-    else
-    {
-        error();
-    }
 
-    error();
+    SendCompilationError("Unexpected token when expecting a new statement.", currentToken);
     return nullptr;
 }
 
@@ -1321,7 +1335,7 @@ ASTNode* Parser::factor()
     }
     else
     {
-        error();
+        SendCompilationError("Unknown token.", t);
     }
 
     return node;
@@ -1383,12 +1397,6 @@ ASTNode* Parser::expr()
     return node;
 }
 
-void Parser::error()
-{
-    printf("oof\n");
-    ASSERT(0);
-}
-
 void Parser::eat(TokenType tpe)
 {
     // compare the current token type with the passed token
@@ -1402,7 +1410,7 @@ void Parser::eat(TokenType tpe)
     }
     else
     {
-        error();
+        SendCompilationError("Ate unexpected token.", currentToken);
     }
 }
 
