@@ -2018,12 +2018,6 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
     }
     MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.PushScope(functionScope);
 
-    for (int arg = 0; arg < procedureDefinition.args.size(); ++arg) // TODO replace hacky way of assigning argument values
-    {
-        auto argn = procedureDefinition.args[arg];
-        auto argv = procedureCall->argsExpressions[arg];
-    }
-
     TValue retval;
     returnRequestedFlag = false;
     returnValueSetFlag = false;
