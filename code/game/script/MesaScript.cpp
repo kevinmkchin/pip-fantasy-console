@@ -1673,7 +1673,6 @@ InterpretExpression(ASTNode* ast)
                 // todo error
             }
         } break;
-        // TODO: ACCESS LIST ELEMENT
         case ASTNodeType::ACCESS_LIST_OR_MAP_ELEMENT: {
             auto v = static_cast<ASTAccessListOrMapElement*>(ast);
 
