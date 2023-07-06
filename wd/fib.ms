@@ -47,12 +47,12 @@ fn test()
 
   v = 32
 
-  li = [ 0, 49, "50", 12390291 ]
+  li = [ 0, 49, "50", 12390291, raise_to(2,3) ]
 
   a[str] = 77
   a["yolo"] = 33
 
-  li[0] = 16 + v
+  li[0] = add(16 ,v)
   li[1] = {}
   li[3] = 1000
 
@@ -61,13 +61,14 @@ fn test()
 
   ~ dosmth(a)
 
-  printv("printing string and table here:")
-  printv(str)
-  printv(a["bruh"])
-  printv(a["yolo"])
-  printv("------")
-  printv("printing list here:")
-  printv(li)
+  print("printing string and table here:")
+  print(str)
+  print(a[str])
+  print(a["bruh"])
+  print(a["yolo"])
+  print("------")
+  print("printing list here:")
+  print(li)
 
   ~printv(b == a)
   ~printv(b.x == a.x)
