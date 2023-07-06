@@ -1,7 +1,7 @@
 @echo off
 
 IF "%1"=="vs" goto run-vs
-IF "%1"=="s" goto run-subl
+IF "%1"=="subl" goto run-subl
 goto run-bin
 
 :run-vs
@@ -10,7 +10,7 @@ devenv .
 goto common-exit
 
 :run-subl
-subl mesascript.sublime-workspace
+subl source.sublime-project
 goto common-exit
 
 :run-bin
