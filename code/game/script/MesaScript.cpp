@@ -7,7 +7,6 @@
 
 #include <unordered_map>
 #include <vector>
-#include <map>
 
 enum class TokenType
 {
@@ -638,14 +637,6 @@ struct TValue
     ValueType type = ValueType::Invalid;
 };
 
-struct CompareFirstChar : public std::binary_function<std::string, std::string, bool>
-{
-    bool operator()(const std::string& lhs, const std::string& rhs) const
-    {
-        return lhs.front() < rhs.front();
-    }
-};
-
 struct MesaGCObject
 {
     enum class GCObjectType
@@ -714,7 +705,7 @@ struct MesaScript_Table
 {
     MesaGCObject base;
 
-    std::map<std::string, TValue, CompareFirstChar> table;
+    std::unordered_map<std::string, TValue> table;
 
     MesaScript_Table()
         : base(MesaGCObject::GCObjectType::Table)
