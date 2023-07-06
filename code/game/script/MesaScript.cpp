@@ -49,7 +49,6 @@ enum class TokenType
     Else,
 
     Return,
-    Print, // temporary
     EndOfLine,
     EndOfFile
 };
@@ -237,10 +236,6 @@ std::vector<Token> Lexer(const std::string& code)
             {
                 retval.push_back({ TokenType::Return, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
-            else if (word == "print")
-            {
-                retval.push_back({ TokenType::Print, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
-            }
             else if (word == "true")
             {
                 retval.push_back({ TokenType::True, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
@@ -313,7 +308,6 @@ enum class ASTNodeType
     VARIABLE,
     PROCEDURECALL,
     RETURN,
-    PRINT,
     WHILE,
     NUMBER,
     STRING,
@@ -375,14 +369,6 @@ class ASTReturn : public ASTNode
 {
 public:
     ASTReturn(ASTNode* expr);
-
-    ASTNode* expr;
-};
-
-class ASTPrint : public ASTNode
-{
-public:
-    ASTPrint(ASTNode* expr);
 
     ASTNode* expr;
 };
@@ -553,11 +539,6 @@ ASTProcedureCall::ASTProcedureCall(const std::string& id)
 ASTReturn::ASTReturn(ASTNode* expr)
     : ASTNode(ASTNodeType::RETURN)
     , expr(expr)
-{}
-
-ASTPrint::ASTPrint(ASTNode* expr)
-        : ASTNode(ASTNodeType::PRINT)
-        , expr(expr)
 {}
 
 ASTNumberTerminal::ASTNumberTerminal(i32 num)
@@ -1192,14 +1173,6 @@ ASTNode* Parser::statement()
         auto node =
                 new (MemoryLinearAllocate(&astBuffer, sizeof(ASTReturn), alignof(ASTReturn)))
                         ASTReturn(cond_or());
-        return node;
-    }
-    else if (currentToken.type == TokenType::Print)
-    {
-        eat(TokenType::Print);
-        auto node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTPrint), alignof(ASTPrint)))
-                        ASTPrint(cond_or());
         return node;
     }
     else if (currentToken.type == TokenType::If)
@@ -1868,177 +1841,106 @@ InterpretStatement(ASTNode* statement)
 {
     switch (statement->GetType())
     {
+        case ASTNodeType::PROCEDURECALL: {
+            auto v = static_cast<ASTProcedureCall*>(statement);
+            InterpretProcedureCall(v);
+        } break;
 
-    case ASTNodeType::PROCEDURECALL: {
-        auto v = static_cast<ASTProcedureCall*>(statement);
-        InterpretProcedureCall(v);
-    } break;
+        case ASTNodeType::ASSIGN: {
+            auto v = static_cast<ASTAssignment*>(statement);
 
-    case ASTNodeType::ASSIGN: {
-        auto v = static_cast<ASTAssignment*>(statement);
+            auto result = InterpretExpression(v->expr);
 
-        auto result = InterpretExpression(v->expr);
-
-        ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
-        std::string key = static_cast<ASTVariable*>(v->id)->id;
-        if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(key))
-        {
-            MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.ReplaceAtKey(key, result);
-        }
-        else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(key))
-        {
-            MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.ReplaceMapEntryAtKey(key, result);
-        }
-        else
-        {
-            MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.EmplaceNewElement(key, result);
-        }
-    } break;
-    case ASTNodeType::ASSIGN_LIST_OR_MAP_ELEMENT: {
-        auto v = static_cast<ASTAssignListOrMapElement*>(statement);
-
-        auto indexTValue = InterpretExpression(v->indexExpression);
-        ASSERT(indexTValue.type == TValue::ValueType::Integer || indexTValue.type == TValue::ValueType::GCObject);
-        bool assigningToList = indexTValue.type == TValue::ValueType::Integer;
-
-        ASSERT(v->listOrMapVariableName->GetType() == ASTNodeType::VARIABLE);
-        std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
-
-        u64 gcObjectId = 0;
-        if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(listOrMapVariableKey))
-        {
-            TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(listOrMapVariableKey);
-            ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
-            gcObjectId = listOrMapGCObj.GCReferenceObject;
-        }
-        else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(listOrMapVariableKey))
-        {
-            TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(listOrMapVariableKey);
-            ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
-            gcObjectId = listOrMapGCObj.GCReferenceObject;
-        }
-        else
-        {
-            SendRuntimeException("Cannot find a list or map with the given identifier.");
-        }
-
-        auto valueTValue = InterpretExpression(v->valueExpression);
-
-        if(assigningToList)
-        {
-            const i64 listIndex = indexTValue.integerValue;
-            // todo assert integer is non negative, valid, etc.
-            
-            MesaScript_List* listToModify = AccessMesaScriptList(gcObjectId);
-            // todo assert index exists in list
-            listToModify->ReplaceListEntryAtIndex(listIndex, valueTValue);
-        }
-        else
-        {
-            ASSERT(indexTValue.type == TValue::ValueType::GCObject);
-            ASSERT(GetTypeOfGCObject(indexTValue.GCReferenceObject) == MesaGCObject::GCObjectType::String);
-            const std::string& tableKey = AccessMesaScriptString(indexTValue.GCReferenceObject)->text;
-
-            MesaScript_Table* tableToModify = AccessMesaScriptTable(gcObjectId);
-            if(tableToModify->Contains(tableKey))
+            ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
+            std::string key = static_cast<ASTVariable*>(v->id)->id;
+            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(key))
             {
-                tableToModify->ReplaceMapEntryAtKey(tableKey, valueTValue);
+                MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.ReplaceAtKey(key, result);
+            }
+            else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(key))
+            {
+                MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.ReplaceMapEntryAtKey(key, result);
             }
             else
             {
-                tableToModify->CreateNewMapEntry(tableKey, valueTValue);
+                MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.EmplaceNewElement(key, result);
             }
-        }
+        } break;
+        case ASTNodeType::ASSIGN_LIST_OR_MAP_ELEMENT: {
+            auto v = static_cast<ASTAssignListOrMapElement*>(statement);
 
-    } break;
+            auto indexTValue = InterpretExpression(v->indexExpression);
+            ASSERT(indexTValue.type == TValue::ValueType::Integer || indexTValue.type == TValue::ValueType::GCObject);
+            bool assigningToList = indexTValue.type == TValue::ValueType::Integer;
 
-    case ASTNodeType::RETURN: {
-        auto v = static_cast<ASTReturn*>(statement);
-        TValue result = InterpretExpression(v->expr);
-        returnValue = result;
-        returnValueSetFlag = true;
-        returnRequestedFlag = true;
-    } break;
+            ASSERT(v->listOrMapVariableName->GetType() == ASTNodeType::VARIABLE);
+            std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
-    case ASTNodeType::PRINT: {
-        auto v = static_cast<ASTPrint*>(statement);
-        TValue result = InterpretExpression(v->expr);
-        if (result.type == TValue::ValueType::Integer)
-        {
-            printf("printed %lld\n", result.integerValue);
-        }
-        else if (result.type == TValue::ValueType::Boolean)
-        {
-            printf("printed %s\n", (result.boolValue ? "true" : "false"));
-        }
-        else if (result.type == TValue::ValueType::Real)
-        {
-            printf("printed %f\n", result.realValue);
-        }
-        else if (result.type == TValue::ValueType::GCObject)
-        {
-            if (GetTypeOfGCObject(result.GCReferenceObject) == MesaGCObject::GCObjectType::Table)
+            u64 gcObjectId = 0;
+            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(listOrMapVariableKey))
             {
-                printf("printing table\n");
-                for (const auto& pair : AccessMesaScriptTable(result.GCReferenceObject)->table)
+                TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(listOrMapVariableKey);
+                ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
+                gcObjectId = listOrMapGCObj.GCReferenceObject;
+            }
+            else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(listOrMapVariableKey))
+            {
+                TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(listOrMapVariableKey);
+                ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
+                gcObjectId = listOrMapGCObj.GCReferenceObject;
+            }
+            else
+            {
+                SendRuntimeException("Cannot find a list or map with the given identifier.");
+            }
+
+            auto valueTValue = InterpretExpression(v->valueExpression);
+
+            if(assigningToList)
+            {
+                const i64 listIndex = indexTValue.integerValue;
+                // todo assert integer is non negative, valid, etc.
+                
+                MesaScript_List* listToModify = AccessMesaScriptList(gcObjectId);
+                // todo assert index exists in list
+                listToModify->ReplaceListEntryAtIndex(listIndex, valueTValue);
+            }
+            else
+            {
+                ASSERT(indexTValue.type == TValue::ValueType::GCObject);
+                ASSERT(GetTypeOfGCObject(indexTValue.GCReferenceObject) == MesaGCObject::GCObjectType::String);
+                const std::string& tableKey = AccessMesaScriptString(indexTValue.GCReferenceObject)->text;
+
+                MesaScript_Table* tableToModify = AccessMesaScriptTable(gcObjectId);
+                if(tableToModify->Contains(tableKey))
                 {
-                    if (pair.second.type == TValue::ValueType::Integer)
-                    {
-                        printf("    %s : %lld\n", pair.first.c_str(), pair.second.integerValue);
-                    }
-                    else if (pair.second.type == TValue::ValueType::Boolean)
-                    {
-                        printf("    %s : %s\n", pair.first.c_str(), (pair.second.boolValue ? "true" : "false"));
-                    }
-                    else if (pair.second.type == TValue::ValueType::Real)
-                    {
-                        printf("    %s : %f\n", pair.first.c_str(), pair.second.realValue);
-                    }
-                    else if (pair.second.type == TValue::ValueType::GCObject)
-                    {
-                        printf("    %s : gcobject\n", pair.first.c_str());
-                    }
+                    tableToModify->ReplaceMapEntryAtKey(tableKey, valueTValue);
+                }
+                else
+                {
+                    tableToModify->CreateNewMapEntry(tableKey, valueTValue);
                 }
             }
-            else if (GetTypeOfGCObject(result.GCReferenceObject) == MesaGCObject::GCObjectType::List)
-            {
-                printf("printing list\n");
-                for (const auto& element : AccessMesaScriptList(result.GCReferenceObject)->list)
-                {
-                    if (element.type == TValue::ValueType::Integer)
-                    {
-                        printf("    %lld\n", element.integerValue);
-                    }
-                    else if (element.type == TValue::ValueType::Boolean)
-                    {
-                        printf("    %s\n", (element.boolValue ? "true" : "false"));
-                    }
-                    else if (element.type == TValue::ValueType::Real)
-                    {
-                        printf("    %f\n", element.realValue);
-                    }
-                    else if (element.type == TValue::ValueType::GCObject)
-                    {
-                        printf("    gcobject\n");
-                    }
-                }  
-            }
-            else if (GetTypeOfGCObject(result.GCReferenceObject) == MesaGCObject::GCObjectType::String)
-            {
-                printf("%s\n", AccessMesaScriptString(result.GCReferenceObject)->text.c_str());
-            }
-        }
-    } break;
 
-    case ASTNodeType::BRANCH: {
-        auto v = static_cast<ASTBranch*>(statement);
-        auto condition = InterpretExpression(v->condition);
-        ASSERT(condition.type == TValue::ValueType::Boolean);
-        if (condition.boolValue)
-            InterpretStatementList(v->if_body);
-        else
-            InterpretStatementList(v->else_body);
-    } break;
+        } break;
+
+        case ASTNodeType::RETURN: {
+            auto v = static_cast<ASTReturn*>(statement);
+            TValue result = InterpretExpression(v->expr);
+            returnValue = result;
+            returnValueSetFlag = true;
+            returnRequestedFlag = true;
+        } break;
+
+        case ASTNodeType::BRANCH: {
+            auto v = static_cast<ASTBranch*>(statement);
+            auto condition = InterpretExpression(v->condition);
+            ASSERT(condition.type == TValue::ValueType::Boolean);
+            if (condition.boolValue)
+                InterpretStatementList(v->if_body);
+            else
+                InterpretStatementList(v->else_body);
+        } break;
     }
 }
 
@@ -2054,14 +1956,85 @@ InterpretStatementList(ASTNode* statements)
     }
 }
 
-TValue CPPBOUND_MESASCRIPT_Add(TValue arg0, TValue arg1)
+TValue CPPBOUND_MESASCRIPT_Print(TValue value)
 {
-    ASSERT(arg0.type == TValue::ValueType::Integer);
-    ASSERT(arg1.type == TValue::ValueType::Integer);
+    if (value.type == TValue::ValueType::Integer)
+    {
+        printf("printed %lld\n", value.integerValue);
+    }
+    else if (value.type == TValue::ValueType::Boolean)
+    {
+        printf("printed %s\n", (value.boolValue ? "true" : "false"));
+    }
+    else if (value.type == TValue::ValueType::Real)
+    {
+        printf("printed %f\n", value.realValue);
+    }
+    else if (value.type == TValue::ValueType::GCObject)
+    {
+        if (GetTypeOfGCObject(value.GCReferenceObject) == MesaGCObject::GCObjectType::Table)
+        {
+            printf("printing table\n");
+            for (const auto& pair : AccessMesaScriptTable(value.GCReferenceObject)->table)
+            {
+                if (pair.second.type == TValue::ValueType::Integer)
+                {
+                    printf("    %s : %lld\n", pair.first.c_str(), pair.second.integerValue);
+                }
+                else if (pair.second.type == TValue::ValueType::Boolean)
+                {
+                    printf("    %s : %s\n", pair.first.c_str(), (pair.second.boolValue ? "true" : "false"));
+                }
+                else if (pair.second.type == TValue::ValueType::Real)
+                {
+                    printf("    %s : %f\n", pair.first.c_str(), pair.second.realValue);
+                }
+                else if (pair.second.type == TValue::ValueType::GCObject)
+                {
+                    printf("    %s : gcobject\n", pair.first.c_str());
+                }
+            }
+        }
+        else if (GetTypeOfGCObject(value.GCReferenceObject) == MesaGCObject::GCObjectType::List)
+        {
+            printf("printing list\n");
+            for (const auto& element : AccessMesaScriptList(value.GCReferenceObject)->list)
+            {
+                if (element.type == TValue::ValueType::Integer)
+                {
+                    printf("    %lld\n", element.integerValue);
+                }
+                else if (element.type == TValue::ValueType::Boolean)
+                {
+                    printf("    %s\n", (element.boolValue ? "true" : "false"));
+                }
+                else if (element.type == TValue::ValueType::Real)
+                {
+                    printf("    %f\n", element.realValue);
+                }
+                else if (element.type == TValue::ValueType::GCObject)
+                {
+                    printf("    gcobject\n");
+                }
+            }  
+        }
+        else if (GetTypeOfGCObject(value.GCReferenceObject) == MesaGCObject::GCObjectType::String)
+        {
+            printf("%s\n", AccessMesaScriptString(value.GCReferenceObject)->text.c_str());
+        }
+    }
+
+    return TValue();
+}
+
+TValue CPPBOUND_MESASCRIPT_RaiseTo(TValue base, TValue exponent)
+{
+    ASSERT(base.type == TValue::ValueType::Integer); // todo can be float too
+    ASSERT(exponent.type == TValue::ValueType::Integer);
 
     TValue result;
     result.type = TValue::ValueType::Integer;
-    result.integerValue = arg0.integerValue + arg1.integerValue;
+    result.integerValue = (int)pow(double(base.integerValue), double(exponent.integerValue));
     return result;
 }
 
@@ -2082,10 +2055,15 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
     }
     else
     {
-        if (procedureCall->id == "add")
+        if (procedureCall->id == "raise_to")
         {
             ASSERT(procedureCall->argsExpressions.size() == 2);
-            return CPPBOUND_MESASCRIPT_Add(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
+            return CPPBOUND_MESASCRIPT_RaiseTo(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
+        }
+        else if (procedureCall->id == "print")
+        {
+            ASSERT(procedureCall->argsExpressions.size() == 1);
+            return CPPBOUND_MESASCRIPT_Print(InterpretExpression(procedureCall->argsExpressions[0]));
         }
         else
         {
@@ -2131,7 +2109,7 @@ void RunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir)
 
     //printf("%ld", sizeof(MesaScript_Table));
 
-    static const char* mesaScriptSetupCode = "fn printv(v) { print v }";
+    static const char* mesaScriptSetupCode = "fn add(x, y) { return x + y }";
 
     auto setupTokens = Lexer(std::string(mesaScriptSetupCode));
     auto setupParser = Parser(setupTokens);

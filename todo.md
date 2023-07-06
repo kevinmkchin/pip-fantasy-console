@@ -11,6 +11,7 @@
 
 ### Language features
 
+- fix return values being reference counted objects created locally (function scope about to be destroyed). function scope gets destroyed before return value is captured and assigned to a variable.
 - reference counting TESTS
 - fix cyclic references. maybe disallow them
 - STRINGS
