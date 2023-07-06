@@ -5,22 +5,27 @@
 - index tables with strings
 - initialize array elements
 - sort of lists/arrays - actual array implementation <- MAYBE JUST MAKE AN ENTIRE NEW ARRAY TYPE??? THAT MIGHT BE SO MUCH CLEANER AND NICER -> is there ANY reason to use a table as also an array?
+- increment ref counts when appending to a list or adding table entry 
+- only increment ref count for gc obj upon assignment to a variable. that means, if we create a table, we don't auto set refcount to 1, and also must instantly delete if we don't assign to a variable at all.
+- release GC reference if lose reference, and then propagate to element gc objects (both lists and maps)
 
 ### Language features
 
+- reference counting TESTS
+- fix cyclic references. maybe disallow them
+- STRINGS
+  - fix strings being reference counted objects...
 - use custom assert for mesascript runtime
-- release GC reference if lose reference, and then propagate to element gc objects (both lists and maps)
-- only increment refcount for gc obj upon assignment to a variable. that means, if we create a table, we don't auto set refcount to 1, and also must instantly delete if we don't assign to a variable at all.
+- access map elements via dot (e.g. map.x or map.f(param))
 
-- Standardize the terms i'm using. what is access, what is look at, what is get?
-- need way to delete a table entry https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
+- need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
+  - deleting an entry is different from deleting the object stored in that entry. if we can delete entire objects, then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).  
 - rename tables to MAP or DICTIONARY
+- answer question about accessing local variables from other scopes
 
 - add relops for GCObject type TValues. for other ops, just crash? 
 
 - initialize table elements
-
-- STRINGS <
 
 - while loops & break
 - for loops

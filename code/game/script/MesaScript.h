@@ -20,6 +20,10 @@
 // Strings
 
 
+// Access := no ref count increase. just looking at the value.
+
+
+
 // -- FORMAL GRAMMAR --
 
 /*

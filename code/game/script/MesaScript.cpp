@@ -73,6 +73,7 @@ void SendCompilationError(const char* msg, Token token)
 void SendRuntimeException(const char* msg)
 {
     printf("Runtime exception: %s\n", msg);
+    ASSERT(0); // todo do something other than halt and crash
 }
 
 
@@ -657,6 +658,7 @@ struct MesaGCObject
 
 public:
     i32 refCount = 0;
+    u64 selfId = 0;
 private:
     GCObjectType type = GCObjectType::Invalid;
 public:
@@ -686,45 +688,26 @@ struct MesaScript_List
         : base(MesaGCObject::GCObjectType::List)
     {}
 
-    TValue& AccessAtIndex(const i64 index)
+    /// Simply returns the value at index. Does not increment reference count.
+    TValue AccessListEntry(const i64 index)
     {
         return list.at(index);
     }
 
-    void Append(const TValue value)
-    {
-        list.push_back(value);
-    }
+    /// Append value to end of list. Increments reference count.
+    void Append(const TValue value);
 
-    //void Append();
+    /// Replace the value at the given index.
+    void ReplaceListEntryAtIndex(const i64 index, const TValue value);
+
+    /// Should only be called before deletion.
+    void DecrementReferenceCountOfEveryListEntry();
+
     //void Insert();
-
     //void ArrayFront();
     //void ArrayBack();
-
-    //size_t ArrayLength()
-    //{
-    //    return array.size();
-    //}
-
-    // bool ArrayContainsKey(const i64 integerKey)
-    // {
-    //     return TableContainsKey(std::to_string(integerKey));
-    // }
-
-    // TValue& ArrayInsertElementAtKey(const i64 integerKey, const TValue value)
-    // {
-    //     return TableCreateElement(std::to_string(integerKey), value);
-    // }
-
-    // TValue& ArrayAccessElementByKey(const i64 integerKey)
-    // {
-    //     // for now, just fucking convert to a string
-    //     return TableAccessElement(std::to_string(integerKey));
-
-    //    // return array.at(index);
-    //    // todo(kevin): out of range error
-    // }
+    // Length
+    // Contains
 };
 
 struct MesaScript_Table
@@ -737,27 +720,30 @@ struct MesaScript_Table
         : base(MesaGCObject::GCObjectType::Table)
     {}
 
-    bool TableContainsKey(const std::string& key)
+    bool Contains(const std::string& key)
     {
         auto elemIterator = table.find(key);
         return elemIterator != table.end();
     }
 
-    TValue& TableAccessElement(const std::string& key)
+    /// Simply returns the value at key. Does not increment reference count.
+    TValue AccessMapEntry(const std::string& key)
     {
         return table.at(key);
     }
 
-    TValue& TableCreateElement(const std::string& key, const TValue value)
-    {
-        table.emplace(key, value);
-        return table.at(key);
-    }
+    /// Create a new key value pair entry. Increments reference count.
+    void CreateNewMapEntry(const std::string& key, const TValue value);
+
+    /// Assign new value to existing entry perform proper reference counting.
+    void ReplaceMapEntryAtKey(const std::string& key, const TValue value);
+
+    /// Should only be called before deletion.
+    void DecrementReferenceCountOfEveryMapEntry();
 };
 
-// mesa_script_table , ref count
 
-u64 ticker = 0;
+u64 ticker = 1; // 0 is invalid
 std::unordered_map<u64, MesaGCObject*> GCOBJECTS_DATABASE;
 
 MesaGCObject::GCObjectType GetTypeOfGCObject(u64 gcObjectId)
@@ -766,34 +752,47 @@ MesaGCObject::GCObjectType GetTypeOfGCObject(u64 gcObjectId)
     return gcobj->GetType();
 }
 
+/// Simply returns the MesaScript_Table associated with the given GCObject id.
 MesaScript_Table* AccessMesaScriptTable(u64 gcObjectId)
 {
     return (MesaScript_Table*)(GCOBJECTS_DATABASE.at(gcObjectId));
 }
 
+/// Simply returns the MesaScript_List associated with the given GCObject id.
 MesaScript_List* AccessMesaScriptList(u64 gcObjectId)
 {
     return (MesaScript_List*)(GCOBJECTS_DATABASE.at(gcObjectId));
 }
 
+/// Simply returns the MesaScript_String associated with the given GCObject id.
 MesaScript_String* AccessMesaScriptString(u64 gcObjectId)
 {
     return (MesaScript_String*)(GCOBJECTS_DATABASE.at(gcObjectId));
 }
 
-MesaGCObject* GetRefExistingGCObject(u64 gcObjectId)
+void IncrementReferenceGCObject(u64 gcObjectId)
 {
     MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
     gcobj->refCount++;
-    return gcobj;
 }
 
-void ReleaseRefGCObject(u64 gcObjectId)
+void ReleaseReferenceGCObject(u64 gcObjectId)
 {
     MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
     gcobj->refCount--;
     if (gcobj->refCount == 0)
     {
+        if (gcobj->GetType() == MesaGCObject::GCObjectType::List)
+        {
+            MesaScript_List* list = AccessMesaScriptList(gcObjectId);
+            list->DecrementReferenceCountOfEveryListEntry();
+        }
+        else if (gcobj->GetType() == MesaGCObject::GCObjectType::Table)
+        {
+            MesaScript_Table* map = AccessMesaScriptTable(gcObjectId);
+            map->DecrementReferenceCountOfEveryMapEntry();
+        }
+
         delete gcobj;
         GCOBJECTS_DATABASE.erase(gcObjectId);
     }
@@ -816,26 +815,111 @@ u64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType)
         default: {
             SendRuntimeException("Error requesting GCObject. Undefined GCObject type.");
         } break;
-    } 
-    gcobj->refCount++;
-    GCOBJECTS_DATABASE.insert_or_assign(ticker, gcobj);
-    return ticker++;
+    }
+    gcobj->selfId = ticker++;
+    GCOBJECTS_DATABASE.insert_or_assign(gcobj->selfId, gcobj);
+    return gcobj->selfId;
 }
 
+void MesaScript_List::Append(const TValue value)
+{
+    if (value.type == TValue::ValueType::GCObject)
+    {
+        IncrementReferenceGCObject(value.GCReferenceObject);
+    }
 
+    list.push_back(value);
+}
 
+void MesaScript_List::ReplaceListEntryAtIndex(const i64 index, const TValue value)
+{
+    TValue existingValue = list.at(index);
+    if (existingValue.type == TValue::ValueType::GCObject)
+    {
+        if (value.type == TValue::ValueType::GCObject && existingValue.GCReferenceObject == value.GCReferenceObject)
+        {
+            return;
+        }
+        else
+        {
+            ReleaseReferenceGCObject(existingValue.GCReferenceObject);
+        }
+    }
+
+    if (value.type == TValue::ValueType::GCObject)
+    {
+        IncrementReferenceGCObject(value.GCReferenceObject);        
+    }
+
+    list.at(index) = value;
+}
+
+void MesaScript_List::DecrementReferenceCountOfEveryListEntry()
+{
+    for (int i = 0, size = (int)list.size(); i < size; ++i)
+    {
+        TValue v = list.at(i);
+        if (v.type == TValue::ValueType::GCObject)
+        {
+            ReleaseReferenceGCObject(v.GCReferenceObject);
+        }
+    }
+}
+
+void MesaScript_Table::CreateNewMapEntry(const std::string& key, const TValue value)
+{
+    if (value.type == TValue::ValueType::GCObject)
+    {
+        IncrementReferenceGCObject(value.GCReferenceObject);
+    }
+
+    table.emplace(key, value);
+}
+
+void MesaScript_Table::ReplaceMapEntryAtKey(const std::string& key, const TValue value)
+{
+    TValue existingValue = table.at(key);
+    if (existingValue.type == TValue::ValueType::GCObject)
+    {
+        if (value.type == TValue::ValueType::GCObject && existingValue.GCReferenceObject == value.GCReferenceObject)
+        {
+            return;
+        }
+        else
+        {
+            ReleaseReferenceGCObject(existingValue.GCReferenceObject);
+        }
+    }
+
+    if (value.type == TValue::ValueType::GCObject)
+    {
+        IncrementReferenceGCObject(value.GCReferenceObject);        
+    }
+
+    table.at(key) = value;
+}
+
+void MesaScript_Table::DecrementReferenceCountOfEveryMapEntry()
+{
+    for (const auto& pair : table)
+    {
+        TValue v = pair.second;
+        if (v.type == TValue::ValueType::GCObject)
+        {
+            ReleaseReferenceGCObject(v.GCReferenceObject);
+        }
+    }
+}
 
 
 struct MesaScript_ScriptObject
 {
-    //TValue& GetAtIndex(size_t index);
-
     bool KeyExists(const std::string& key)
     {
         for (int back = int(scopes.size()) - 1; back >= 0; --back)
         {
             MesaScript_Table& scope = scopes.at(back);
-            if (scope.TableContainsKey(key))
+            if (scope.Contains(key))
             {
                 return true;
             }
@@ -843,30 +927,48 @@ struct MesaScript_ScriptObject
         return false;
     }
 
-    TValue& AccessAtKey(const std::string& key)
+    TValue AccessAtKey(const std::string& key)
     {
         for (int back = int(scopes.size()) - 1; back >= 0; --back)
         {
             MesaScript_Table& scope = scopes.at(back);
-            if (scope.TableContainsKey(key))
+            if (scope.Contains(key))
             {   
-                return scope.TableAccessElement(key);
+                return scope.AccessMapEntry(key);
             }
-        }        
+        }
+
+        SendRuntimeException("Provided identifier does not exist in MesaScript_ScriptObject");
+        return TValue();
+    }
+
+    void ReplaceAtKey(const std::string& key, const TValue value)
+    {
+        for (int back = int(scopes.size()) - 1; back >= 0; --back)
+        {
+            MesaScript_Table& scope = scopes.at(back);
+            if (scope.Contains(key))
+            {   
+                scope.ReplaceMapEntryAtKey(key, value);
+            }
+        }
     }
 
     void EmplaceNewElement(std::string key, TValue value)
     {
-        scopes.back().TableCreateElement(key, value);
+        scopes.back().CreateNewMapEntry(key, value);
     }
 
+    /// Provided scope must have proper reference counts already (this will be done when adding map entries)
     void PushScope(const MesaScript_Table& scope)
     {
         scopes.push_back(scope);
     }
 
+    /// Decrements ref counts here because we are removing a scope
     void PopScope()
     {
+        scopes.back().DecrementReferenceCountOfEveryMapEntry();
         scopes.pop_back();
     }
 
@@ -875,15 +977,13 @@ private:
 };
 
 
-struct MesaScript_Scope
+struct MesaScript_All_Scope_Singleton
 {
     MesaScript_Table GLOBAL_TABLE;
     MesaScript_ScriptObject ACTIVE_SCRIPT_TABLE;
 };
 
-static MesaScript_Scope MESASCRIPT_SCOPE;
-
-//static std::unordered_map<std::string, TValue> GLOBAL_SCOPE_SYMBOL_TABLE;
+static MesaScript_All_Scope_Singleton MESASCRIPT_ALL_SCOPE;
 
 
 static MemoryLinearBuffer astBuffer;
@@ -896,8 +996,6 @@ public:
     void parse();
 
 private:
-    //void error();
-
     void eat(TokenType tpe);
 
     ASTNode* procedure_call();
@@ -968,15 +1066,14 @@ PID Parser::procedure_decl()
     functionVariable.procedureId = createdProcedureId;
     functionVariable.type = TValue::ValueType::Function;
 
-    if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(procedureNameToken.text))
+    if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(procedureNameToken.text))
     {
-        MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(procedureNameToken.text) = functionVariable;
+        MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.ReplaceMapEntryAtKey(procedureNameToken.text, functionVariable);
     }
     else
     {
-        MESASCRIPT_SCOPE.GLOBAL_TABLE.TableCreateElement(procedureNameToken.text, functionVariable);
+        MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.CreateNewMapEntry(procedureNameToken.text, functionVariable);
     }
-
     return createdProcedureId;
 }
 
@@ -1656,21 +1753,17 @@ InterpretExpression(ASTNode* ast)
 
         case ASTNodeType::VARIABLE: {
             auto v = static_cast<ASTVariable*>(ast);
-            try {
-                if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(v->id))
-                {
-                    return MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(v->id);
-                }
-                else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(v->id))
-                {
-                    return MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(v->id);
-                }
-                else
-                {
-                    // error;
-                }
-            } catch (const std::exception& e) {
-                // todo error
+            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(v->id))
+            {
+                return MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(v->id);
+            }
+            else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(v->id))
+            {
+                return MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(v->id);
+            }
+            else
+            {
+                SendRuntimeException("Unknown identifier in expression.");
             }
         } break;
         case ASTNodeType::ACCESS_LIST_OR_MAP_ELEMENT: {
@@ -1684,15 +1777,15 @@ InterpretExpression(ASTNode* ast)
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
             u64 gcObjectId = 0;
-            if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(listOrMapVariableKey))
+            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(listOrMapVariableKey))
             {
-                TValue& listOrMapGCObj = MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(listOrMapVariableKey);
+                TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
-            else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(listOrMapVariableKey))
+            else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(listOrMapVariableKey))
             {
-                TValue& listOrMapGCObj = MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(listOrMapVariableKey);
+                TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
@@ -1707,7 +1800,7 @@ InterpretExpression(ASTNode* ast)
                 const i64 listIndex = indexTValue.integerValue;
                 // todo assert integer is non negative, valid, etc.
                 MesaScript_List* list = AccessMesaScriptList(gcObjectId);
-                return list->AccessAtIndex(listIndex);
+                return list->AccessListEntry(listIndex);
             }
             else
             {
@@ -1716,12 +1809,12 @@ InterpretExpression(ASTNode* ast)
                 const std::string& tableKey = AccessMesaScriptString(indexTValue.GCReferenceObject)->text;
 
                 MesaScript_Table* table = AccessMesaScriptTable(gcObjectId);
-                return table->TableAccessElement(tableKey);
+                return table->AccessMapEntry(tableKey);
             }
         } break;
 
         case ASTNodeType::CREATETABLE: {
-            //auto v = static_cast<ASTCreateTable*>(ast);
+            //auto v = static_cast<CreateNewMapEntry*>(ast);
             TValue result;
             result.type = TValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
@@ -1739,7 +1832,7 @@ InterpretExpression(ASTNode* ast)
             {
                 ASTNode* elementExpr = v->listInitializingElements[i];
                 TValue elementValue = InterpretExpression(elementExpr);
-                mesaList->Append(elementValue); // TODO: increment GCObj ref count...or maybe this should be responsibility of "append" helper
+                mesaList->Append(elementValue);
             }
 
             return result;            
@@ -1773,6 +1866,9 @@ InterpretExpression(ASTNode* ast)
             return InterpretProcedureCall(v);
         } break;
     }
+
+    SendRuntimeException("Invalid expression.");
+    return TValue();
 }
 
 static void
@@ -1786,7 +1882,6 @@ InterpretStatement(ASTNode* statement)
         InterpretProcedureCall(v);
     } break;
 
-    // TODO(Kevin): in these assignments, make sure to release reference of overwritten variable
     case ASTNodeType::ASSIGN: {
         auto v = static_cast<ASTAssignment*>(statement);
 
@@ -1794,17 +1889,17 @@ InterpretStatement(ASTNode* statement)
 
         ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
         std::string key = static_cast<ASTVariable*>(v->id)->id;
-        if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(key))
+        if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(key))
         {
-            MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(key) = result;
+            MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.ReplaceAtKey(key, result);
         }
-        else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(key))
+        else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(key))
         {
-            MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(key) = result;
+            MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.ReplaceMapEntryAtKey(key, result);
         }
         else
         {
-            MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.EmplaceNewElement(key, result);
+            MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.EmplaceNewElement(key, result);
         }
     } break;
     case ASTNodeType::ASSIGN_LIST_OR_MAP_ELEMENT: {
@@ -1812,41 +1907,39 @@ InterpretStatement(ASTNode* statement)
 
         auto indexTValue = InterpretExpression(v->indexExpression);
         ASSERT(indexTValue.type == TValue::ValueType::Integer || indexTValue.type == TValue::ValueType::GCObject);
-        bool accessingList = indexTValue.type == TValue::ValueType::Integer;
+        bool assigningToList = indexTValue.type == TValue::ValueType::Integer;
 
         ASSERT(v->listOrMapVariableName->GetType() == ASTNodeType::VARIABLE);
-        std::string tableVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
+        std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
         u64 gcObjectId = 0;
-        if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(tableVariableKey))
+        if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(listOrMapVariableKey))
         {
-            TValue& tableGCObj = MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(tableVariableKey);
-            ASSERT(tableGCObj.type == TValue::ValueType::GCObject);
-            gcObjectId = tableGCObj.GCReferenceObject;
+            TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(listOrMapVariableKey);
+            ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
+            gcObjectId = listOrMapGCObj.GCReferenceObject;
         }
-        else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(tableVariableKey))
+        else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(listOrMapVariableKey))
         {
-            TValue& tableGCObj = MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(tableVariableKey);
-            ASSERT(tableGCObj.type == TValue::ValueType::GCObject);
-            gcObjectId = tableGCObj.GCReferenceObject;
+            TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(listOrMapVariableKey);
+            ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
+            gcObjectId = listOrMapGCObj.GCReferenceObject;
         }
         else
         {
-            // error
-            ASSERT(0);
+            SendRuntimeException("Cannot find a list or map with the given identifier.");
         }
 
         auto valueTValue = InterpretExpression(v->valueExpression);
 
-        if(accessingList)
+        if(assigningToList)
         {
             const i64 listIndex = indexTValue.integerValue;
             // todo assert integer is non negative, valid, etc.
             
             MesaScript_List* listToModify = AccessMesaScriptList(gcObjectId);
-            // assert index exists in list
-            TValue& listElementToSet = listToModify->AccessAtIndex(listIndex);
-            listElementToSet = valueTValue;
+            // todo assert index exists in list
+            listToModify->ReplaceListEntryAtIndex(listIndex, valueTValue);
         }
         else
         {
@@ -1855,14 +1948,13 @@ InterpretStatement(ASTNode* statement)
             const std::string& tableKey = AccessMesaScriptString(indexTValue.GCReferenceObject)->text;
 
             MesaScript_Table* tableToModify = AccessMesaScriptTable(gcObjectId);
-            if(tableToModify->TableContainsKey(tableKey))
+            if(tableToModify->Contains(tableKey))
             {
-                TValue& tableElementToSet = tableToModify->TableAccessElement(tableKey);
-                tableElementToSet = valueTValue;
+                tableToModify->ReplaceMapEntryAtKey(tableKey, valueTValue);
             }
             else
             {
-                tableToModify->TableCreateElement(tableKey, valueTValue);
+                tableToModify->CreateNewMapEntry(tableKey, valueTValue);
             }
         }
 
@@ -1988,13 +2080,13 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
     // TValue result = cpp_fn(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
 
     TValue procedureVariable;
-    if (MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(procedureCall->id))
+    if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(procedureCall->id))
     {
-        procedureVariable = MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(procedureCall->id);
+        procedureVariable = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(procedureCall->id);
     }
-    else if (MESASCRIPT_SCOPE.GLOBAL_TABLE.TableContainsKey(procedureCall->id))
+    else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(procedureCall->id))
     {
-        procedureVariable = MESASCRIPT_SCOPE.GLOBAL_TABLE.TableAccessElement(procedureCall->id);
+        procedureVariable = MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(procedureCall->id);
     }
     else
     {
@@ -2003,20 +2095,24 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
             ASSERT(procedureCall->argsExpressions.size() == 2);
             return CPPBOUND_MESASCRIPT_Add(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
         }
-        // else error
+        else
+        {
+            SendRuntimeException("Unknown identifier for procedure call.");
+        }
     }
     auto procedureDefinition = PROCEDURES_DATABASE.At((unsigned int)procedureVariable.procedureId);
 
 
+    // Intended: creating function scope (map) and adding the function arguments as map entries increments their ref count
     MesaScript_Table functionScope;
     for (int i = 0; i < procedureDefinition.args.size(); ++i)
     {
         auto argn = procedureDefinition.args[i];
         auto argexpr = procedureCall->argsExpressions[i];
         TValue argv = InterpretExpression(argexpr);
-        functionScope.TableCreateElement(argn, argv);
+        functionScope.CreateNewMapEntry(argn, argv);
     }
-    MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.PushScope(functionScope);
+    MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.PushScope(functionScope);
 
     TValue retval;
     returnRequestedFlag = false;
@@ -2029,8 +2125,8 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
     returnRequestedFlag = false;
     returnValueSetFlag = false;
 
-    MESASCRIPT_SCOPE.ACTIVE_SCRIPT_TABLE.PopScope();
-    // TODO(Kevin): When we pop this scope, we should ReleaseRefGCObject on all gc objects in this scope
+    // Intended: ACTIVE_SCRIPT_TABLE.PopScope should decrement ref count of every entry of the function scope being popped.
+    MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.PopScope();
 
     return retval;
 }
