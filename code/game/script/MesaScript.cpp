@@ -1057,6 +1057,7 @@ PID Parser::procedure_decl()
     {
         argsVector.push_back(currentToken.text);
         eat(TokenType::Identifier);
+        if (currentToken.type != TokenType::RParen) eat(TokenType::Comma);
     }
     eat(TokenType::RParen);
 
