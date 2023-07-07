@@ -8,6 +8,7 @@
 - increment ref counts when appending to a list or adding table entry 
 - only increment ref count for gc obj upon assignment to a variable. that means, if we create a table, we don't auto set refcount to 1, and also must instantly delete if we don't assign to a variable at all.
 - release GC reference if lose reference, and then propagate to element gc objects (both lists and maps)
+- release ref of local variables when function scope gets popped
 
 ### Language features
 
