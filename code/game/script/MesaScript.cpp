@@ -121,10 +121,11 @@ std::vector<Token> Lexer(const std::string& code)
         {
             ++currentIndex;
         }
-        else if(lookAhead == '"')
+        else if(lookAhead == '"' || lookAhead == '\'')
         {
+            char quotationInUse = lookAhead == '"' ? '"' : '\'';
             ++currentIndex;
-            while (currentIndex < (code.length() - 1) && code.at(currentIndex) != '"')
+            while (currentIndex < (code.length() - 1) && code.at(currentIndex) != quotationInUse)
             {
                 ++currentIndex;
             }
@@ -2105,11 +2106,11 @@ void RunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir)
 {
     std::string fileStr = ReadFileString(wd_path(pathFromWorkingDir).c_str());
 
-    MemoryLinearInitialize(&astBuffer, 4096);
+    MemoryLinearInitialize(&astBuffer, 8000000);
 
     //printf("%ld", sizeof(MesaScript_Table));
 
-    static const char* mesaScriptSetupCode = "fn add(x, y) { return x + y }";
+    static const char* mesaScriptSetupCode = "fn add(x, y) { return x + y } fn checkeq(expected, actual) { if (expected == actual) { print('test pass') } else { print('test fail') } }";
 
     auto setupTokens = Lexer(std::string(mesaScriptSetupCode));
     auto setupParser = Parser(setupTokens);

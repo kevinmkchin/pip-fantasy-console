@@ -38,6 +38,7 @@ fn dosmth(table)
     ~ if this fn tries to declare a new local variable v, it'll overwrite v from test
 }
 
+
 fn test()
 {
   str = "bruh"
@@ -76,25 +77,32 @@ fn test()
 
 test()
 
-`
+~Find the n-th Fibonacci number
 fn fib (n) 
 {
-  if (n < 2) 
-  {
+  if (n < 2) {
     return n
-  } 
-  else 
-  {
+  } else {
     return fib(n - 1) + fib(n - 2)
   }
 }
+checkeq(55, fib(10))
+checkeq(3, fib(4))
+checkeq(14, add(add(4, 2), 8))
 
-printv(fib(10))
-~printv(fib(4))
-printv(add(add(4, 2), 8))
-`
+~Find the factorial of n
+fn fact(n)
+{
+    if (n == 0) { return 1 }
+    else { return n * fact(n-1) }
+}
+checkeq(1, fact(0))
+checkeq(1, fact(1))
+checkeq(24, fact(4))
+checkeq(362880, fact(9))
 
-`
+
+` BRAINSTORMING INTEGRATION:
 ~ the user could create levels in sprites (one sprite per layer) where color determines tile
 
 fn mesa_init ()
