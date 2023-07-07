@@ -85,7 +85,7 @@ void CoreRenderer::RenderGameLayer()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, gameLayer.FBO);
     glViewport(0, 0, gameLayer.width, gameLayer.height);
-    glClearColor(0.674f, 0.847f, 1.0f, 1.f); //_RGB(46, 88, 120)
+    glClearColor(RGB255TO1(46, 88, 120), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
