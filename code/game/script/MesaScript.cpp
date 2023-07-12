@@ -2126,3 +2126,8 @@ void RunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir)
     }
 }
 
+void CallParameterlessFunctionInActiveScript(const char* functionIdentifier)
+{
+    
+}
+

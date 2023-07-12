@@ -19,8 +19,8 @@ set(SOURCE_FILES
         code/core/CoreInput.cpp
         code/core/ArcadiaIMGUI.cpp
         code/core/CoreMemoryAllocator.cpp
-
         code/game/script/MesaScript.cpp
+        code/game/EditorState.cpp
         )
 
 
