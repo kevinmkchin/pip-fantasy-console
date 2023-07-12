@@ -141,3 +141,8 @@ IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 
 void RunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir);
 
+void SetActiveScript();
+void CallParameterlessFunctionInActiveScript(const char* functionIdentifier);
+
+
+

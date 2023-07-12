@@ -10,6 +10,10 @@
 - release GC reference if lose reference, and then propagate to element gc objects (both lists and maps)
 - release ref of local variables when function scope gets popped
 
+### Engine
+
+- MesaScript integration
+
 ### Language features
 
 - fix return values being reference counted objects created locally (function scope about to be destroyed). function scope gets destroyed before return value is captured and assigned to a variable.
@@ -20,7 +24,8 @@
 - use custom assert for mesascript runtime
 - access map elements via dot (e.g. map.x or map.f(param))
 
-- introducing "null" or "nil" means there are always going to have to be null checks. instead, provide a function to check if a variable exists or is alive.
+- introducing "null" or "nil" means there are always going to have to be null checks. instead, provide a function to check if a variable name exists or is alive.
+- you should be able to ask for a list of identifiers/names that reference a given GCObj -> if a GCObj has 4 refs, I should be able to find out what those refs are...although that might be tough if the reference has no identifier e.g. if the reference is from inside a list or map entry.
 - need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
   - deleting an entry is different from deleting the object stored in that entry. if we can delete entire objects, then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).  
 - rename tables to MAP or DICTIONARY
@@ -39,6 +44,7 @@ Way the fuck down the line:
 - replace all std data structs with alternate optimized implementations in C?
 - REFACTOR
 - Better unit test suite (built into the language would be nice, it should be dog simple to use)
+- should we have protected fields? how would this lead to encapsulation and inheritance?
 
 ### Bugs
 

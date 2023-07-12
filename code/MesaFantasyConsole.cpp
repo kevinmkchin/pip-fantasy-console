@@ -82,6 +82,8 @@ static void ProcessSDLEvents()
 static void StartEditor()
 {
     g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
+
+    
 }
 
 static void StartGameFile()
