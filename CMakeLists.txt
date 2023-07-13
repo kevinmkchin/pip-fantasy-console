@@ -21,6 +21,8 @@ set(SOURCE_FILES
         code/core/CoreMemoryAllocator.cpp
         code/game/script/MesaScript.cpp
         code/game/EditorState.cpp
+        code/game/Game.cpp
+        code/game/Space.cpp
         )
 
 

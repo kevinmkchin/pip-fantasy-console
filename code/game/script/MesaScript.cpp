@@ -5,8 +5,6 @@
 #include "../../core/CoreMemoryAllocator.h"
 #include "../../core/CoreFileSystem.h"
 
-#include <unordered_map>
-#include <vector>
 
 enum class TokenType
 {
@@ -590,130 +588,8 @@ struct ProcedureDefinition
     ASTStatementList* body;
 };
 
-typedef size_t PID;
-#define PID_MAX 256
 NiceArray<ProcedureDefinition, PID_MAX> PROCEDURES_DATABASE;
 std::vector<ASTProcedureCall*> SCRIPT_PROCEDURE_EXECUTION_QUEUE;
-
-struct TValue
-{
-    enum class ValueType
-    {
-        Invalid,
-        Integer,
-        Real,
-        Boolean,
-        Function,
-        GCObject
-    };
-
-    union
-    {
-        i64 integerValue;
-        float realValue;
-        bool boolValue;
-        PID procedureId;
-        i64 GCReferenceObject;
-    };
-
-    ValueType type = ValueType::Invalid;
-};
-
-struct MesaGCObject
-{
-    enum class GCObjectType
-    {
-        Invalid,
-        Table,
-        List,
-        String
-    };
-
-public:
-    i32 refCount = 0;
-    u64 selfId = 0;
-private:
-    GCObjectType type = GCObjectType::Invalid;
-public:
-    MesaGCObject(GCObjectType in_type) { type = in_type; }
-    inline GCObjectType GetType() { return type; }
-};
-
-struct MesaScript_String
-{
-    MesaGCObject base;
-
-    std::string text;
-
-    MesaScript_String()
-        : base(MesaGCObject::GCObjectType::String)
-    {}
-};
-
-
-struct MesaScript_List
-{
-    MesaGCObject base;
-
-    std::vector<TValue> list;
-
-    MesaScript_List()
-        : base(MesaGCObject::GCObjectType::List)
-    {}
-
-    /// Simply returns the value at index. Does not increment reference count.
-    TValue AccessListEntry(const i64 index)
-    {
-        return list.at(index);
-    }
-
-    /// Append value to end of list. Increments reference count.
-    void Append(const TValue value);
-
-    /// Replace the value at the given index.
-    void ReplaceListEntryAtIndex(const i64 index, const TValue value);
-
-    /// Should only be called before deletion.
-    void DecrementReferenceCountOfEveryListEntry();
-
-    //void Insert();
-    //void ArrayFront();
-    //void ArrayBack();
-    // Length
-    // Contains
-};
-
-struct MesaScript_Table
-{
-    MesaGCObject base;
-
-    std::unordered_map<std::string, TValue> table;
-
-    MesaScript_Table()
-        : base(MesaGCObject::GCObjectType::Table)
-    {}
-
-    bool Contains(const std::string& key)
-    {
-        auto elemIterator = table.find(key);
-        return elemIterator != table.end();
-    }
-
-    /// Simply returns the value at key. Does not increment reference count.
-    TValue AccessMapEntry(const std::string& key)
-    {
-        return table.at(key);
-    }
-
-    /// Create a new key value pair entry. Increments reference count.
-    void CreateNewMapEntry(const std::string& key, const TValue value);
-
-    /// Assign new value to existing entry perform proper reference counting.
-    void ReplaceMapEntryAtKey(const std::string& key, const TValue value);
-
-    /// Should only be called before deletion.
-    void DecrementReferenceCountOfEveryMapEntry();
-};
 
 
 u64 ticker = 1; // 0 is invalid
@@ -885,78 +761,16 @@ void MesaScript_Table::DecrementReferenceCountOfEveryMapEntry()
 }
 
 
-struct MesaScript_ScriptObject
-{
-    bool KeyExists(const std::string& key)
-    {
-        for (int back = int(scopes.size()) - 1; back >= 0; --back)
-        {
-            MesaScript_Table& scope = scopes.at(back);
-            if (scope.Contains(key))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    TValue AccessAtKey(const std::string& key)
-    {
-        for (int back = int(scopes.size()) - 1; back >= 0; --back)
-        {
-            MesaScript_Table& scope = scopes.at(back);
-            if (scope.Contains(key))
-            {   
-                return scope.AccessMapEntry(key);
-            }
-        }
-
-        SendRuntimeException("Provided identifier does not exist in MesaScript_ScriptObject");
-        return TValue();
-    }
-
-    void ReplaceAtKey(const std::string& key, const TValue value)
-    {
-        for (int back = int(scopes.size()) - 1; back >= 0; --back)
-        {
-            MesaScript_Table& scope = scopes.at(back);
-            if (scope.Contains(key))
-            {   
-                scope.ReplaceMapEntryAtKey(key, value);
-            }
-        }
-    }
-
-    void EmplaceNewElement(std::string key, TValue value)
-    {
-        scopes.back().CreateNewMapEntry(key, value);
-    }
-
-    /// Provided scope must have proper reference counts already (this will be done when adding map entries)
-    void PushScope(const MesaScript_Table& scope)
-    {
-        scopes.push_back(scope);
-    }
-
-    /// Decrements ref counts here because we are removing a scope
-    void PopScope()
-    {
-        scopes.back().DecrementReferenceCountOfEveryMapEntry();
-        scopes.pop_back();
-    }
-
-private:
-    std::vector<MesaScript_Table> scopes;
-};
-
-
 struct MesaScript_All_Scope_Singleton
 {
     MesaScript_Table GLOBAL_TABLE;
-    MesaScript_ScriptObject ACTIVE_SCRIPT_TABLE;
+    MesaScript_ScriptEnvironment* ACTIVE_SCRIPT_TABLE_PTR;
 };
-
 static MesaScript_All_Scope_Singleton MESASCRIPT_ALL_SCOPE;
+void SetActiveScriptEnvironment(MesaScript_ScriptEnvironment* env)
+{
+    MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR = env;
+}
 
 
 static MemoryLinearBuffer astBuffer;
@@ -1040,13 +854,13 @@ PID Parser::procedure_decl()
     functionVariable.procedureId = createdProcedureId;
     functionVariable.type = TValue::ValueType::Function;
 
-    if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(procedureNameToken.text))
+    if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(procedureNameToken.text))
     {
-        MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.ReplaceMapEntryAtKey(procedureNameToken.text, functionVariable);
+        MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->ReplaceAtKey(procedureNameToken.text, functionVariable);
     }
     else
     {
-        MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.CreateNewMapEntry(procedureNameToken.text, functionVariable);
+        MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->EmplaceNewElement(procedureNameToken.text, functionVariable);
     }
     return createdProcedureId;
 }
@@ -1719,9 +1533,9 @@ InterpretExpression(ASTNode* ast)
 
         case ASTNodeType::VARIABLE: {
             auto v = static_cast<ASTVariable*>(ast);
-            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(v->id))
+            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(v->id))
             {
-                return MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(v->id);
+                return MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->AccessAtKey(v->id);
             }
             else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(v->id))
             {
@@ -1743,9 +1557,9 @@ InterpretExpression(ASTNode* ast)
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
             u64 gcObjectId = 0;
-            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(listOrMapVariableKey))
+            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(listOrMapVariableKey);
+                TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->AccessAtKey(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
@@ -1854,9 +1668,9 @@ InterpretStatement(ASTNode* statement)
 
             ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
             std::string key = static_cast<ASTVariable*>(v->id)->id;
-            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(key))
+            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(key))
             {
-                MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.ReplaceAtKey(key, result);
+                MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->ReplaceAtKey(key, result);
             }
             else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(key))
             {
@@ -1864,7 +1678,7 @@ InterpretStatement(ASTNode* statement)
             }
             else
             {
-                MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.EmplaceNewElement(key, result);
+                MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->EmplaceNewElement(key, result);
             }
         } break;
         case ASTNodeType::ASSIGN_LIST_OR_MAP_ELEMENT: {
@@ -1878,9 +1692,9 @@ InterpretStatement(ASTNode* statement)
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
             u64 gcObjectId = 0;
-            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(listOrMapVariableKey))
+            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(listOrMapVariableKey);
+                TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->AccessAtKey(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
@@ -2046,9 +1860,9 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
     // TValue result = cpp_fn(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
 
     TValue procedureVariable;
-    if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.KeyExists(procedureCall->id))
+    if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(procedureCall->id))
     {
-        procedureVariable = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.AccessAtKey(procedureCall->id);
+        procedureVariable = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->AccessAtKey(procedureCall->id);
     }
     else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(procedureCall->id))
     {
@@ -2083,7 +1897,7 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
         TValue argv = InterpretExpression(argexpr);
         functionScope.CreateNewMapEntry(argn, argv);
     }
-    MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.PushScope(functionScope);
+    MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->PushScope(functionScope);
 
     TValue retval;
     returnRequestedFlag = false;
@@ -2096,17 +1910,42 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
     returnRequestedFlag = false;
     returnValueSetFlag = false;
 
-    // Intended: ACTIVE_SCRIPT_TABLE.PopScope should decrement ref count of every entry of the function scope being popped.
-    MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE.PopScope();
+    // Intended: ACTIVE_SCRIPT_TABLE_PTR->PopScope should decrement ref count of every entry of the function scope being popped.
+    MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->PopScope();
 
     return retval;
 }
 
+MesaScript_ScriptEnvironment CompileEntityBehaviourAsNewScriptEnvironment(const std::string& entityBehaviourScript)
+{
+    MesaScript_ScriptEnvironment scriptEnvironment;
+    scriptEnvironment.PushScope(MesaScript_Table());
+    SetActiveScriptEnvironment(&scriptEnvironment);
+
+    std::vector<Token> tokens = Lexer(entityBehaviourScript.c_str());
+    auto parser = Parser(tokens);
+    parser.parse();
+    // TODO(Kevin): if not release mode, probably want to keep Parser paired with the ScriptEnvironment so we have debug data later
+
+    SetActiveScriptEnvironment(NULL);
+    return scriptEnvironment;
+}
+
+void CallParameterlessFunctionInActiveScriptEnvironment(const char* functionIdentifier)
+{
+    ASTProcedureCall parameterlessProcCallNode = ASTProcedureCall(functionIdentifier);
+    InterpretProcedureCall(&parameterlessProcCallNode);
+}
+
+void InitializeLanguageCompilerAndRuntime()
+{
+    MemoryLinearInitialize(&astBuffer, 8000000);
+}
+
+// TODO(Kevin): move initialize and setup stuff somewhere else. make sure built-in methods like add get added to global scope not script scope.
 void RunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir)
 {
     std::string fileStr = ReadFileString(wd_path(pathFromWorkingDir).c_str());
-
-    MemoryLinearInitialize(&astBuffer, 8000000);
 
     //printf("%ld", sizeof(MesaScript_Table));
 
@@ -2125,9 +1964,3 @@ void RunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir)
         InterpretProcedureCall(procCallNode);
     }
 }
-
-void CallParameterlessFunctionInActiveScript(const char* functionIdentifier)
-{
-    
-}
-

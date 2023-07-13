@@ -105,25 +105,6 @@ as well as other places in the code that reference E
 
 */
 
-struct EntityTemplate
-{
-    // what sprite / animation to start with, what animations are available?
-    // what is the code / behaviour of all instances of this entity?
-};
-
-struct EntityInstance
-{
-    vec2 position;
-
-    GC
-};
-
-struct Space
-{
-    std::vector<>
-
-};
-
 struct EditorState
 {
 
