@@ -15,6 +15,8 @@
 #include "singleheaders/vertext.h"
 #include "core/CoreInput.h"
 #include "core/ArcadiaIMGUI.h"
+
+#include "game/Game.h"
 #include "game/script/MesaScript.h"
 
 static SDL_Window* g_SDLWindow;
@@ -48,7 +50,7 @@ static bool InitializeEverything()
     g_gfx.Init();
     ARCGUI::Init();
 
-
+    InitializeLanguageCompilerAndRuntime();
 
 	return true;
 }
@@ -99,7 +101,7 @@ static void LoadFantasyConsole()
 
 int main(int argc, char* argv[])
 {
-    RunMesaScriptInterpreterOnFile("fib.ms");
+    // RunMesaScriptInterpreterOnFile("fib.ms");
 
     // if (argc > 1)
     // {
@@ -110,12 +112,17 @@ int main(int argc, char* argv[])
 
     LoadFantasyConsole();
 
+    TemporaryGameInit();
+
     while (!g_ProgramShouldShutdown)
     {
         if (Time.UpdateDeltaTime() > 0.1f) { continue; } // if delta time is too large, will cause glitches
 
         ARCGUI::NewFrame();
         ProcessSDLEvents();
+
+        // console_update(Time.unscaledDeltaTime);
+        TemporaryGameLoop();
 
         auto sty = ARCGUI::GetActiveUIStyleCopy();
         sty.textColor = vec4(0.f,0.f,0.f,1.f);
@@ -131,10 +138,18 @@ int main(int argc, char* argv[])
         ARCGUI::EditorBeginWindow(ARCGUI::UIRect(30, 120, 200, 200));
         ARCGUI::EditorLabelledButton("Insert Cartridge");
         ARCGUI::EditorEndWindow();
+
+        static float lastFPSShowTime = Time.time;
+        static float framerate = 0.f;
+        if (Time.time - lastFPSShowTime > 0.25f)
+        {
+            framerate = (1.f / Time.deltaTime);
+            lastFPSShowTime = Time.time;
+        }
+        ARCGUI::DoText(0, 16, 16, ARCGUI::TextAlignment::Left, "FPS: %d", int(framerate));
+
         //ARCGUI::PopUIStyle();
 
-//        console_update(Time.unscaledDeltaTime);
-//        editorRuntime.UpdateEditor(); //game->Update();
 //        DrawProfilerGUI();
         g_gfx.Render();
         SDL_GL_SwapWindow(g_SDLWindow);
