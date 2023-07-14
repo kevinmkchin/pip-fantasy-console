@@ -474,6 +474,7 @@ inline mat3 TranslationMatrix2D(vec2 translation);
 /** Generates rotation matrix for given quaternion represented rotation
     https://en.wikipedia.org/wiki/Rotation_matrix#In_three_dimensions */
 inline mat4 RotationMatrix(quat q);
+
 inline mat3 RotationMatrix2D(float rotationInRadians);
 
 /** Generates scaling matrix for given x y z scales
@@ -978,7 +979,7 @@ inline mat4 TranslationMatrix(vec3 translation)
     return TranslationMatrix(translation.x, translation.y, translation.z);
 }
 
-inline mat3 TranslationMatrix2D(vec2 translation)
+inline mat3 TranslationMatrix2D(vec2 translation) // TODO(Kevin): NEED TESTS
 {
     mat3 ret = mat3();
     ret[2][0] = translation.x;
@@ -1020,7 +1021,7 @@ inline mat4 ScaleMatrix(vec3 scale)
     return ScaleMatrix(scale.x, scale.y, scale.z);
 }
 
-inline mat3 ScaleMatrix2D(vec2 scale)
+inline mat3 ScaleMatrix2D(vec2 scale) // TODO(Kevin): NEED TESTS
 {
     mat3 ret = mat3();
     ret[0][0] = scale.x;
@@ -1031,7 +1032,7 @@ inline mat3 ScaleMatrix2D(vec2 scale)
 
 inline mat4 ProjectionMatrixPerspective(float fovy, float aspect, float nearclip, float farclip)
 {
-    float const tanHalfFovy = tan(fovy / 2.f);
+    float const tanHalfFovy = tanf(fovy / 2.f);
 
     mat4 Result;
     Result[0][0] = 1.f / (aspect * tanHalfFovy);
@@ -1451,7 +1452,7 @@ inline quat RotationFromTo(vec3 fromDirection, vec3 toDirection)
     rotation_axis = Cross(start, dest);
     if (cos_theta >= -1 + 0.0001f)
     {
-        float s = sqrt((1 + cos_theta) * 2);
+        float s = sqrtf((1 + cos_theta) * 2);
         float sin_of_half_angle = 1 / s;
 
         rotation_quat = quat(
