@@ -793,7 +793,7 @@ namespace ARCGUI
         Mesh::MeshCreate(__ui_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
         Mesh::MeshCreate(__text_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
 
-        __default_font = FontCreateFromFile(data_path("EndlessBossBattle.ttf"), 16, true);
+        __default_font = FontCreateFromFile(data_path("PressStart2P.ttf"), 16, true);
 
         if(ui_ss.empty())
         {

@@ -7,3 +7,4 @@
 void TemporaryGameInit();
 void TemporaryGameLoop();
 
+struct Space* GetGameActiveSpace();

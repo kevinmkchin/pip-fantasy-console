@@ -331,14 +331,20 @@ private:
     std::vector<MesaScript_Table> scopes;
 };
 
+/// Simply returns the MesaScript_Table associated with the given GCObject id.
+MesaScript_Table* AccessMesaScriptTable(u64 gcObjectId);
 void IncrementReferenceGCObject(u64 gcObjectId);
 void ReleaseReferenceGCObject(u64 gcObjectId);
 u64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType);
+
+MesaScript_Table* EmplaceMapInGlobalScope(const std::string& id);
+MesaScript_Table* AccessMapInGlobalScope(const std::string& id);
 
 MesaScript_ScriptEnvironment CompileEntityBehaviourAsNewScriptEnvironment(const std::string& entityBehaviourScript);
 void SetActiveScriptEnvironment(MesaScript_ScriptEnvironment* env);
 
 void CallParameterlessFunctionInActiveScriptEnvironment(const char* functionIdentifier);
+void CallFunctionInActiveScriptEnvironmentWithOneParam(const char* functionIdentifier, TValue arg0);
 
 void InitializeLanguageCompilerAndRuntime();
 

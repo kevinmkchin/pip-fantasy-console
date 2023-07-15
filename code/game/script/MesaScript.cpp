@@ -318,7 +318,9 @@ enum class ASTNodeType
     CREATETABLE,
     CREATELIST,
     ASSIGN_LIST_OR_MAP_ELEMENT,
-    ACCESS_LIST_OR_MAP_ELEMENT
+    ACCESS_LIST_OR_MAP_ELEMENT,
+
+    SIMPLYTVALUE
 };
 
 class ASTNode
@@ -453,6 +455,14 @@ public:
     bool value;
 };
 
+class ASTSimplyTValue : public ASTNode
+{
+public:
+    ASTSimplyTValue(TValue v);
+
+    TValue value;
+};
+
 enum class BinOp
 {
     Add,
@@ -581,6 +591,11 @@ ASTBranch::ASTBranch(ASTNode* condition, ASTNode* if_case, ASTNode* else_case)
         , else_body(else_case)
 {}
 
+ASTSimplyTValue::ASTSimplyTValue(TValue v)
+    : ASTNode(ASTNodeType::SIMPLYTVALUE)
+    , value(v)
+{}
+
 
 struct ProcedureDefinition
 {
@@ -601,7 +616,6 @@ MesaGCObject::GCObjectType GetTypeOfGCObject(u64 gcObjectId)
     return gcobj->GetType();
 }
 
-/// Simply returns the MesaScript_Table associated with the given GCObject id.
 MesaScript_Table* AccessMesaScriptTable(u64 gcObjectId)
 {
     return (MesaScript_Table*)(GCOBJECTS_DATABASE.at(gcObjectId));
@@ -770,6 +784,19 @@ static MesaScript_All_Scope_Singleton MESASCRIPT_ALL_SCOPE;
 void SetActiveScriptEnvironment(MesaScript_ScriptEnvironment* env)
 {
     MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR = env;
+}
+MesaScript_Table* EmplaceMapInGlobalScope(const std::string& id)
+{
+    TValue v;
+    v.type = TValue::ValueType::GCObject;
+    v.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
+    MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.CreateNewMapEntry(id, v);
+    return (MesaScript_Table*) GCOBJECTS_DATABASE.at(v.GCReferenceObject);
+}
+MesaScript_Table* AccessMapInGlobalScope(const std::string& id)
+{
+    TValue v = MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(id);
+    return (MesaScript_Table*) GCOBJECTS_DATABASE.at(v.GCReferenceObject);
 }
 
 
@@ -1306,6 +1333,10 @@ InterpretExpression(ASTNode* ast)
 {
     switch(ast->GetType())
     {
+        case ASTNodeType::SIMPLYTVALUE: {
+            auto v = static_cast<ASTSimplyTValue*>(ast);
+            return v->value;
+        } break;
         case ASTNodeType::BINOP: {
             auto v = static_cast<ASTBinOp*>(ast);
             TValue l = InterpretExpression(v->left);
@@ -1548,8 +1579,8 @@ InterpretExpression(ASTNode* ast)
             if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(v->id))
             {
                 return MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->AccessAtKey(v->id);
-            }
-            else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(v->id))
+            
+}            else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(v->id))
             {
                 return MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(v->id);
             }
@@ -1787,15 +1818,15 @@ TValue CPPBOUND_MESASCRIPT_Print(TValue value)
 {
     if (value.type == TValue::ValueType::Integer)
     {
-        printf("printed %lld\n", value.integerValue);
+        printf("%lld\n", value.integerValue);
     }
     else if (value.type == TValue::ValueType::Boolean)
     {
-        printf("printed %s\n", (value.boolValue ? "true" : "false"));
+        printf("%s\n", (value.boolValue ? "true" : "false"));
     }
     else if (value.type == TValue::ValueType::Real)
     {
-        printf("printed %f\n", value.realValue);
+        printf("%f\n", value.realValue);
     }
     else if (value.type == TValue::ValueType::GCObject)
     {
@@ -1904,10 +1935,10 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
     MesaScript_Table functionScope;
     for (int i = 0; i < procedureDefinition.args.size(); ++i)
     {
-        auto argn = procedureDefinition.args[i];
+        auto argname = procedureDefinition.args[i];
         auto argexpr = procedureCall->argsExpressions[i];
         TValue argv = InterpretExpression(argexpr);
-        functionScope.CreateNewMapEntry(argn, argv);
+        functionScope.CreateNewMapEntry(argname, argv);
     }
     MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->PushScope(functionScope);
 
@@ -1947,6 +1978,14 @@ void CallParameterlessFunctionInActiveScriptEnvironment(const char* functionIden
 {
     ASTProcedureCall parameterlessProcCallNode = ASTProcedureCall(functionIdentifier);
     InterpretProcedureCall(&parameterlessProcCallNode);
+}
+
+void CallFunctionInActiveScriptEnvironmentWithOneParam(const char* functionIdentifier, TValue arg0)
+{
+    ASTProcedureCall procCallNode = ASTProcedureCall(functionIdentifier);
+    ASTSimplyTValue arg0Node = ASTSimplyTValue(arg0);
+    procCallNode.argsExpressions.push_back(&arg0Node);
+    InterpretProcedureCall(&procCallNode);
 }
 
 void InitializeLanguageCompilerAndRuntime()
