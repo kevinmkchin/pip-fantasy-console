@@ -232,7 +232,7 @@ void GfxRenderer::RenderGUILayer()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
 
-    ARCGUI::Draw();
+    MesaGUI::Draw();
 }
 
 //void GfxRenderer::RenderDebugUILayer()
@@ -270,17 +270,17 @@ void GfxRenderer::FinalRenderToBackBuffer()
     // Draw game frame
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, gameLayer.colorTexId);
-    screenSizeQuad.RenderMesh();
+    RenderMesh(screenSizeQuad);
 
     // Draw GUI frame
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, guiLayer.colorTexId);
-    screenSizeQuad.RenderMesh();
+    RenderMesh(screenSizeQuad);
 
 //    // Draw Debug UI frame
 //    glActiveTexture(GL_TEXTURE0);
 //    glBindTexture(GL_TEXTURE_2D, debugUILayer.colorTexId);
-//    screenSizeQuad.RenderMesh();
+//    RenderMesh(screenSizeQuad);
 
     GLHasErrors();
 }
@@ -376,7 +376,7 @@ void GfxRenderer::CreateMiscellaneous()
             1.f, 1.f, 1.f, 1.f
     };
 
-    Mesh::MeshCreate(screenSizeQuad, refQuadVertices, refQuadIndices, 16, 6, 2, 2, 0, GL_STATIC_DRAW);
+    MeshCreate(screenSizeQuad, refQuadVertices, refQuadIndices, 16, 6, 2, 2, 0, GL_STATIC_DRAW);
 }
 
 void GfxRenderer::UpdateScreenSizeQuad()
@@ -413,7 +413,7 @@ void GfxRenderer::UpdateScreenSizeQuad()
         finalOutputQuadVertices[9] = 1.f - f;
         finalOutputQuadVertices[13] = 1.f - f;
     }
-    screenSizeQuad.RebindBufferObjects(finalOutputQuadVertices, refQuadIndices, 16, 6);
+    RebindBufferObjects(screenSizeQuad, finalOutputQuadVertices, refQuadIndices, 16, 6);
 }
 
 

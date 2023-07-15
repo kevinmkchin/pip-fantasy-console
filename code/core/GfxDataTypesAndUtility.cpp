@@ -3,43 +3,43 @@
 #include "FileSystem.h"
 #include "MesaUtility.h"
 
-void Mesh::RenderMesh(GLenum renderMode) const
+void RenderMesh(const Mesh mesh, GLenum renderMode)
 {
-    if (indicesCount == 0) // Early out if index_count == 0, nothing to draw
+    if (mesh.indicesCount == 0) // Early out if index_count == 0, nothing to draw
     {
         printf("WARNING: Attempting to Render a mesh with 0 index count!\n");
         return;
     }
 
     // Bind VAO, bind VBO, draw elements(indexed draw)
-    glBindVertexArray(idVAO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, idIBO);
-    glDrawElements(renderMode, indicesCount, GL_UNSIGNED_INT, nullptr);
+    glBindVertexArray(mesh.idVAO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.idIBO);
+    glDrawElements(renderMode, mesh.indicesCount, GL_UNSIGNED_INT, nullptr);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
 
-void Mesh::RebindBufferObjects(float* vertices, u32* indices,
-                               u32 verticesArrayCount, u32 indicesArrayCount, GLenum drawUsage)
+void RebindBufferObjects(Mesh& mesh, float* vertices, u32* indices,
+                         u32 verticesArrayCount, u32 indicesArrayCount, GLenum drawUsage)
 {
-    if (idVBO == 0 || idIBO == 0)
+    if (mesh.idVBO == 0 || mesh.idIBO == 0)
     {
         return;
     }
 
-    indicesCount = indicesArrayCount;
-    glBindVertexArray(idVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, idVBO);
+    mesh.indicesCount = indicesArrayCount;
+    glBindVertexArray(mesh.idVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.idVBO);
     glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr) 4 * verticesArrayCount, vertices, drawUsage);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, idIBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.idIBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr) 4 * indicesArrayCount, indices, drawUsage);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
 
-Mesh Mesh::MeshCreate(Mesh& mesh, float* vertices, u32* indices,
-                      u32 verticesArrayCount, u32 indicesArrayCount,
-                      u8 positionAttribSize, u8 textureAttribSize, u8 normalAttribSize, GLenum drawUsage)
+Mesh MeshCreate(Mesh& mesh, float* vertices, u32* indices,
+                u32 verticesArrayCount, u32 indicesArrayCount,
+                u8 positionAttribSize, u8 textureAttribSize, u8 normalAttribSize, GLenum drawUsage)
 {
     u8 stride = 0;
     if (textureAttribSize)
@@ -82,7 +82,7 @@ Mesh Mesh::MeshCreate(Mesh& mesh, float* vertices, u32* indices,
     return mesh;
 }
 
-void Mesh::MeshDelete(Mesh& mesh)
+void MeshDelete(Mesh& mesh)
 {
     if (mesh.idIBO != 0)
     {
