@@ -106,6 +106,7 @@ namespace MesaGUI
     static Gfx::Mesh __text_mesh;
 
     static Font __default_font;
+    static Font __fonts[32];
 
     static char __reservedTextMemory[16000000];
     static u32 __reservedTextMemoryIndexer = 0;
@@ -800,7 +801,14 @@ namespace MesaGUI
         MeshCreate(__ui_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
         MeshCreate(__text_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
 
-        __default_font = FontCreateFromFile(data_path("PressStart2P.ttf"), 16, true);
+        // __default_font = FontCreateFromFile(data_path("Baskic8.otf"), 32, true);
+        __fonts[0] = FontCreateFromFile(data_path("PressStart2P.ttf"), 16, true);
+        __fonts[1] = FontCreateFromFile(data_path("Baskic8.otf"), 16, true);
+        __fonts[2] = FontCreateFromFile(data_path("EndlessBossBattle.ttf"), 16, true);
+        __fonts[3] = FontCreateFromFile(data_path("8BitDragon.ttf"), 16, true);
+
+        __default_font = __fonts[0];//FontCreateFromFile(data_path("PressStart2P.ttf"), 16, true);
+
 
         if(ui_ss.empty())
         {
@@ -867,6 +875,13 @@ namespace MesaGUI
 
     void Draw()
     {
+        int fontAtlasDebugY = 10;
+        for (int i = 0; i < 4; ++i)
+        {
+            DoImage(UIRect(10, fontAtlasDebugY, __fonts[i].ptr->font_atlas.width, __fonts[i].ptr->font_atlas.height), __fonts[i].textureId);
+            fontAtlasDebugY += __fonts[i].ptr->font_atlas.height + 5;
+        }
+
 
         i32 kevGuiScreenWidth = Gfx::GetCoreRenderer()->guiLayer.width;
         i32 kevGuiScreenHeight = Gfx::GetCoreRenderer()->guiLayer.height;
