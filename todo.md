@@ -1,14 +1,4 @@
-# todo
-
-### Done
-
-- index tables with strings
-- initialize array elements
-- sort of lists/arrays - actual array implementation <- MAYBE JUST MAKE AN ENTIRE NEW ARRAY TYPE??? THAT MIGHT BE SO MUCH CLEANER AND NICER -> is there ANY reason to use a table as also an array?
-- increment ref counts when appending to a list or adding table entry 
-- only increment ref count for gc obj upon assignment to a variable. that means, if we create a table, we don't auto set refcount to 1, and also must instantly delete if we don't assign to a variable at all.
-- release GC reference if lose reference, and then propagate to element gc objects (both lists and maps)
-- release ref of local variables when function scope gets popped
+# TODO
 
 ### Bugs
 
@@ -18,6 +8,7 @@
 
 ### Engine
 
+- Complete MesaScript a0.1 -> MesaGUI code editor -> select entity type to edit their code -> entity type can choose sprite
 - MesaScript integration
 - MesaGUI code editor
 
@@ -44,6 +35,7 @@
 - while loops & break
 - for loops
 - elifs
+- +=, -=, /=, *=*
 
 - introducing "null" or "nil" means there are always going to have to be null checks. instead, provide a function to check if a variable name exists or is alive.
 - you should be able to ask for a list of identifiers/names that reference a given GCObj -> if a GCObj has 4 refs, I should be able to find out what those refs are...although that might be tough if the reference has no identifier e.g. if the reference is from inside a list or map entry.
@@ -72,3 +64,13 @@
 - Better unit test suite (built into the language would be nice, it should be dog simple to use)
 - should we have protected fields? how would this lead to encapsulation and inheritance?
 
+
+# Done
+
+- index tables with strings
+- initialize array elements
+- sort of lists/arrays - actual array implementation <- MAYBE JUST MAKE AN ENTIRE NEW ARRAY TYPE??? THAT MIGHT BE SO MUCH CLEANER AND NICER -> is there ANY reason to use a table as also an array?
+- increment ref counts when appending to a list or adding table entry 
+- only increment ref count for gc obj upon assignment to a variable. that means, if we create a table, we don't auto set refcount to 1, and also must instantly delete if we don't assign to a variable at all.
+- release GC reference if lose reference, and then propagate to element gc objects (both lists and maps)
+- release ref of local variables when function scope gets popped

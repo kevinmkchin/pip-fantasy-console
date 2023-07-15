@@ -107,9 +107,8 @@ namespace MesaGUI
 
     static Font __default_font;
 
-    static char __reservedTextMemory[65536];
-    static const int __reservedTextLineSizeBytes = 128;
-    static int __reservedTextMemoryIndexer = 0;
+    static char __reservedTextMemory[16000000];
+    static u32 __reservedTextMemoryIndexer = 0;
 
     static NiceArray<SDL_Keycode, 16> keyboardInputASCIIKeycodeThisFrame;
 
@@ -376,8 +375,11 @@ namespace MesaGUI
 
     void DoText(int x, int y, int size, TextAlignment alignment, const char* textFmt, ...)
     {
+        if (textFmt == NULL) return;
+
 #if INTERNAL_BUILD & SLOW_BUILD
-        if (__reservedTextMemoryIndexer >= ARRAY_COUNT(__reservedTextMemory) / __reservedTextLineSizeBytes)
+        // Giving 500,000 bytes of free space in the frame text buffer to be safe
+        if (__reservedTextMemoryIndexer >= ARRAY_COUNT(__reservedTextMemory) - 500000)
         {
             PrintLog.WarningFmt("Attempting to draw text in GUI.cpp but not enough reserved memory to store text.");
             return;
@@ -385,11 +387,12 @@ namespace MesaGUI
 #endif
 
         va_list argptr;
-        char* formattedTextBuffer = __reservedTextMemory + (__reservedTextMemoryIndexer * __reservedTextLineSizeBytes);
+        char* formattedTextBuffer = __reservedTextMemory + __reservedTextMemoryIndexer;
         va_start(argptr, textFmt);
-        stbsp_vsprintf(formattedTextBuffer, textFmt, argptr);
+        int numCharactersWritten = stbsp_vsprintf(formattedTextBuffer, textFmt, argptr);
         va_end(argptr);
-        ++__reservedTextMemoryIndexer;
+        ASSERT(numCharactersWritten > 0);
+        __reservedTextMemoryIndexer += numCharactersWritten + 1;
 
         TextDrawRequest drawRequest;
         drawRequest.text = formattedTextBuffer;
@@ -406,17 +409,21 @@ namespace MesaGUI
 
     void DoTextUnformatted(int x, int y, int size, TextAlignment alignment, const char* text)
     {
+        if (text == NULL) return;
+
 #if INTERNAL_BUILD & SLOW_BUILD
-        if (__reservedTextMemoryIndexer >= ARRAY_COUNT(__reservedTextMemory) / __reservedTextLineSizeBytes)
+        // Giving 500,000 bytes of free space in the frame text buffer to be safe
+        if (__reservedTextMemoryIndexer >= ARRAY_COUNT(__reservedTextMemory) - 500000)
         {
             PrintLog.WarningFmt("Attempting to draw text in GUI.cpp but not enough reserved memory to store text.");
             return;
         }
 #endif
 
-        char* textBuffer = __reservedTextMemory + (__reservedTextMemoryIndexer * __reservedTextLineSizeBytes);
-        memcpy(textBuffer, text, __reservedTextLineSizeBytes);
-        ++__reservedTextMemoryIndexer;
+        char* textBuffer = __reservedTextMemory + __reservedTextMemoryIndexer;
+        int numCharactersWritten = stbsp_sprintf(textBuffer, text);
+        ASSERT(numCharactersWritten > 0);
+        __reservedTextMemoryIndexer += numCharactersWritten + 1;
 
         TextDrawRequest drawRequest;
         drawRequest.text = textBuffer;
