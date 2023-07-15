@@ -37,6 +37,7 @@ if(WIN32)
 
     if(MSVC)
       add_definitions(/MP)
+      target_compile_options(${PROJECT_NAME} PUBLIC "/W3" "/EHsc" "/we4239")
     endif()
 
     # Find OpenGL
@@ -46,9 +47,9 @@ if(WIN32)
        target_link_libraries(${PROJECT_NAME} PUBLIC ${OPENGL_gl_LIBRARY})
     endif()
 
-    set(SDL2_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/include/SDL")
-    set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x64.lib;${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2main-x64.lib")
-    set(SDL_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x64.dll")
+    set(SDL2_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/include")
+    set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/x64/SDL2.lib;${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/x64/SDL2main.lib")
+    set(SDL_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/x64/SDL2.dll")
 
     # Copy and rename dlls
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -56,7 +57,6 @@ if(WIN32)
         "${SDL_DLL}"
         "$<TARGET_FILE_DIR:${PROJECT_NAME}>/SDL2.dll")
 
-    target_compile_options(${PROJECT_NAME} PUBLIC "/W3" "/EHsc" "/we4239")
     target_include_directories(${PROJECT_NAME} PUBLIC ${SDL2_INCLUDE_DIRS} ext/gl3w)
     target_link_libraries(${PROJECT_NAME} PUBLIC ${SDL2_LIBRARIES})
 
