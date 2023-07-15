@@ -13,7 +13,7 @@
 #include "PrintLog.h"
 #include "FileSystem.h"
 
-namespace ARCGUI
+namespace MesaGUI
 {
     static std::unordered_map<std::string, vtxt_font> __vtxtLoadedFonts;
     Font FontCreateFromFile(const std::string& fontFilePath, u8 fontSize, bool useNearestFiltering)
@@ -150,8 +150,8 @@ namespace ARCGUI
             __main_ui_shader.GLBind1i("useColour", true);
             __main_ui_shader.GLBind4f("uiColour", color.x, color.y, color.z, color.w);
 
-            __ui_mesh.RebindBufferObjects(vb, ib, ARRAY_COUNT(vb), ARRAY_COUNT(ib), GL_DYNAMIC_DRAW);
-            __ui_mesh.RenderMesh();
+            RebindBufferObjects(__ui_mesh, vb, ib, ARRAY_COUNT(vb), ARRAY_COUNT(ib), GL_DYNAMIC_DRAW);
+            RenderMesh(__ui_mesh);
         }
     };
 
@@ -211,8 +211,8 @@ namespace ARCGUI
                 __main_ui_shader.GLBind4f("uiColour", color.x, color.y, color.z, color.w);
             }
 
-            __ui_mesh.RebindBufferObjects(vb, ib, ARRAY_COUNT(vb), ARRAY_COUNT(ib), GL_DYNAMIC_DRAW);
-            __ui_mesh.RenderMesh();
+            RebindBufferObjects(__ui_mesh, vb, ib, ARRAY_COUNT(vb), ARRAY_COUNT(ib), GL_DYNAMIC_DRAW);
+            RenderMesh(__ui_mesh);
         }
     };
 
@@ -243,7 +243,7 @@ namespace ARCGUI
                 }break;
             }
             vtxt_vertex_buffer _txt = vtxt_grab_buffer();
-            __text_mesh.RebindBufferObjects(_txt.vertex_buffer, _txt.index_buffer, _txt.vertices_array_count, _txt.indices_array_count, GL_DYNAMIC_DRAW);
+            RebindBufferObjects(__text_mesh, _txt.vertex_buffer, _txt.index_buffer, _txt.vertices_array_count, _txt.indices_array_count, GL_DYNAMIC_DRAW);
             vtxt_clear_buffer();
 
             mat4 matrixModel = mat4();
@@ -254,7 +254,7 @@ namespace ARCGUI
             __text_shader.GLBind1i("textureSampler0", 0);
             __text_shader.GLBind4f("uiColour", color.x, color.y, color.z, color.w);
 
-            __text_mesh.RenderMesh();
+            RenderMesh(__text_mesh);
         }
     };
 
@@ -790,8 +790,8 @@ namespace ARCGUI
         activeUI = null_ui_id;
         Shader::GLCreateShaderProgram(__main_ui_shader, __main_ui_shader_vs, __main_ui_shader_fs);
         Shader::GLCreateShaderProgram(__text_shader, __text_shader_vs, __text_shader_fs);
-        Mesh::MeshCreate(__ui_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
-        Mesh::MeshCreate(__text_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
+        MeshCreate(__ui_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
+        MeshCreate(__text_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
 
         __default_font = FontCreateFromFile(data_path("PressStart2P.ttf"), 16, true);
 

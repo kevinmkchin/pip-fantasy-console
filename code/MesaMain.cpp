@@ -48,7 +48,7 @@ static bool InitializeEverything()
     SDL_GL_SetSwapInterval(1);
 
     g_gfx.Init();
-    ARCGUI::Init();
+    MesaGUI::Init();
 
     InitializeLanguageCompilerAndRuntime();
 
@@ -61,7 +61,7 @@ static void ProcessSDLEvents()
     while (SDL_PollEvent(&event))
     {
         Input.ProcessAllSDLInputEvents(event);
-        ARCGUI::SDLProcessEvent(&event);
+        MesaGUI::SDLProcessEvent(&event);
 
         // Lower level engine related input
         switch (event.type)
@@ -117,28 +117,28 @@ int main(int argc, char* argv[])
     {
         if (Time.UpdateDeltaTime() > 0.1f) { continue; } // if delta time is too large, will cause glitches
 
-        ARCGUI::NewFrame();
+        MesaGUI::NewFrame();
         ProcessSDLEvents();
 
         // console_update(Time.unscaledDeltaTime);
         TemporaryGameLoop();
 
 /*
-        auto sty = ARCGUI::GetActiveUIStyleCopy();
+        auto sty = MesaGUI::GetActiveUIStyleCopy();
         sty.textColor = vec4(0.f,0.f,0.f,1.f);
-        //ARCGUI::PushUIStyle(sty);
-        ARCGUI::DoTextUnformatted(30, 30, 8, ARCGUI::TextAlignment::Left, "JOURNEY");
-        ARCGUI::DoTextUnformatted(130, 30, 8, ARCGUI::TextAlignment::Left, "COMET");
-        ARCGUI::DoTextUnformatted(230, 30, 16, ARCGUI::TextAlignment::Left, "MESA");
-        ARCGUI::DoTextUnformatted(330, 30, 8, ARCGUI::TextAlignment::Left, "STAR");
-        ARCGUI::DoTextUnformatted(430, 30, 8, ARCGUI::TextAlignment::Left, "HEART");
-        ARCGUI::DoTextUnformatted(30, 60, 16, ARCGUI::TextAlignment::Left, "Start Editor");
-        ARCGUI::DoTextUnformatted(30, 90, 8, ARCGUI::TextAlignment::Left, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!");
-        //ARCGUI::PopUIStyle();
-        //ARCGUI::DoButton(ARCGUI::FreshID(), ARCGUI::UIRect(30, 90, 100, 30), vec4(0,0,0,1), vec4(0.5,0.5,0.5,1), vec4(1.f, 1.f, 1.f, 1.f));
-        ARCGUI::EditorBeginWindow(ARCGUI::UIRect(30, 120, 200, 200));
-        ARCGUI::EditorLabelledButton("Insert Cartridge");
-        ARCGUI::EditorEndWindow();
+        //MesaGUI::PushUIStyle(sty);
+        MesaGUI::DoTextUnformatted(30, 30, 8, MesaGUI::TextAlignment::Left, "JOURNEY");
+        MesaGUI::DoTextUnformatted(130, 30, 8, MesaGUI::TextAlignment::Left, "COMET");
+        MesaGUI::DoTextUnformatted(230, 30, 16, MesaGUI::TextAlignment::Left, "MESA");
+        MesaGUI::DoTextUnformatted(330, 30, 8, MesaGUI::TextAlignment::Left, "STAR");
+        MesaGUI::DoTextUnformatted(430, 30, 8, MesaGUI::TextAlignment::Left, "HEART");
+        MesaGUI::DoTextUnformatted(30, 60, 16, MesaGUI::TextAlignment::Left, "Start Editor");
+        MesaGUI::DoTextUnformatted(30, 90, 8, MesaGUI::TextAlignment::Left, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!");
+        //MesaGUI::PopUIStyle();
+        //MesaGUI::DoButton(MesaGUI::FreshID(), MesaGUI::UIRect(30, 90, 100, 30), vec4(0,0,0,1), vec4(0.5,0.5,0.5,1), vec4(1.f, 1.f, 1.f, 1.f));
+        MesaGUI::EditorBeginWindow(MesaGUI::UIRect(30, 120, 200, 200));
+        MesaGUI::EditorLabelledButton("Insert Cartridge");
+        MesaGUI::EditorEndWindow();
 */
         static float lastFPSShowTime = Time.time;
         static float framerate = 0.f;
@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
             framerate = (1.f / Time.deltaTime);
             lastFPSShowTime = Time.time;
         }
-        ARCGUI::DoText(0, 16, 16, ARCGUI::TextAlignment::Left, "FPS: %d", int(framerate));
+        MesaGUI::DoText(0, 16, 16, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
 
 
         // DrawProfilerGUI();

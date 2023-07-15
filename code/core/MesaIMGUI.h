@@ -11,7 +11,7 @@ typedef int ui_id;
 #include "MesaCommon.h"
 struct vtxt_font;
 
-namespace ARCGUI
+namespace MesaGUI
 {
     enum class TextAlignment
     {
