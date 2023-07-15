@@ -22,7 +22,7 @@
 static SDL_Window* g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
 static bool g_ProgramShouldShutdown = false;
-static GfxRenderer g_gfx;
+static Gfx::CoreRenderer g_gfx;
 
 static bool InitializeEverything()
 {

@@ -53,7 +53,7 @@ namespace MesaGUI
         return fontToReturn;
     }
 
-    static Shader __main_ui_shader;
+    static Gfx::Shader __main_ui_shader;
     static const char* __main_ui_shader_vs =
             "#version 330 core\n"
             "layout (location = 0) in vec2 pos;\n"
@@ -79,7 +79,7 @@ namespace MesaGUI
             "   }\n"
             "}\n";
 
-    static Shader __text_shader;
+    static Gfx::Shader __text_shader;
     static const char* __text_shader_vs =
             "#version 330 core\n"
             "layout (location = 0) in vec2 pos;\n"
@@ -102,8 +102,8 @@ namespace MesaGUI
             "   colour = vec4(uiColour.xyz, uiColour.w * textAlpha);\n"
             "}\n";
 
-    static Mesh __ui_mesh;
-    static Mesh __text_mesh;
+    static Gfx::Mesh __ui_mesh;
+    static Gfx::Mesh __text_mesh;
 
     static Font __default_font;
 
@@ -146,9 +146,9 @@ namespace MesaGUI
                            right, top, 1.f, 1.f, };
             u32 ib[] = { 0, 1, 3, 1, 2, 3 };
 
-            __main_ui_shader.UseShader();
-            __main_ui_shader.GLBind1i("useColour", true);
-            __main_ui_shader.GLBind4f("uiColour", color.x, color.y, color.z, color.w);
+            Gfx::UseShader(__main_ui_shader);
+            Gfx::GLBind1i(__main_ui_shader, "useColour", true);
+            Gfx::GLBind4f(__main_ui_shader, "uiColour", color.x, color.y, color.z, color.w);
 
             RebindBufferObjects(__ui_mesh, vb, ib, ARRAY_COUNT(vb), ARRAY_COUNT(ib), GL_DYNAMIC_DRAW);
             RenderMesh(__ui_mesh);
@@ -196,19 +196,19 @@ namespace MesaGUI
             u32 ib[] = { 0, 1, 2, 2, 1, 3, 2, 3, 4, 4, 3, 5, 4, 5, 6, 6, 5, 7, 1, 8, 3, 3, 8, 10, 3, 10, 5,
                          5, 10, 12, 5, 12, 7, 7, 12, 14, 8, 9, 10, 10, 9, 11, 10, 11, 12, 12, 11, 13, 12, 13, 14, 14, 13, 15 };
 
-            __main_ui_shader.UseShader();
+            Gfx::UseShader(__main_ui_shader);
 
             if (textureId != 0)
             {
-                __main_ui_shader.GLBind1i("useColour", false);
+                Gfx::GLBind1i(__main_ui_shader, "useColour", false);
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, textureId);
-                __main_ui_shader.GLBind1i("textureSampler0", 0);
+                Gfx::GLBind1i(__main_ui_shader, "textureSampler0", 0);
             }
             else
             {
-                __main_ui_shader.GLBind1i("useColour", true);
-                __main_ui_shader.GLBind4f("uiColour", color.x, color.y, color.z, color.w);
+                Gfx::GLBind1i(__main_ui_shader, "useColour", true);
+                Gfx::GLBind4f(__main_ui_shader, "uiColour", color.x, color.y, color.z, color.w);
             }
 
             RebindBufferObjects(__ui_mesh, vb, ib, ARRAY_COUNT(vb), ARRAY_COUNT(ib), GL_DYNAMIC_DRAW);
@@ -247,12 +247,12 @@ namespace MesaGUI
             vtxt_clear_buffer();
 
             mat4 matrixModel = mat4();
-            __text_shader.UseShader();
-            __text_shader.GLBindMatrix4fv("matrixModel", 1, matrixModel.ptr());
+            Gfx::UseShader(__text_shader);
+            Gfx::GLBindMatrix4fv(__text_shader, "matrixModel", 1, matrixModel.ptr());
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, font.textureId);
-            __text_shader.GLBind1i("textureSampler0", 0);
-            __text_shader.GLBind4f("uiColour", color.x, color.y, color.z, color.w);
+            Gfx::GLBind1i(__text_shader, "textureSampler0", 0);
+            Gfx::GLBind4f(__text_shader, "uiColour", color.x, color.y, color.z, color.w);
 
             RenderMesh(__text_mesh);
         }
@@ -788,8 +788,8 @@ namespace MesaGUI
     {
         hoveredUI = null_ui_id;
         activeUI = null_ui_id;
-        Shader::GLCreateShaderProgram(__main_ui_shader, __main_ui_shader_vs, __main_ui_shader_fs);
-        Shader::GLCreateShaderProgram(__text_shader, __text_shader_vs, __text_shader_fs);
+        Gfx::GLCreateShaderProgram(__main_ui_shader, __main_ui_shader_vs, __main_ui_shader_fs);
+        Gfx::GLCreateShaderProgram(__text_shader, __text_shader_vs, __text_shader_fs);
         MeshCreate(__ui_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
         MeshCreate(__text_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
 
@@ -861,15 +861,15 @@ namespace MesaGUI
     void Draw()
     {
 
-        i32 kevGuiScreenWidth = GetGfxRenderer()->guiLayer.width;
-        i32 kevGuiScreenHeight = GetGfxRenderer()->guiLayer.height;
+        i32 kevGuiScreenWidth = Gfx::GetCoreRenderer()->guiLayer.width;
+        i32 kevGuiScreenHeight = Gfx::GetCoreRenderer()->guiLayer.height;
         mat4 matrixOrtho = ProjectionMatrixOrthographic2D(0.f, (float)kevGuiScreenWidth, (float)kevGuiScreenHeight, 0.f);
 
-        __main_ui_shader.UseShader();
-        __main_ui_shader.GLBindMatrix4fv("matrixOrtho", 1, matrixOrtho.ptr());
+        Gfx::UseShader(__main_ui_shader);
+        Gfx::GLBindMatrix4fv(__main_ui_shader, "matrixOrtho", 1, matrixOrtho.ptr());
 
-        __text_shader.UseShader();
-        __text_shader.GLBindMatrix4fv("matrixOrtho", 1, matrixOrtho.ptr());
+        Gfx::UseShader(__text_shader);
+        Gfx::GLBindMatrix4fv(__text_shader, "matrixOrtho", 1, matrixOrtho.ptr());
 
         while(!drawQueue.empty())
         {
