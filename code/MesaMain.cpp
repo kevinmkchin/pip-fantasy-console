@@ -18,6 +18,7 @@
 
 #include "game/Game.h"
 #include "game/script/MesaScript.h"
+#include "game/EditorGUI.h"
 
 static SDL_Window* g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
@@ -134,6 +135,9 @@ int main(int argc, char* argv[])
         MesaGUI::EditorLabelledButton("Insert Cartridge");
         MesaGUI::EditorEndWindow();
 */
+
+        DoCodeEditor();
+
         static float lastFPSShowTime = Time.time;
         static float framerate = 0.f;
         if (Time.time - lastFPSShowTime > 0.25f)
@@ -142,7 +146,6 @@ int main(int argc, char* argv[])
             lastFPSShowTime = Time.time;
         }
         MesaGUI::DoText(0, 16, 16, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
-
 
         // DrawProfilerGUI();
         g_gfx.Render();
