@@ -1,7 +1,7 @@
-#include "CoreShader.h"
+#include "GfxShader.h"
 
-#include "CoreCommon.h"
-#include "CoreFileSystem.h"
+#include "MesaCommon.h"
+#include "FileSystem.h"
 
 /** Telling opengl to start using this shader program */
 void Shader::UseShader() const

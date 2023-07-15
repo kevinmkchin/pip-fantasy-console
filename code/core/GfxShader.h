@@ -1,7 +1,7 @@
 #pragma once
 
-#include "CoreCommon.h"
-#include "ArcadiaOpenGL.h"
+#include "MesaCommon.h"
+#include "MesaOpenGL.h"
 
 #include <unordered_map>
 

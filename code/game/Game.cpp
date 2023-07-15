@@ -1,7 +1,7 @@
 #include "Game.h"
 #include "Space.h"
 #include "script/MesaScript.h"
-#include "../core/CoreInput.h"
+#include "../core/InputSystem.h"
 
 
 Space activeSpace;
@@ -36,19 +36,19 @@ void TemporaryGameInit()
     EntityTemplate et2;
 
     et0.code = "fn Update(self) { \n"
-        "   if (input['left']) {\n"
-        "       self['x'] = self['x'] - 1\n" 
-        "   }\n" 
-        "   if (input['right']) {\n"
-        "       self['x'] = self['x'] + 1\n" 
-        "   }\n" 
-        "   if (input['up']) {\n"
-        "       self['y'] = self['y'] + 1\n" 
-        "   }\n" 
-        "   if (input['down']) {\n"
-        "       self['y'] = self['y'] - 1\n" 
-        "   }\n" 
-        "}";
+               "    if (input['left']) {\n"
+               "        self['x'] = self['x'] - 1\n" 
+               "    }\n" 
+               "    if (input['right']) {\n"
+               "        self['x'] = self['x'] + 1\n" 
+               "    }\n" 
+               "    if (input['up']) {\n"
+               "        self['y'] = self['y'] + 1\n" 
+               "    }\n" 
+               "    if (input['down']) {\n"
+               "        self['y'] = self['y'] - 1\n" 
+               "    }\n" 
+               "}";
     et1.code = "fn Update() { print('et1 update') }";
     et2.code = "fn Update() { print('et2 update') }";
 

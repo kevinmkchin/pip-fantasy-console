@@ -1,9 +1,9 @@
 #include "MesaScript.h"
 
-#include "../../core/CoreCommon.h"
-#include "../../core/ArcadiaUtility.h"
-#include "../../core/CoreMemoryAllocator.h"
-#include "../../core/CoreFileSystem.h"
+#include "../../core/MesaCommon.h"
+#include "../../core/MesaUtility.h"
+#include "../../core/MemoryAllocator.h"
+#include "../../core/FileSystem.h"
 
 #include <cmath>
 

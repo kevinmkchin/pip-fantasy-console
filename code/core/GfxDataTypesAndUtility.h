@@ -1,7 +1,7 @@
 #pragma once
 
-#include "CoreCommon.h"
-#include "CoreShader.h"
+#include "MesaCommon.h"
+#include "GfxShader.h"
 
 struct BasicFrameBuffer
 {

@@ -2,8 +2,8 @@
 
 #include <SDL.h>
 
-#include "gmath.h"
-#include "CoreCommon.h"
+#include "MesaMath.h"
+#include "MesaCommon.h"
 
 /** Input manager for SDL **/
 
@@ -86,7 +86,7 @@ struct GamepadStatesWrapper
     void OnDisconnect(i32 instanceID);
 };
 
-class InputManager
+class InputSystem
 {
     //////////////////////////////////////////////////////////////////////
     // GENERIC CLASSES AND FUNCTIONS BELOW
@@ -140,4 +140,4 @@ private:
 
 };
 
-extern InputManager Input;
+extern InputSystem Input;
