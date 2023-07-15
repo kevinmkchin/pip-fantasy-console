@@ -1765,7 +1765,7 @@ InterpretStatement(ASTNode* statement)
             ASSERT(condition.type == TValue::ValueType::Boolean);
             if (condition.boolValue)
                 InterpretStatementList(v->if_body);
-            else
+            else if (v->else_body)
                 InterpretStatementList(v->else_body);
         } break;
     }
