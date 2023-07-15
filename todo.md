@@ -19,32 +19,26 @@
 - fix return values being reference counted objects created locally (function scope about to be destroyed). function scope gets destroyed before return value is captured and assigned to a variable.
 - reference counting TESTS
 - fix cyclic references. maybe disallow them
+- FLOATS
 - STRINGS
-  - fix strings being reference counted objects...
+  - should strings be reference counted objects? probably not? not sure
 - use custom assert for mesascript runtime
 - access map elements via dot (e.g. map.x or map.f(param))
 
-- introducing "null" or "nil" means there are always going to have to be null checks. instead, provide a function to check if a variable name exists or is alive.
-- you should be able to ask for a list of identifiers/names that reference a given GCObj -> if a GCObj has 4 refs, I should be able to find out what those refs are...although that might be tough if the reference has no identifier e.g. if the reference is from inside a list or map entry.
 - need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
   - deleting an entry is different from deleting the object stored in that entry. if we can delete entire objects, then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).  
 - rename tables to MAP or DICTIONARY
 - answer question about accessing local variables from other scopes
 
 - add relops for GCObject type TValues. for other ops, just crash? 
-
 - initialize table elements
 
 - while loops & break
 - for loops
-- floats
 - elifs
 
-Way the fuck down the line:
-- replace all std data structs with alternate optimized implementations in C?
-- REFACTOR
-- Better unit test suite (built into the language would be nice, it should be dog simple to use)
-- should we have protected fields? how would this lead to encapsulation and inheritance?
+- introducing "null" or "nil" means there are always going to have to be null checks. instead, provide a function to check if a variable name exists or is alive.
+- you should be able to ask for a list of identifiers/names that reference a given GCObj -> if a GCObj has 4 refs, I should be able to find out what those refs are...although that might be tough if the reference has no identifier e.g. if the reference is from inside a list or map entry.
 
 ### Bugs
 
@@ -69,61 +63,14 @@ Way the fuck down the line:
 
 Missing from Cute or Ascent
 - ECS + components
-- Asset management
 - Console
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-NOTES:
-
-potentially:
-auto
-const
-float
-int
-bool
-string
-struct
-void
-enum
-break
-continue
-for
-while
-do
-switch
-case
-default
-
-
-I want:
-either
-- boxes instead of pointers AND structs or arrays
-OR
-- tables that are always reference type
-
-
-----
-- boxes instead of pointers
-    - boxes are reference pointers to a copy of a value that exists in that scope only?
-        e.g. x = 4; box b = box(x); x = 7; x != unbox(b);
-        setbox(b, unbox(b) + 2);
-- tables instead of structs?
-- vectors or arrays or something
-- hashtable? or dictionary?
-
-
-
+### Way the fuck down the line
+##### Language features
+- replace all std data structs with alternate optimized implementations in C?
+- REFACTOR
+- Better unit test suite (built into the language would be nice, it should be dog simple to use)
+- should we have protected fields? how would this lead to encapsulation and inheritance?
 
