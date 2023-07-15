@@ -4,63 +4,64 @@
 #include "GfxShader.h"
 #include "GfxDataTypesAndUtility.h"
 
-class GfxRenderer
+namespace Gfx
 {
-public:
-    bool Init();
 
-    void Render();
+    class CoreRenderer
+    {
+    public:
+        bool Init();
 
-    void UpdateBackBufferSize();
+        void Render();
 
-    void GetBackBufferSize(i32* widthOutput, i32* heightOutput);
+        void UpdateBackBufferSize();
 
-    void SetGameResolution(i32 w, i32 h);
+        void GetBackBufferSize(i32* widthOutput, i32* heightOutput);
 
-private:
+        void SetGameResolution(i32 w, i32 h);
 
-    void RenderGameLayer();
+    private:
 
-    void RenderGUILayer();
+        void RenderGameLayer();
 
-    // void RenderDebugUILayer();
+        void RenderGUILayer();
 
-    void FinalRenderToBackBuffer();
+        // void RenderDebugUILayer();
 
-private:
+        void FinalRenderToBackBuffer();
 
-    void CreateFrameBuffers();
+    private:
 
-    void UpdateFrameBuffersSize();
+        void CreateFrameBuffers();
 
-    void CreateBasicFrameBuffer(BasicFrameBuffer* buffer);
+        void UpdateFrameBuffersSize();
 
-    void UpdateBasicFrameBufferSize(BasicFrameBuffer* buffer, i32 newWidth, i32 newHeight);
+        void UpdateScreenSizeQuad();
 
-    void UpdateScreenSizeQuad();
+        void CreateMiscellaneous();
 
-    void CreateMiscellaneous();
+    private:
+        i32 backBufferWidth = -1;
+        i32 backBufferHeight = -1;
 
-private:
-    i32 backBufferWidth = -1;
-    i32 backBufferHeight = -1;
+        // constant during the runtime of a game disregard of window resize
+        i32 internalGameResolutionW = 800;
+        i32 internalGameResolutionH = 600;
 
-    // constant during the runtime of a game disregard of window resize
-    i32 internalGameResolutionW = 800;
-    i32 internalGameResolutionH = 600;
+    public:
+        BasicFrameBuffer gameLayer;
+        BasicFrameBuffer guiLayer;
+        //BasicFrameBuffer debugUILayer;
 
-public:
-    BasicFrameBuffer gameLayer;
-    BasicFrameBuffer guiLayer;
-    //BasicFrameBuffer debugUILayer;
+    private:
+        Shader finalPassShader;
+        Shader spriteShader;
 
-private:
-    Shader finalPassShader;
-    Shader spriteShader;
+    private:
+        Mesh screenSizeQuad;
 
-private:
-    Mesh screenSizeQuad;
+    };
 
-};
+    CoreRenderer* GetCoreRenderer();
 
-GfxRenderer* GetGfxRenderer();
+}

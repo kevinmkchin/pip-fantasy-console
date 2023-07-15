@@ -15,405 +15,369 @@
 #include "../game/Space.h"
 #include "../game/script/MesaScript.h"
 
-
-static SDL_Window* s_ActiveSDLWindow = nullptr;
-static GfxRenderer* s_TheGfxRenderer = nullptr;
-
-GfxRenderer* GetGfxRenderer()
+namespace Gfx
 {
-    return s_TheGfxRenderer;
-}
+    static SDL_Window* s_ActiveSDLWindow = nullptr;
+    static CoreRenderer* s_TheGfxRenderer = nullptr;
 
-static const char* __finalpass_shader_vs =
-        "#version 330\n"
-        "layout(location = 0) in vec2 pos;\n"
-        "layout(location = 1) in vec2 uv;\n"
-        "out vec2 texcoord;\n"
-        "void main()\n"
-        "{\n"
-        "    gl_Position = vec4(pos, 0, 1.0);\n"
-        "    texcoord = uv;\n"
-        "}\n";
-
-static const char* __finalpass_shader_fs =
-        "#version 330\n"
-        "uniform sampler2D screen_texture;\n"
-        "in vec2 texcoord;\n"
-        "out vec4 color;\n"
-        "void main()\n"
-        "{\n"
-        "    vec4 in_color = texture(screen_texture, texcoord);\n"
-        "    if(in_color.w < 0.001)\n"
-        "    {\n"
-        "        discard;\n"
-        "    }\n"
-        "    color = in_color;\n"
-        "}\n";
-
-static const char* __sprite_shader_vs =
-        "#version 330\n"
-        "// Input attributes\n"
-        "layout (location = 0) in vec2 vs_pos;\n"
-        "layout (location = 1) in vec2 vs_uv;\n"
-        "// Passed to fragment shader\n"
-        "out vec2 fs_uv;\n"
-        "// Application data\n"
-        "uniform mat3 model;\n"
-        "uniform mat3 view;\n"
-        "uniform mat3 projection;\n"
-        "void main()\n"
-        "{\n"
-        "    fs_uv = vs_uv;\n"
-        "    vec3 pos = projection * view * model * vec3(vs_pos, 1.0);\n"
-        "    gl_Position = vec4(pos.xy, 0.0, 1.0);\n"
-        "}\n";
-
-static const char* __sprite_shader_fs =
-        "#version 330\n"
-        "// From vertex shader\n"
-        "in vec2 fs_uv;\n"
-        "// Application data\n"
-        "uniform sampler2D sampler0;\n"
-        "uniform vec3 fragmentColor;\n"
-        "// Output color\n"
-        "layout (location = 0) out vec4 color;\n"
-        "void main()\n"
-        "{\n"
-        "    color = vec4(fragmentColor, 1.0) * texture(sampler0, fs_uv);\n"
-        "}\n";
-
-
-bool GfxRenderer::Init()
-{
-#ifdef MESA_USING_GL3W
-    if (gl3w_init())
+    CoreRenderer* GetCoreRenderer()
     {
-        fprintf(stderr, "Failed to initialize OpenGL\n");
-        return false;
-    }
-    PrintLog.Message("OpenGL initialized.");
-#endif
-    s_ActiveSDLWindow = SDL_GL_GetCurrentWindow();
-
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // alpha blending func: a * (rgb) + (1 - a) * (rgb) = final color output
-    glBlendEquation(GL_FUNC_ADD);
-
-    CreateFrameBuffers();
-    UpdateBackBufferSize();
-
-    Shader::GLCreateShaderProgram(finalPassShader, __finalpass_shader_vs, __finalpass_shader_fs);
-    Shader::GLCreateShaderProgram(spriteShader, __sprite_shader_vs, __sprite_shader_fs);
-
-    CreateMiscellaneous();
-
-    s_TheGfxRenderer = this;
-
-    return true;
-}
-
-void GfxRenderer::Render()
-{
-    RenderGameLayer();
-    RenderGUILayer();
-    //RenderDebugUILayer();
-
-    FinalRenderToBackBuffer();
-}
-
-void GfxRenderer::RenderGameLayer()
-{
-    glBindFramebuffer(GL_FRAMEBUFFER, gameLayer.FBO);
-    glViewport(0, 0, gameLayer.width, gameLayer.height);
-    glClearColor(RGB255TO1(46, 88, 120), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    spriteShader.UseShader();
-
-    static mat3 orthographicMatrix = mat3(ProjectionMatrixOrthographic2D(0.f, float(internalGameResolutionW), 0.f, float(internalGameResolutionH)));
-    static mat3 identityMatrix = mat3();
-
-    spriteShader.GLBindMatrix3fv("projection", 1, orthographicMatrix.ptr());
-    spriteShader.GLBindMatrix3fv("view", 1, identityMatrix.ptr());
-
-    mat3 modelMatrix = identityMatrix;
-
-    Space* space = GetGameActiveSpace();
-    if (space->aliveUpdateAndDraw.size() > 0)
-    {
-        EntityInstance e = space->aliveUpdateAndDraw[0];
-        MesaScript_Table* table = AccessMesaScriptTable(e.mesaGCObjMapRepresentationId);
-        TValue xtv = table->AccessMapEntry("x");
-        TValue ytv = table->AccessMapEntry("y");
-        modelMatrix[2][0] = float(xtv.integerValue);
-        modelMatrix[2][1] = float(ytv.integerValue);
+        return s_TheGfxRenderer;
     }
 
-    spriteShader.GLBindMatrix3fv("model", 1, modelMatrix.ptr());
+    static const char* __finalpass_shader_vs =
+            "#version 330\n"
+            "layout(location = 0) in vec2 pos;\n"
+            "layout(location = 1) in vec2 uv;\n"
+            "out vec2 texcoord;\n"
+            "void main()\n"
+            "{\n"
+            "    gl_Position = vec4(pos, 0, 1.0);\n"
+            "    texcoord = uv;\n"
+            "}\n";
 
-    static TextureHandle mushroom = CreateGPUTextureFromDisk(data_path("mushroom.png").c_str());
+    static const char* __finalpass_shader_fs =
+            "#version 330\n"
+            "uniform sampler2D screen_texture;\n"
+            "in vec2 texcoord;\n"
+            "out vec4 color;\n"
+            "void main()\n"
+            "{\n"
+            "    vec4 in_color = texture(screen_texture, texcoord);\n"
+            "    if(in_color.w < 0.001)\n"
+            "    {\n"
+            "        discard;\n"
+            "    }\n"
+            "    color = in_color;\n"
+            "}\n";
 
-    const i32 numQuads = 1;
-    const u32 verticesCount = 16 * numQuads;
-    const u32 indicesCount = 6 * numQuads;
-    float vb[verticesCount];
-    u32 ib[indicesCount];
+    static const char* __sprite_shader_vs =
+            "#version 330\n"
+            "// Input attributes\n"
+            "layout (location = 0) in vec2 vs_pos;\n"
+            "layout (location = 1) in vec2 vs_uv;\n"
+            "// Passed to fragment shader\n"
+            "out vec2 fs_uv;\n"
+            "// Application data\n"
+            "uniform mat3 model;\n"
+            "uniform mat3 view;\n"
+            "uniform mat3 projection;\n"
+            "void main()\n"
+            "{\n"
+            "    fs_uv = vs_uv;\n"
+            "    vec3 pos = projection * view * model * vec3(vs_pos, 1.0);\n"
+            "    gl_Position = vec4(pos.xy, 0.0, 1.0);\n"
+            "}\n";
 
-    vb[0] = 0;
-    vb[1] = 0;
-    vb[2] = 0;
-    vb[3] = 1;
-    vb[4] = 16;
-    vb[5] = 0;
-    vb[6] = 1;
-    vb[7] = 1;
-    vb[8] = 0;
-    vb[9] = -16;
-    vb[10] = 0;
-    vb[11] = 0;
-    vb[12] = 16;
-    vb[13] = -16;
-    vb[14] = 1;
-    vb[15] = 0;
+    static const char* __sprite_shader_fs =
+            "#version 330\n"
+            "// From vertex shader\n"
+            "in vec2 fs_uv;\n"
+            "// Application data\n"
+            "uniform sampler2D sampler0;\n"
+            "uniform vec3 fragmentColor;\n"
+            "// Output color\n"
+            "layout (location = 0) out vec4 color;\n"
+            "void main()\n"
+            "{\n"
+            "    color = vec4(fragmentColor, 1.0) * texture(sampler0, fs_uv);\n"
+            "}\n";
 
-    ib[0] = 0;
-    ib[1] = 2;
-    ib[2] = 1;
-    ib[3] = 2;
-    ib[4] = 3;
-    ib[5] = 1;
 
-    // pass VBO (x, y, u, v) and IBO to shader
-    static u32 spriteBatchVAO = 0;
-    static u32 spriteBatchVBO = 0;
-    static u32 spriteBatchIBO = 0;
-    if(!spriteBatchVAO)
+    bool CoreRenderer::Init()
     {
-        glGenVertexArrays(1, &spriteBatchVAO);
+    #ifdef MESA_USING_GL3W
+        if (gl3w_init())
+        {
+            fprintf(stderr, "Failed to initialize OpenGL\n");
+            return false;
+        }
+        PrintLog.Message("OpenGL initialized.");
+    #endif
+        s_ActiveSDLWindow = SDL_GL_GetCurrentWindow();
+
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // alpha blending func: a * (rgb) + (1 - a) * (rgb) = final color output
+        glBlendEquation(GL_FUNC_ADD);
+
+        CreateFrameBuffers();
+        UpdateBackBufferSize();
+
+        GLCreateShaderProgram(finalPassShader, __finalpass_shader_vs, __finalpass_shader_fs);
+        GLCreateShaderProgram(spriteShader, __sprite_shader_vs, __sprite_shader_fs);
+
+        CreateMiscellaneous();
+
+        s_TheGfxRenderer = this;
+
+        return true;
+    }
+
+    void CoreRenderer::Render()
+    {
+        RenderGameLayer();
+        RenderGUILayer();
+        //RenderDebugUILayer();
+
+        FinalRenderToBackBuffer();
+    }
+
+    void CoreRenderer::RenderGameLayer()
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, gameLayer.FBO);
+        glViewport(0, 0, gameLayer.width, gameLayer.height);
+        glClearColor(RGB255TO1(46, 88, 120), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        UseShader(spriteShader);
+
+        static mat3 orthographicMatrix = mat3(ProjectionMatrixOrthographic2D(0.f, float(internalGameResolutionW), 0.f, float(internalGameResolutionH)));
+        static mat3 identityMatrix = mat3();
+
+        GLBindMatrix3fv(spriteShader, "projection", 1, orthographicMatrix.ptr());
+        GLBindMatrix3fv(spriteShader, "view", 1, identityMatrix.ptr());
+
+        mat3 modelMatrix = identityMatrix;
+
+        Space* space = GetGameActiveSpace();
+        if (space->aliveUpdateAndDraw.size() > 0)
+        {
+            EntityInstance e = space->aliveUpdateAndDraw[0];
+            MesaScript_Table* table = AccessMesaScriptTable(e.mesaGCObjMapRepresentationId);
+            TValue xtv = table->AccessMapEntry("x");
+            TValue ytv = table->AccessMapEntry("y");
+            modelMatrix[2][0] = float(xtv.integerValue);
+            modelMatrix[2][1] = float(ytv.integerValue);
+        }
+
+        GLBindMatrix3fv(spriteShader, "model", 1, modelMatrix.ptr());
+
+        static TextureHandle mushroom = CreateGPUTextureFromDisk(data_path("mushroom.png").c_str());
+
+        const i32 numQuads = 1;
+        const u32 verticesCount = 16 * numQuads;
+        const u32 indicesCount = 6 * numQuads;
+        float vb[verticesCount];
+        u32 ib[indicesCount];
+
+        vb[0] = 0;
+        vb[1] = 0;
+        vb[2] = 0;
+        vb[3] = 1;
+        vb[4] = 16;
+        vb[5] = 0;
+        vb[6] = 1;
+        vb[7] = 1;
+        vb[8] = 0;
+        vb[9] = -16;
+        vb[10] = 0;
+        vb[11] = 0;
+        vb[12] = 16;
+        vb[13] = -16;
+        vb[14] = 1;
+        vb[15] = 0;
+
+        ib[0] = 0;
+        ib[1] = 2;
+        ib[2] = 1;
+        ib[3] = 2;
+        ib[4] = 3;
+        ib[5] = 1;
+
+        // pass VBO (x, y, u, v) and IBO to shader
+        static u32 spriteBatchVAO = 0;
+        static u32 spriteBatchVBO = 0;
+        static u32 spriteBatchIBO = 0;
+        if(!spriteBatchVAO)
+        {
+            glGenVertexArrays(1, &spriteBatchVAO);
+            glBindVertexArray(spriteBatchVAO);
+
+            glGenBuffers(1, &spriteBatchVBO);
+            glBindBuffer(GL_ARRAY_BUFFER, spriteBatchVBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 16, nullptr, GL_DYNAMIC_DRAW);
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, nullptr);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void*)(sizeof(float) * 2)); // i really feel like this can be nullptr
+            glEnableVertexAttribArray(1);
+
+            glGenBuffers(1, &spriteBatchIBO);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spriteBatchIBO);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * 6, nullptr, GL_DYNAMIC_DRAW);
+        }
         glBindVertexArray(spriteBatchVAO);
-
-        glGenBuffers(1, &spriteBatchVBO);
         glBindBuffer(GL_ARRAY_BUFFER, spriteBatchVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 16, nullptr, GL_DYNAMIC_DRAW);
-        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, nullptr);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void*)(sizeof(float) * 2)); // i really feel like this can be nullptr
-        glEnableVertexAttribArray(1);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verticesCount, vb, GL_DYNAMIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, spriteBatchIBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * indicesCount, ib, GL_DYNAMIC_DRAW);
 
-        glGenBuffers(1, &spriteBatchIBO);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spriteBatchIBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * 6, nullptr, GL_DYNAMIC_DRAW);
+        // set Sampler2D/int sampler0
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, mushroom.textureId);
+        GLBind1i(spriteShader, "sampler0", 0);
+        // set vec3 fragmentColor 
+        GLBind3f(spriteShader, "fragmentColor", 1.f, 1.f, 1.f);
+
+        // draw
+        glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
     }
-    glBindVertexArray(spriteBatchVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, spriteBatchVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verticesCount, vb, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, spriteBatchIBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * indicesCount, ib, GL_DYNAMIC_DRAW);
 
-    // set Sampler2D/int sampler0
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, mushroom.textureId);
-    spriteShader.GLBind1i("sampler0", 0);
-    // set vec3 fragmentColor 
-    spriteShader.GLBind3f("fragmentColor", 1.f, 1.f, 1.f);
-
-    // draw
-    glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
-}
-
-void GfxRenderer::RenderGUILayer()
-{
-    glBindFramebuffer(GL_FRAMEBUFFER, guiLayer.FBO);
-    glViewport(0, 0, guiLayer.width, guiLayer.height);
-    glDepthRange(0.00001f, 10.f);
-    glClearColor(RGB255TO1(244,194,194), 0.0f);
-    glClearDepth(10.f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_DEPTH_TEST);
-
-    MesaGUI::Draw();
-}
-
-//void GfxRenderer::RenderDebugUILayer()
-//{
-//    glBindFramebuffer(GL_FRAMEBUFFER, debugUILayer.FBO);
-//    glViewport(0, 0, debugUILayer.width, debugUILayer.height);
-//    glDepthRange(0.00001f, 10.f);
-//    glClearColor(0.674f, 0.847f, 1.0f, 0.0f);
-//    glClearDepth(10.f);
-//    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//    glEnable(GL_BLEND);
-//    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//
-//    // CONSOLE RENDERING
-//    glDisable(GL_DEPTH_TEST);
-//    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-//    console_render();
-//    glEnable(GL_DEPTH_TEST);
-//}
-
-void GfxRenderer::FinalRenderToBackBuffer()
-{
-    finalPassShader.UseShader();
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, backBufferWidth, backBufferHeight);
-    glDepthRange(0, 10);
-    glClearColor(RGB255TO1(0, 0, 0), 1.f);
-    glClearDepth(1.f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_DEPTH_TEST);
-
-    // Draw game frame
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, gameLayer.colorTexId);
-    RenderMesh(screenSizeQuad);
-
-    // Draw GUI frame
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, guiLayer.colorTexId);
-    RenderMesh(screenSizeQuad);
-
-//    // Draw Debug UI frame
-//    glActiveTexture(GL_TEXTURE0);
-//    glBindTexture(GL_TEXTURE_2D, debugUILayer.colorTexId);
-//    RenderMesh(screenSizeQuad);
-
-    GLHasErrors();
-}
-
-void GfxRenderer::UpdateBackBufferSize()
-{
-    SDL_GL_GetDrawableSize(s_ActiveSDLWindow, &backBufferWidth, &backBufferHeight);
-    UpdateScreenSizeQuad();
-}
-
-void GfxRenderer::GetBackBufferSize(i32* widthOutput, i32* heightOutput)
-{
-    *widthOutput = backBufferWidth;
-    *heightOutput = backBufferHeight;
-}
-
-void GfxRenderer::CreateFrameBuffers()
-{
-    gameLayer.width = internalGameResolutionW;
-    gameLayer.height = internalGameResolutionH;
-    CreateBasicFrameBuffer(&gameLayer);
-    guiLayer.width = internalGameResolutionW;
-    guiLayer.height = internalGameResolutionH;
-    CreateBasicFrameBuffer(&guiLayer);
-//    debugUILayer.width = internalGameResolutionW;
-//    debugUILayer.height = internalGameResolutionH;
-//    CreateBasicFrameBuffer(&debugUILayer);
-}
-
-void GfxRenderer::SetGameResolution(i32 w, i32 h)
-{
-    internalGameResolutionW = w;
-    internalGameResolutionH = h;
-    UpdateFrameBuffersSize();
-    UpdateScreenSizeQuad();
-}
-
-void GfxRenderer::UpdateFrameBuffersSize()
-{
-    UpdateBasicFrameBufferSize(&gameLayer, internalGameResolutionW, internalGameResolutionH);
-    UpdateBasicFrameBufferSize(&guiLayer, internalGameResolutionW, internalGameResolutionH); // TODO(Kevin): gui layer should use different resolution to game
-//    UpdateBasicFrameBufferSize(&debugUILayer, backBufferWidth, backBufferHeight);
-}
-
-void GfxRenderer::CreateBasicFrameBuffer(BasicFrameBuffer* buffer)
-{
-    buffer->FBO = 0;
-    glGenFramebuffers(1, &buffer->FBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, buffer->FBO);
-
-    glGenTextures(1, &buffer->colorTexId);
-    glBindTexture(GL_TEXTURE_2D, buffer->colorTexId);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buffer->width, buffer->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-    glGenRenderbuffers(1, &buffer->depthRBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, buffer->depthRBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, buffer->colorTexId, 0);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, buffer->width, buffer->height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buffer->depthRBO);
-
-    ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-}
-
-void GfxRenderer::UpdateBasicFrameBufferSize(BasicFrameBuffer* buffer, i32 newWidth, i32 newHeight)
-{
-    buffer->width = newWidth;
-    buffer->height = newHeight;
-    glBindFramebuffer(GL_FRAMEBUFFER, buffer->FBO);
-    glBindTexture(GL_TEXTURE_2D, buffer->colorTexId);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, buffer->width, buffer->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glBindRenderbuffer(GL_RENDERBUFFER, buffer->depthRBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, buffer->width, buffer->height);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    void CoreRenderer::RenderGUILayer()
     {
-        PrintLog.Error("Failed to change size of Internal FrameBuffer Object.");
+        glBindFramebuffer(GL_FRAMEBUFFER, guiLayer.FBO);
+        glViewport(0, 0, guiLayer.width, guiLayer.height);
+        glDepthRange(0.00001f, 10.f);
+        glClearColor(RGB255TO1(244,194,194), 0.0f);
+        glClearDepth(10.f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_DEPTH_TEST);
+
+        MesaGUI::Draw();
     }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
 
-void GfxRenderer::CreateMiscellaneous()
-{
-    u32 refQuadIndices[6] = {
-            0, 1, 3,
-            0, 3, 2
-    };
-    float refQuadVertices[16] = {
-            //  x   y    u    v
-            -1.f, -1.f, 0.f, 0.f,
-            1.f, -1.f, 1.f, 0.f,
-            -1.f, 1.f, 0.f, 1.f,
-            1.f, 1.f, 1.f, 1.f
-    };
+    //void CoreRenderer::RenderDebugUILayer()
+    //{
+    //    glBindFramebuffer(GL_FRAMEBUFFER, debugUILayer.FBO);
+    //    glViewport(0, 0, debugUILayer.width, debugUILayer.height);
+    //    glDepthRange(0.00001f, 10.f);
+    //    glClearColor(0.674f, 0.847f, 1.0f, 0.0f);
+    //    glClearDepth(10.f);
+    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //    glEnable(GL_BLEND);
+    //    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //
+    //    // CONSOLE RENDERING
+    //    glDisable(GL_DEPTH_TEST);
+    //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //    console_render();
+    //    glEnable(GL_DEPTH_TEST);
+    //}
 
-    MeshCreate(screenSizeQuad, refQuadVertices, refQuadIndices, 16, 6, 2, 2, 0, GL_STATIC_DRAW);
-}
-
-void GfxRenderer::UpdateScreenSizeQuad()
-{
-    u32 refQuadIndices[6] = {
-            0, 1, 3,
-            0, 3, 2
-    };
-    float bw = (float)backBufferWidth;
-    float bh = (float)backBufferHeight;
-    float internal_ratio = (float)internalGameResolutionW / (float)internalGameResolutionH;
-    float screen_ratio = (float)bw / (float)bh;
-    float finalOutputQuadVertices[16] = {
-            -1.f, -1.f, 0.f, 0.f,
-            1.f, -1.f, 1.f, 0.f,
-            -1.f, 1.f, 0.f, 1.f,
-            1.f, 1.f, 1.f, 1.f
-    };
-    if(screen_ratio > internal_ratio)
+    void CoreRenderer::FinalRenderToBackBuffer()
     {
-        float w = bh * internal_ratio;
-        float f = (bw - w) / bw;
-        finalOutputQuadVertices[0] = -1.f + f;
-        finalOutputQuadVertices[4] = 1.f - f;
-        finalOutputQuadVertices[8] = -1.f + f;
-        finalOutputQuadVertices[12] = 1.f - f;
-    }
-    else
-    {
-        float h = bw / internal_ratio;
-        float f = (bh - h) / bh;
-        finalOutputQuadVertices[1] = -1.f + f;
-        finalOutputQuadVertices[5] = -1.f + f;
-        finalOutputQuadVertices[9] = 1.f - f;
-        finalOutputQuadVertices[13] = 1.f - f;
-    }
-    RebindBufferObjects(screenSizeQuad, finalOutputQuadVertices, refQuadIndices, 16, 6);
-}
+        UseShader(finalPassShader);
 
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, backBufferWidth, backBufferHeight);
+        glDepthRange(0, 10);
+        glClearColor(RGB255TO1(0, 0, 0), 1.f);
+        glClearDepth(1.f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_DEPTH_TEST);
+
+        // Draw game frame
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, gameLayer.colorTexId);
+        RenderMesh(screenSizeQuad);
+
+        // Draw GUI frame
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, guiLayer.colorTexId);
+        RenderMesh(screenSizeQuad);
+
+    //    // Draw Debug UI frame
+    //    glActiveTexture(GL_TEXTURE0);
+    //    glBindTexture(GL_TEXTURE_2D, debugUILayer.colorTexId);
+    //    RenderMesh(screenSizeQuad);
+
+        GLHasErrors();
+    }
+
+    void CoreRenderer::UpdateBackBufferSize()
+    {
+        SDL_GL_GetDrawableSize(s_ActiveSDLWindow, &backBufferWidth, &backBufferHeight);
+        UpdateScreenSizeQuad();
+    }
+
+    void CoreRenderer::GetBackBufferSize(i32* widthOutput, i32* heightOutput)
+    {
+        *widthOutput = backBufferWidth;
+        *heightOutput = backBufferHeight;
+    }
+
+    void CoreRenderer::CreateFrameBuffers()
+    {
+        gameLayer.width = internalGameResolutionW;
+        gameLayer.height = internalGameResolutionH;
+        CreateBasicFrameBuffer(&gameLayer);
+        guiLayer.width = internalGameResolutionW;
+        guiLayer.height = internalGameResolutionH;
+        CreateBasicFrameBuffer(&guiLayer);
+    //    debugUILayer.width = internalGameResolutionW;
+    //    debugUILayer.height = internalGameResolutionH;
+    //    CreateBasicFrameBuffer(&debugUILayer);
+    }
+
+    void CoreRenderer::SetGameResolution(i32 w, i32 h)
+    {
+        internalGameResolutionW = w;
+        internalGameResolutionH = h;
+        UpdateFrameBuffersSize();
+    }
+
+    void CoreRenderer::UpdateFrameBuffersSize()
+    {
+        UpdateBasicFrameBufferSize(&gameLayer, internalGameResolutionW, internalGameResolutionH);
+        UpdateBasicFrameBufferSize(&guiLayer, internalGameResolutionW, internalGameResolutionH); // TODO(Kevin): gui layer should use different resolution to game
+    //    UpdateBasicFrameBufferSize(&debugUILayer, backBufferWidth, backBufferHeight);
+    }
+
+    void CoreRenderer::CreateMiscellaneous()
+    {
+        u32 refQuadIndices[6] = {
+                0, 1, 3,
+                0, 3, 2
+        };
+        float refQuadVertices[16] = {
+                //  x   y    u    v
+                -1.f, -1.f, 0.f, 0.f,
+                1.f, -1.f, 1.f, 0.f,
+                -1.f, 1.f, 0.f, 1.f,
+                1.f, 1.f, 1.f, 1.f
+        };
+
+        MeshCreate(screenSizeQuad, refQuadVertices, refQuadIndices, 16, 6, 2, 2, 0, GL_STATIC_DRAW);
+    }
+
+    void CoreRenderer::UpdateScreenSizeQuad()
+    {
+        u32 refQuadIndices[6] = {
+                0, 1, 3,
+                0, 3, 2
+        };
+        float bw = (float)backBufferWidth;
+        float bh = (float)backBufferHeight;
+        float internal_ratio = (float)internalGameResolutionW / (float)internalGameResolutionH;
+        float screen_ratio = (float)bw / (float)bh;
+        float finalOutputQuadVertices[16] = {
+                -1.f, -1.f, 0.f, 0.f,
+                1.f, -1.f, 1.f, 0.f,
+                -1.f, 1.f, 0.f, 1.f,
+                1.f, 1.f, 1.f, 1.f
+        };
+        if(screen_ratio > internal_ratio)
+        {
+            float w = bh * internal_ratio;
+            float f = (bw - w) / bw;
+            finalOutputQuadVertices[0] = -1.f + f;
+            finalOutputQuadVertices[4] = 1.f - f;
+            finalOutputQuadVertices[8] = -1.f + f;
+            finalOutputQuadVertices[12] = 1.f - f;
+        }
+        else
+        {
+            float h = bw / internal_ratio;
+            float f = (bh - h) / bh;
+            finalOutputQuadVertices[1] = -1.f + f;
+            finalOutputQuadVertices[5] = -1.f + f;
+            finalOutputQuadVertices[9] = 1.f - f;
+            finalOutputQuadVertices[13] = 1.f - f;
+        }
+        RebindBufferObjects(screenSizeQuad, finalOutputQuadVertices, refQuadIndices, 16, 6);
+    }
+   
+}
 
