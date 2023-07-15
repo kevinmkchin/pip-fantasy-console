@@ -10,25 +10,33 @@
 - release GC reference if lose reference, and then propagate to element gc objects (both lists and maps)
 - release ref of local variables when function scope gets popped
 
+### Bugs
+
+- GUI incorrect zones when window resize
+  - prob cuz mouse x y will be incorrect.
+- Make sure vertext height thing didn't regress (text height inconsistency for loading vs forming vertices)
+
 ### Engine
 
 - MesaScript integration
+- MesaGUI code editor
 
 ### Language features
 
 - fix return values being reference counted objects created locally (function scope about to be destroyed). function scope gets destroyed before return value is captured and assigned to a variable.
-- reference counting TESTS
 - fix cyclic references. maybe disallow them
 - FLOATS
+  - flr, ceil, rnd
 - STRINGS
   - should strings be reference counted objects? probably not? not sure
-- use custom assert for mesascript runtime
 - access map elements via dot (e.g. map.x or map.f(param))
+- reference counting TESTS
 
 - need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
   - deleting an entry is different from deleting the object stored in that entry. if we can delete entire objects, then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).  
 - rename tables to MAP or DICTIONARY
 - answer question about accessing local variables from other scopes
+- use custom assert for mesascript runtime
 
 - add relops for GCObject type TValues. for other ops, just crash? 
 - initialize table elements
@@ -39,12 +47,6 @@
 
 - introducing "null" or "nil" means there are always going to have to be null checks. instead, provide a function to check if a variable name exists or is alive.
 - you should be able to ask for a list of identifiers/names that reference a given GCObj -> if a GCObj has 4 refs, I should be able to find out what those refs are...although that might be tough if the reference has no identifier e.g. if the reference is from inside a list or map entry.
-
-### Bugs
-
-- GUI incorrect zones when window resize
-  - prob cuz mouse x y will be incorrect.
-- Make sure vertext height thing didn't regress (text height inconsistency for loading vs forming vertices)
 
 ### Uncategorized
 
@@ -57,12 +59,8 @@
 - Game file management
   - meta data (Title, Cover art, Author, etc.)
   - everything needed to play or edit the game
-- Screen system
-- Object system
-- Script interpreter
-
-Missing from Cute or Ascent
-- ECS + components
+- Space system
+- Entity system
 - Console
 
 

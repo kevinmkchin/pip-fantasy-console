@@ -348,7 +348,10 @@ void CallFunctionInActiveScriptEnvironmentWithOneParam(const char* functionIdent
 
 void InitializeLanguageCompilerAndRuntime();
 
-// void RunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir);
+
+
+
+void TemporaryRunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir);
 
 
 
