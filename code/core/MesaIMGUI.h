@@ -7,8 +7,8 @@ typedef int ui_id;
 
 #include <SDL.h>
 
-#include "gmath.h"
-#include "CoreCommon.h"
+#include "MesaMath.h"
+#include "MesaCommon.h"
 struct vtxt_font;
 
 namespace ARCGUI

@@ -1,17 +1,17 @@
-#include "ArcadiaIMGUI.h"
+#include "MesaIMGUI.h"
 
 #include <queue>
 #include <stack>
 
-#include "gmath.h"
+#include "MesaMath.h"
 #include "../singleheaders/vertext.h"
 #include "../singleheaders/stb_sprintf.h"
 
-#include "ArcadiaUtility.h"
-#include "CoreRenderer.h"
-#include "CoreShader.h"
-#include "CorePrintLog.h"
-#include "CoreFileSystem.h"
+#include "MesaUtility.h"
+#include "GfxRenderer.h"
+#include "GfxShader.h"
+#include "PrintLog.h"
+#include "FileSystem.h"
 
 namespace ARCGUI
 {
@@ -861,8 +861,8 @@ namespace ARCGUI
     void Draw()
     {
 
-        i32 kevGuiScreenWidth = GetCoreRenderer()->guiLayer.width;
-        i32 kevGuiScreenHeight = GetCoreRenderer()->guiLayer.height;
+        i32 kevGuiScreenWidth = GetGfxRenderer()->guiLayer.width;
+        i32 kevGuiScreenHeight = GetGfxRenderer()->guiLayer.height;
         mat4 matrixOrtho = ProjectionMatrixOrthographic2D(0.f, (float)kevGuiScreenWidth, (float)kevGuiScreenHeight, 0.f);
 
         __main_ui_shader.UseShader();

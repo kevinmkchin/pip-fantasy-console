@@ -1,4 +1,4 @@
-#include "CorePrintLog.h"
+#include "PrintLog.h"
 
 CorePrintLog PrintLog;
 

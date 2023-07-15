@@ -1,7 +1,7 @@
-#include "RenderingDataTypesAndUtility.h"
+#include "GfxDataTypesAndUtility.h"
 
-#include "CoreFileSystem.h"
-#include "ArcadiaUtility.h"
+#include "FileSystem.h"
+#include "MesaUtility.h"
 
 void Mesh::RenderMesh(GLenum renderMode) const
 {

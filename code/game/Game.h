@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../core/CoreCommon.h"
-#include "../core/gmath.h"
+#include "../core/MesaCommon.h"
+#include "../core/MesaMath.h"
 
 
 void TemporaryGameInit();

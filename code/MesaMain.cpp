@@ -1,7 +1,7 @@
-#include "core/CoreCommon.h"
-#include "core/ArcadiaUtility.h"
-#include "core/ArcadiaTimer.h"
-#include "core/CoreRenderer.h"
+#include "core/MesaCommon.h"
+#include "core/MesaUtility.h"
+#include "core/Timer.h"
+#include "core/GfxRenderer.h"
 
 #include <SDL.h>
 
@@ -13,8 +13,8 @@
 #include "singleheaders/stb_truetype.h"
 #define VERTEXT_IMPLEMENTATION
 #include "singleheaders/vertext.h"
-#include "core/CoreInput.h"
-#include "core/ArcadiaIMGUI.h"
+#include "core/InputSystem.h"
+#include "core/MesaIMGUI.h"
 
 #include "game/Game.h"
 #include "game/script/MesaScript.h"
@@ -22,7 +22,7 @@
 static SDL_Window* g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
 static bool g_ProgramShouldShutdown = false;
-static CoreRenderer g_gfx;
+static GfxRenderer g_gfx;
 
 static bool InitializeEverything()
 {
@@ -123,6 +123,7 @@ int main(int argc, char* argv[])
         // console_update(Time.unscaledDeltaTime);
         TemporaryGameLoop();
 
+/*
         auto sty = ARCGUI::GetActiveUIStyleCopy();
         sty.textColor = vec4(0.f,0.f,0.f,1.f);
         //ARCGUI::PushUIStyle(sty);
@@ -133,11 +134,12 @@ int main(int argc, char* argv[])
         ARCGUI::DoTextUnformatted(430, 30, 8, ARCGUI::TextAlignment::Left, "HEART");
         ARCGUI::DoTextUnformatted(30, 60, 16, ARCGUI::TextAlignment::Left, "Start Editor");
         ARCGUI::DoTextUnformatted(30, 90, 8, ARCGUI::TextAlignment::Left, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!");
+        //ARCGUI::PopUIStyle();
         //ARCGUI::DoButton(ARCGUI::FreshID(), ARCGUI::UIRect(30, 90, 100, 30), vec4(0,0,0,1), vec4(0.5,0.5,0.5,1), vec4(1.f, 1.f, 1.f, 1.f));
         ARCGUI::EditorBeginWindow(ARCGUI::UIRect(30, 120, 200, 200));
         ARCGUI::EditorLabelledButton("Insert Cartridge");
         ARCGUI::EditorEndWindow();
-
+*/
         static float lastFPSShowTime = Time.time;
         static float framerate = 0.f;
         if (Time.time - lastFPSShowTime > 0.25f)
@@ -147,9 +149,8 @@ int main(int argc, char* argv[])
         }
         ARCGUI::DoText(0, 16, 16, ARCGUI::TextAlignment::Left, "FPS: %d", int(framerate));
 
-        //ARCGUI::PopUIStyle();
 
-//        DrawProfilerGUI();
+        // DrawProfilerGUI();
         g_gfx.Render();
         SDL_GL_SwapWindow(g_SDLWindow);
         Input.ResetInputStatesAtEndOfFrame();

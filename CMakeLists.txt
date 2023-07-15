@@ -9,17 +9,17 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ext/cmake_project_path.h.in" "${CMAK
 
 
 set(SOURCE_FILES
-	    code/MesaFantasyConsole.cpp
-        code/core/ArcadiaUtility.cpp
-        code/core/ArcadiaTimer.cpp
-        code/core/CoreRenderer.cpp
-        code/core/RenderingDataTypesAndUtility.cpp
-        code/core/CoreShader.cpp
-        code/core/CoreFileSystem.cpp
-        code/core/CorePrintLog.cpp
-        code/core/CoreInput.cpp
-        code/core/ArcadiaIMGUI.cpp
-        code/core/CoreMemoryAllocator.cpp
+        code/MesaMain.cpp
+        code/core/MesaUtility.cpp
+        code/core/Timer.cpp
+        code/core/GfxRenderer.cpp
+        code/core/GfxDataTypesAndUtility.cpp
+        code/core/GfxShader.cpp
+        code/core/FileSystem.cpp
+        code/core/PrintLog.cpp
+        code/core/InputSystem.cpp
+        code/core/MesaIMGUI.cpp
+        code/core/MemoryAllocator.cpp
         code/game/script/MesaScript.cpp
         code/game/EditorState.cpp
         code/game/Game.cpp

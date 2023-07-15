@@ -1,7 +1,7 @@
-#include "ArcadiaUtility.h"
-#include "CoreCommon.h"
-#include "ArcadiaOpenGL.h"
-#include "CorePrintLog.h"
+#include "MesaUtility.h"
+#include "MesaCommon.h"
+#include "MesaOpenGL.h"
+#include "PrintLog.h"
 
 #include <cassert>
 
@@ -33,7 +33,7 @@ bool GLHasErrors()
                 break;
         }
 
-        // TODO(Kevin): PrintLog.ErrorFmt("OpenGL: {}", error_str);
+        // TODO(Kevin): CorePrintLog.ErrorFmt("OpenGL: {}", error_str);
         error = glGetError();
         assert(false);
     }

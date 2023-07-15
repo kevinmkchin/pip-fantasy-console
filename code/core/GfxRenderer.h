@@ -1,10 +1,10 @@
 #pragma once
 
-#include "CoreCommon.h"
-#include "CoreShader.h"
-#include "RenderingDataTypesAndUtility.h"
+#include "MesaCommon.h"
+#include "GfxShader.h"
+#include "GfxDataTypesAndUtility.h"
 
-class CoreRenderer
+class GfxRenderer
 {
 public:
     bool Init();
@@ -63,4 +63,4 @@ private:
 
 };
 
-CoreRenderer* GetCoreRenderer();
+GfxRenderer* GetGfxRenderer();

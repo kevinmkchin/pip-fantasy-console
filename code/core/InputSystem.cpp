@@ -1,15 +1,15 @@
-#include "CoreInput.h"
+#include "InputSystem.h"
 
-#include "CoreCommon.h"
+#include "MesaCommon.h"
 
-InputManager Input;
+InputSystem Input;
 
 //////////////////////////////////////////////////////////////////////
 // GENERIC CLASSES AND FUNCTIONS BELOW
 //////////////////////////////////////////////////////////////////////
 
 /** Global **/
-void InputManager::ProcessAllSDLInputEvents(const SDL_Event event)
+void InputSystem::ProcessAllSDLInputEvents(const SDL_Event event)
 {
     switch (event.type)
     {
@@ -46,7 +46,7 @@ void InputManager::ProcessAllSDLInputEvents(const SDL_Event event)
     }
 }
 
-void InputManager::ResetInputStatesAtEndOfFrame()
+void InputSystem::ResetInputStatesAtEndOfFrame()
 {
     mouseDelta = vec2(0.f, 0.f);
 
@@ -66,27 +66,27 @@ void InputManager::ResetInputStatesAtEndOfFrame()
     }
 }
 
-bool InputManager::KeyPressed(SDL_Scancode scancode)
+bool InputSystem::KeyPressed(SDL_Scancode scancode)
 {
     return currentKeyState[scancode];
 }
 
-bool InputManager::KeyReleased(SDL_Scancode scancode)
+bool InputSystem::KeyReleased(SDL_Scancode scancode)
 {
     return !KeyPressed(scancode);
 }
 
-bool InputManager::KeyHasBeenPressed(SDL_Scancode scancode)
+bool InputSystem::KeyHasBeenPressed(SDL_Scancode scancode)
 {
     return justPressedKeyState[scancode];
 }
 
-bool InputManager::KeyHasBeenReleased(SDL_Scancode scancode)
+bool InputSystem::KeyHasBeenReleased(SDL_Scancode scancode)
 {
     return justReleasedKeyState[scancode];
 }
 
-void InputManager::ProcessSDLMouseButtonEvent(SDL_MouseButtonEvent mouseButtonEvent)
+void InputSystem::ProcessSDLMouseButtonEvent(SDL_MouseButtonEvent mouseButtonEvent)
 {
     if (mouseButtonEvent.button == SDL_BUTTON_LEFT)
     {
@@ -114,13 +114,13 @@ void InputManager::ProcessSDLMouseButtonEvent(SDL_MouseButtonEvent mouseButtonEv
     }
 }
 
-void InputManager::ProcessSDLMouseMotionEvent(SDL_MouseMotionEvent mouseMotionEvent)
+void InputSystem::ProcessSDLMouseMotionEvent(SDL_MouseMotionEvent mouseMotionEvent)
 {
     mouseDelta = vec2((float)mouseMotionEvent.xrel, (float)mouseMotionEvent.yrel);
     mousePos = ivec2(mouseMotionEvent.x, mouseMotionEvent.y);
 }
 
-void InputManager::ProcessSDLKeyDownEvent(SDL_KeyboardEvent keyEvent) {
+void InputSystem::ProcessSDLKeyDownEvent(SDL_KeyboardEvent keyEvent) {
     SDL_Scancode key = keyEvent.keysym.scancode;
     currentKeyState[key] = 1;
     if (!keyEvent.repeat) {
@@ -128,7 +128,7 @@ void InputManager::ProcessSDLKeyDownEvent(SDL_KeyboardEvent keyEvent) {
     }
 }
 
-void InputManager::ProcessSDLKeyUpEvent(SDL_KeyboardEvent keyEvent) {
+void InputSystem::ProcessSDLKeyUpEvent(SDL_KeyboardEvent keyEvent) {
     // Never set JustPressed or JustReleased to 0 here.
     SDL_Scancode key = keyEvent.keysym.scancode;
     currentKeyState[key] = 0;
@@ -136,12 +136,12 @@ void InputManager::ProcessSDLKeyUpEvent(SDL_KeyboardEvent keyEvent) {
 }
 
 
-GamepadState& InputManager::GetGamepad(i32 playerNumber)
+GamepadState& InputSystem::GetGamepad(i32 playerNumber)
 {
     return gamepadStates[playerNumber];
 }
 
-void InputManager::ProcessSDLControllerButtonDownEvent(SDL_ControllerButtonEvent gamepadButtonEvent) {
+void InputSystem::ProcessSDLControllerButtonDownEvent(SDL_ControllerButtonEvent gamepadButtonEvent) {
     /* SDL_GameControllerButton reference:
     SDL_CONTROLLER_BUTTON_A 0
     SDL_CONTROLLER_BUTTON_B 1
@@ -224,7 +224,7 @@ void InputManager::ProcessSDLControllerButtonDownEvent(SDL_ControllerButtonEvent
     }
 }
 
-void InputManager::ProcessSDLControllerButtonUpEvent(SDL_ControllerButtonEvent gamepadButtonEvent) {
+void InputSystem::ProcessSDLControllerButtonUpEvent(SDL_ControllerButtonEvent gamepadButtonEvent) {
     i32 joystickInstanceID = gamepadButtonEvent.which;
     i32 gamepadIndex = gamepadStates.GamepadIndexFromInstanceID(joystickInstanceID);
     u8 buttonIndex = gamepadButtonEvent.button;
@@ -289,7 +289,7 @@ void InputManager::ProcessSDLControllerButtonUpEvent(SDL_ControllerButtonEvent g
     }
 }
 
-void InputManager::ProcessSDLControllerAxisEvent(SDL_ControllerAxisEvent gamepadAxisEvent) {
+void InputSystem::ProcessSDLControllerAxisEvent(SDL_ControllerAxisEvent gamepadAxisEvent) {
     i32 joystickInstanceID = gamepadAxisEvent.which;
     i32 gamepadIndex = gamepadStates.GamepadIndexFromInstanceID(joystickInstanceID);
     u8 axisIndex = gamepadAxisEvent.axis;
@@ -401,7 +401,7 @@ void InputManager::ProcessSDLControllerAxisEvent(SDL_ControllerAxisEvent gamepad
     }
 }
 
-void InputManager::ProcessSDLControllerConnected(i32 deviceIndex) {
+void InputSystem::ProcessSDLControllerConnected(i32 deviceIndex) {
     SDL_GameController* deviceHandle = SDL_GameControllerOpen(deviceIndex);
     i32 joystickInstanceID = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(deviceHandle));
     gamepadStates.OnConnect(joystickInstanceID);
@@ -409,7 +409,7 @@ void InputManager::ProcessSDLControllerConnected(i32 deviceIndex) {
     printf("Gamepad connected. Instance ID: %d\n", joystickInstanceID);
 }
 
-void InputManager::ProcessSDLControllerRemoved(i32 joystickInstanceID) {
+void InputSystem::ProcessSDLControllerRemoved(i32 joystickInstanceID) {
     gamepadStates.OnDisconnect(joystickInstanceID);
     SDL_GameControllerClose(SDL_GameControllerFromInstanceID(joystickInstanceID));
 

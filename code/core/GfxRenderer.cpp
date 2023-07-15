@@ -1,14 +1,14 @@
-#include "CoreRenderer.h"
+#include "GfxRenderer.h"
 
 #include <SDL.h>
 
 
 #define GL3W_IMPLEMENTATION
 #include <gl3w.h>
-#include "ArcadiaOpenGL.h"
-#include "ArcadiaUtility.h"
-#include "CorePrintLog.h"
-#include "ArcadiaIMGUI.h"
+#include "MesaOpenGL.h"
+#include "MesaUtility.h"
+#include "PrintLog.h"
+#include "MesaIMGUI.h"
 
 // TODO(Kevin): maybe renderer shouldn't need to know about this shit:
 #include "../game/Game.h"
@@ -17,11 +17,11 @@
 
 
 static SDL_Window* s_ActiveSDLWindow = nullptr;
-static CoreRenderer* s_TheCoreRenderer = nullptr;
+static GfxRenderer* s_TheGfxRenderer = nullptr;
 
-CoreRenderer* GetCoreRenderer()
+GfxRenderer* GetGfxRenderer()
 {
-    return s_TheCoreRenderer;
+    return s_TheGfxRenderer;
 }
 
 static const char* __finalpass_shader_vs =
@@ -83,7 +83,7 @@ static const char* __sprite_shader_fs =
         "}\n";
 
 
-bool CoreRenderer::Init()
+bool GfxRenderer::Init()
 {
 #ifdef MESA_USING_GL3W
     if (gl3w_init())
@@ -106,12 +106,12 @@ bool CoreRenderer::Init()
 
     CreateMiscellaneous();
 
-    s_TheCoreRenderer = this;
+    s_TheGfxRenderer = this;
 
     return true;
 }
 
-void CoreRenderer::Render()
+void GfxRenderer::Render()
 {
     RenderGameLayer();
     RenderGUILayer();
@@ -120,7 +120,7 @@ void CoreRenderer::Render()
     FinalRenderToBackBuffer();
 }
 
-void CoreRenderer::RenderGameLayer()
+void GfxRenderer::RenderGameLayer()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, gameLayer.FBO);
     glViewport(0, 0, gameLayer.width, gameLayer.height);
@@ -220,7 +220,7 @@ void CoreRenderer::RenderGameLayer()
     glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
 }
 
-void CoreRenderer::RenderGUILayer()
+void GfxRenderer::RenderGUILayer()
 {
     glBindFramebuffer(GL_FRAMEBUFFER, guiLayer.FBO);
     glViewport(0, 0, guiLayer.width, guiLayer.height);
@@ -235,7 +235,7 @@ void CoreRenderer::RenderGUILayer()
     ARCGUI::Draw();
 }
 
-//void CoreRenderer::RenderDebugUILayer()
+//void GfxRenderer::RenderDebugUILayer()
 //{
 //    glBindFramebuffer(GL_FRAMEBUFFER, debugUILayer.FBO);
 //    glViewport(0, 0, debugUILayer.width, debugUILayer.height);
@@ -253,7 +253,7 @@ void CoreRenderer::RenderGUILayer()
 //    glEnable(GL_DEPTH_TEST);
 //}
 
-void CoreRenderer::FinalRenderToBackBuffer()
+void GfxRenderer::FinalRenderToBackBuffer()
 {
     finalPassShader.UseShader();
 
@@ -285,19 +285,19 @@ void CoreRenderer::FinalRenderToBackBuffer()
     GLHasErrors();
 }
 
-void CoreRenderer::UpdateBackBufferSize()
+void GfxRenderer::UpdateBackBufferSize()
 {
     SDL_GL_GetDrawableSize(s_ActiveSDLWindow, &backBufferWidth, &backBufferHeight);
     UpdateScreenSizeQuad();
 }
 
-void CoreRenderer::GetBackBufferSize(i32* widthOutput, i32* heightOutput)
+void GfxRenderer::GetBackBufferSize(i32* widthOutput, i32* heightOutput)
 {
     *widthOutput = backBufferWidth;
     *heightOutput = backBufferHeight;
 }
 
-void CoreRenderer::CreateFrameBuffers()
+void GfxRenderer::CreateFrameBuffers()
 {
     gameLayer.width = internalGameResolutionW;
     gameLayer.height = internalGameResolutionH;
@@ -310,7 +310,7 @@ void CoreRenderer::CreateFrameBuffers()
 //    CreateBasicFrameBuffer(&debugUILayer);
 }
 
-void CoreRenderer::SetGameResolution(i32 w, i32 h)
+void GfxRenderer::SetGameResolution(i32 w, i32 h)
 {
     internalGameResolutionW = w;
     internalGameResolutionH = h;
@@ -318,14 +318,14 @@ void CoreRenderer::SetGameResolution(i32 w, i32 h)
     UpdateScreenSizeQuad();
 }
 
-void CoreRenderer::UpdateFrameBuffersSize()
+void GfxRenderer::UpdateFrameBuffersSize()
 {
     UpdateBasicFrameBufferSize(&gameLayer, internalGameResolutionW, internalGameResolutionH);
     UpdateBasicFrameBufferSize(&guiLayer, internalGameResolutionW, internalGameResolutionH); // TODO(Kevin): gui layer should use different resolution to game
 //    UpdateBasicFrameBufferSize(&debugUILayer, backBufferWidth, backBufferHeight);
 }
 
-void CoreRenderer::CreateBasicFrameBuffer(BasicFrameBuffer* buffer)
+void GfxRenderer::CreateBasicFrameBuffer(BasicFrameBuffer* buffer)
 {
     buffer->FBO = 0;
     glGenFramebuffers(1, &buffer->FBO);
@@ -346,7 +346,7 @@ void CoreRenderer::CreateBasicFrameBuffer(BasicFrameBuffer* buffer)
     ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 }
 
-void CoreRenderer::UpdateBasicFrameBufferSize(BasicFrameBuffer* buffer, i32 newWidth, i32 newHeight)
+void GfxRenderer::UpdateBasicFrameBufferSize(BasicFrameBuffer* buffer, i32 newWidth, i32 newHeight)
 {
     buffer->width = newWidth;
     buffer->height = newHeight;
@@ -362,7 +362,7 @@ void CoreRenderer::UpdateBasicFrameBufferSize(BasicFrameBuffer* buffer, i32 newW
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void CoreRenderer::CreateMiscellaneous()
+void GfxRenderer::CreateMiscellaneous()
 {
     u32 refQuadIndices[6] = {
             0, 1, 3,
@@ -379,7 +379,7 @@ void CoreRenderer::CreateMiscellaneous()
     Mesh::MeshCreate(screenSizeQuad, refQuadVertices, refQuadIndices, 16, 6, 2, 2, 0, GL_STATIC_DRAW);
 }
 
-void CoreRenderer::UpdateScreenSizeQuad()
+void GfxRenderer::UpdateScreenSizeQuad()
 {
     u32 refQuadIndices[6] = {
             0, 1, 3,
