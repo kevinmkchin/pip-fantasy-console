@@ -10,6 +10,12 @@
 #include "CorePrintLog.h"
 #include "ArcadiaIMGUI.h"
 
+// TODO(Kevin): maybe renderer shouldn't need to know about this shit:
+#include "../game/Game.h"
+#include "../game/Space.h"
+#include "../game/script/MesaScript.h"
+
+
 static SDL_Window* s_ActiveSDLWindow = nullptr;
 static CoreRenderer* s_TheCoreRenderer = nullptr;
 
@@ -44,6 +50,39 @@ static const char* __finalpass_shader_fs =
         "    color = in_color;\n"
         "}\n";
 
+static const char* __sprite_shader_vs =
+        "#version 330\n"
+        "// Input attributes\n"
+        "layout (location = 0) in vec2 vs_pos;\n"
+        "layout (location = 1) in vec2 vs_uv;\n"
+        "// Passed to fragment shader\n"
+        "out vec2 fs_uv;\n"
+        "// Application data\n"
+        "uniform mat3 model;\n"
+        "uniform mat3 view;\n"
+        "uniform mat3 projection;\n"
+        "void main()\n"
+        "{\n"
+        "    fs_uv = vs_uv;\n"
+        "    vec3 pos = projection * view * model * vec3(vs_pos, 1.0);\n"
+        "    gl_Position = vec4(pos.xy, 0.0, 1.0);\n"
+        "}\n";
+
+static const char* __sprite_shader_fs =
+        "#version 330\n"
+        "// From vertex shader\n"
+        "in vec2 fs_uv;\n"
+        "// Application data\n"
+        "uniform sampler2D sampler0;\n"
+        "uniform vec3 fragmentColor;\n"
+        "// Output color\n"
+        "layout (location = 0) out vec4 color;\n"
+        "void main()\n"
+        "{\n"
+        "    color = vec4(fragmentColor, 1.0) * texture(sampler0, fs_uv);\n"
+        "}\n";
+
+
 bool CoreRenderer::Init()
 {
 #ifdef MESA_USING_GL3W
@@ -63,7 +102,7 @@ bool CoreRenderer::Init()
     UpdateBackBufferSize();
 
     Shader::GLCreateShaderProgram(finalPassShader, __finalpass_shader_vs, __finalpass_shader_fs);
-    //Shader::GLLoadShaderProgramFromFile(gameSceneShader, shader_path("scene.vert").c_str(), shader_path("scene.frag").c_str());
+    Shader::GLCreateShaderProgram(spriteShader, __sprite_shader_vs, __sprite_shader_fs);
 
     CreateMiscellaneous();
 
@@ -87,17 +126,98 @@ void CoreRenderer::RenderGameLayer()
     glViewport(0, 0, gameLayer.width, gameLayer.height);
     glClearColor(RGB255TO1(46, 88, 120), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
 
-    //gameSceneShader.UseShader();
+    spriteShader.UseShader();
 
-//    gameSceneShader.GLBindMatrix4fv("projMatrix", 1, activeGameCamera->perspectiveMatrix.ptr());
-//    gameSceneShader.GLBindMatrix4fv("viewMatrix", 1, activeGameCamera->viewMatrix.ptr());
+    static mat3 orthographicMatrix = mat3(ProjectionMatrixOrthographic2D(0.f, float(internalGameResolutionW), 0.f, float(internalGameResolutionH)));
+    static mat3 identityMatrix = mat3();
 
-    //GameState* gameState = &(Engine.game->state);
+    spriteShader.GLBindMatrix3fv("projection", 1, orthographicMatrix.ptr());
+    spriteShader.GLBindMatrix3fv("view", 1, identityMatrix.ptr());
 
-    //glUseProgram(0);
+    mat3 modelMatrix = identityMatrix;
+
+    Space* space = GetGameActiveSpace();
+    if (space->aliveUpdateAndDraw.size() > 0)
+    {
+        EntityInstance e = space->aliveUpdateAndDraw[0];
+        MesaScript_Table* table = AccessMesaScriptTable(e.mesaGCObjMapRepresentationId);
+        TValue xtv = table->AccessMapEntry("x");
+        TValue ytv = table->AccessMapEntry("y");
+        modelMatrix[2][0] = float(xtv.integerValue);
+        modelMatrix[2][1] = float(ytv.integerValue);
+    }
+
+    spriteShader.GLBindMatrix3fv("model", 1, modelMatrix.ptr());
+
+    static TextureHandle mushroom = CreateGPUTextureFromDisk(data_path("mushroom.png").c_str());
+
+    const i32 numQuads = 1;
+    const u32 verticesCount = 16 * numQuads;
+    const u32 indicesCount = 6 * numQuads;
+    float vb[verticesCount];
+    u32 ib[indicesCount];
+
+    vb[0] = 0;
+    vb[1] = 0;
+    vb[2] = 0;
+    vb[3] = 1;
+    vb[4] = 16;
+    vb[5] = 0;
+    vb[6] = 1;
+    vb[7] = 1;
+    vb[8] = 0;
+    vb[9] = -16;
+    vb[10] = 0;
+    vb[11] = 0;
+    vb[12] = 16;
+    vb[13] = -16;
+    vb[14] = 1;
+    vb[15] = 0;
+
+    ib[0] = 0;
+    ib[1] = 2;
+    ib[2] = 1;
+    ib[3] = 2;
+    ib[4] = 3;
+    ib[5] = 1;
+
+    // pass VBO (x, y, u, v) and IBO to shader
+    static u32 spriteBatchVAO = 0;
+    static u32 spriteBatchVBO = 0;
+    static u32 spriteBatchIBO = 0;
+    if(!spriteBatchVAO)
+    {
+        glGenVertexArrays(1, &spriteBatchVAO);
+        glBindVertexArray(spriteBatchVAO);
+
+        glGenBuffers(1, &spriteBatchVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, spriteBatchVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 16, nullptr, GL_DYNAMIC_DRAW);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, nullptr);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void*)(sizeof(float) * 2)); // i really feel like this can be nullptr
+        glEnableVertexAttribArray(1);
+
+        glGenBuffers(1, &spriteBatchIBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spriteBatchIBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * 6, nullptr, GL_DYNAMIC_DRAW);
+    }
+    glBindVertexArray(spriteBatchVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, spriteBatchVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verticesCount, vb, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, spriteBatchIBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * indicesCount, ib, GL_DYNAMIC_DRAW);
+
+    // set Sampler2D/int sampler0
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, mushroom.textureId);
+    spriteShader.GLBind1i("sampler0", 0);
+    // set vec3 fragmentColor 
+    spriteShader.GLBind3f("fragmentColor", 1.f, 1.f, 1.f);
+
+    // draw
+    glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
 }
 
 void CoreRenderer::RenderGUILayer()
@@ -296,104 +416,4 @@ void CoreRenderer::UpdateScreenSizeQuad()
     screenSizeQuad.RebindBufferObjects(finalOutputQuadVertices, refQuadIndices, 16, 6);
 }
 
-
-void Mesh::RenderMesh(GLenum renderMode) const
-{
-    if (indicesCount == 0) // Early out if index_count == 0, nothing to draw
-    {
-        printf("WARNING: Attempting to Render a mesh with 0 index count!\n");
-        return;
-    }
-
-    // Bind VAO, bind VBO, draw elements(indexed draw)
-    glBindVertexArray(idVAO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, idIBO);
-    glDrawElements(renderMode, indicesCount, GL_UNSIGNED_INT, nullptr);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-}
-
-void Mesh::RebindBufferObjects(float* vertices, u32* indices,
-                               u32 verticesArrayCount, u32 indicesArrayCount, GLenum drawUsage)
-{
-    if (idVBO == 0 || idIBO == 0)
-    {
-        return;
-    }
-
-    indicesCount = indicesArrayCount;
-    glBindVertexArray(idVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, idVBO);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr) 4 * verticesArrayCount, vertices, drawUsage);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, idIBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr) 4 * indicesArrayCount, indices, drawUsage);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-}
-
-Mesh Mesh::MeshCreate(Mesh& mesh, float* vertices, u32* indices,
-                      u32 verticesArrayCount, u32 indicesArrayCount,
-                      u8 positionAttribSize, u8 textureAttribSize, u8 normalAttribSize, GLenum drawUsage)
-{
-    u8 stride = 0;
-    if (textureAttribSize)
-    {
-        stride += positionAttribSize + textureAttribSize;
-        if (normalAttribSize)
-        {
-            stride += normalAttribSize;
-        }
-    }
-
-    mesh.indicesCount = indicesArrayCount;
-
-    glGenVertexArrays(1, &mesh.idVAO);
-    glBindVertexArray(mesh.idVAO);
-    glGenBuffers(1, &mesh.idVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, mesh.idVBO);
-    glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr) 4 /*bytes cuz float*/ * verticesArrayCount, vertices, drawUsage);
-    glVertexAttribPointer(0, positionAttribSize, GL_FLOAT, GL_FALSE, sizeof(float) * stride, nullptr);
-    glEnableVertexAttribArray(0);
-    if (textureAttribSize > 0)
-    {
-        glVertexAttribPointer(1, textureAttribSize, GL_FLOAT, GL_FALSE, sizeof(float) * stride,
-                              (void*)(sizeof(float) * positionAttribSize));
-        glEnableVertexAttribArray(1);
-        if (normalAttribSize > 0)
-        {
-            glVertexAttribPointer(2, normalAttribSize, GL_FLOAT, GL_FALSE, sizeof(float) * stride,
-                                  (void*)(sizeof(float) * ((GLsizeiptr) positionAttribSize + textureAttribSize)));
-            glEnableVertexAttribArray(2);
-        }
-    }
-
-    glGenBuffers(1, &mesh.idIBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.idIBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr) 4 /*bytes cuz uint32*/ * indicesArrayCount, indices, drawUsage);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0); // Unbind the VAO;
-
-    return mesh;
-}
-
-void Mesh::MeshDelete(Mesh& mesh)
-{
-    if (mesh.idIBO != 0)
-    {
-        glDeleteBuffers(1, &mesh.idIBO);
-        mesh.idIBO = 0;
-    }
-    if (mesh.idVBO != 0)
-    {
-        glDeleteBuffers(1, &mesh.idVBO);
-        mesh.idVBO = 0;
-    }
-    if (mesh.idVAO != 0)
-    {
-        glDeleteVertexArrays(1, &mesh.idVAO);
-        mesh.idVAO = 0;
-    }
-
-    mesh.indicesCount = 0;
-}
 

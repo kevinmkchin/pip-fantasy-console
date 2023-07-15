@@ -13,6 +13,7 @@ set(SOURCE_FILES
         code/core/ArcadiaUtility.cpp
         code/core/ArcadiaTimer.cpp
         code/core/CoreRenderer.cpp
+        code/core/RenderingDataTypesAndUtility.cpp
         code/core/CoreShader.cpp
         code/core/CoreFileSystem.cpp
         code/core/CorePrintLog.cpp

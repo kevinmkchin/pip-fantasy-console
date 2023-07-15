@@ -83,6 +83,7 @@ void ReadImage(BitmapHandle& image_handle, const char* image_file_path)
         FreeImage(image_handle);
     }
 
+    stbi_set_flip_vertically_on_load(1);
     image_handle.memory = stbi_load(image_file_path, (int*)&image_handle.width, (int*)&image_handle.height, (int*)&image_handle.bitDepth, 0);
     if(image_handle.memory)
     {

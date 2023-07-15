@@ -38,8 +38,8 @@ static bool InitializeEverything()
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
     g_SDLWindow = SDL_CreateWindow("Mesa Fantasy Console",
-                                   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H,
-                                   SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);// | SDL_WINDOW_RESIZABLE);
+                                   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SDL_WINDOW_STARTING_SIZE_W, SDL_WINDOW_STARTING_SIZE_H,
+                                   SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); // TODO(Kevin): fix MyImGui mouse input error with resizing 
 
     g_SDLGLContext = SDL_GL_CreateContext(g_SDLWindow);
 
@@ -84,8 +84,7 @@ static void ProcessSDLEvents()
 static void StartEditor()
 {
     g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
-
-    
+    SDL_SetWindowMinimumSize(g_SDLWindow, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
 }
 
 static void StartGameFile()
@@ -127,13 +126,13 @@ int main(int argc, char* argv[])
         auto sty = ARCGUI::GetActiveUIStyleCopy();
         sty.textColor = vec4(0.f,0.f,0.f,1.f);
         //ARCGUI::PushUIStyle(sty);
-        ARCGUI::DoTextUnformatted(30, 30, 16, ARCGUI::TextAlignment::Left, "JOURNEY");
-        ARCGUI::DoTextUnformatted(130, 30, 16, ARCGUI::TextAlignment::Left, "COMET");
+        ARCGUI::DoTextUnformatted(30, 30, 8, ARCGUI::TextAlignment::Left, "JOURNEY");
+        ARCGUI::DoTextUnformatted(130, 30, 8, ARCGUI::TextAlignment::Left, "COMET");
         ARCGUI::DoTextUnformatted(230, 30, 16, ARCGUI::TextAlignment::Left, "MESA");
-        ARCGUI::DoTextUnformatted(330, 30, 16, ARCGUI::TextAlignment::Left, "STAR");
-        ARCGUI::DoTextUnformatted(430, 30, 16, ARCGUI::TextAlignment::Left, "HEART");
+        ARCGUI::DoTextUnformatted(330, 30, 8, ARCGUI::TextAlignment::Left, "STAR");
+        ARCGUI::DoTextUnformatted(430, 30, 8, ARCGUI::TextAlignment::Left, "HEART");
         ARCGUI::DoTextUnformatted(30, 60, 16, ARCGUI::TextAlignment::Left, "Start Editor");
-        ARCGUI::DoTextUnformatted(30, 90, 16, ARCGUI::TextAlignment::Left, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!");
+        ARCGUI::DoTextUnformatted(30, 90, 8, ARCGUI::TextAlignment::Left, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!");
         //ARCGUI::DoButton(ARCGUI::FreshID(), ARCGUI::UIRect(30, 90, 100, 30), vec4(0,0,0,1), vec4(0.5,0.5,0.5,1), vec4(1.f, 1.f, 1.f, 1.f));
         ARCGUI::EditorBeginWindow(ARCGUI::UIRect(30, 120, 200, 200));
         ARCGUI::EditorLabelledButton("Insert Cartridge");
