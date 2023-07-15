@@ -5,6 +5,7 @@
 #include "../../core/CoreMemoryAllocator.h"
 #include "../../core/CoreFileSystem.h"
 
+#include <cmath>
 
 enum class TokenType
 {
@@ -680,7 +681,7 @@ u64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType)
         } break;
     }
     gcobj->selfId = ticker++;
-    GCOBJECTS_DATABASE.insert_or_assign(gcobj->selfId, gcobj);
+    GCOBJECTS_DATABASE.insert({gcobj->selfId, gcobj});
     return gcobj->selfId;
 }
 
