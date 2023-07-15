@@ -3,6 +3,7 @@
 #include "CoreCommon.h"
 
 #include <cfloat>
+#include <cstring>
 
 /* Call after OpenGL calls to check for errors. */
 bool GLHasErrors();
