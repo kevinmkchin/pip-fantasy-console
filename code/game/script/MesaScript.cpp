@@ -1995,11 +1995,15 @@ void InitializeLanguageCompilerAndRuntime()
 }
 
 // TODO(Kevin): move initialize and setup stuff somewhere else. make sure built-in methods like add get added to global scope not script scope.
-void RunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir)
+void TemporaryRunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir)
 {
     std::string fileStr = ReadFileString(wd_path(pathFromWorkingDir).c_str());
 
     //printf("%ld", sizeof(MesaScript_Table));
+
+    MesaScript_ScriptEnvironment scriptEnvironment;
+    scriptEnvironment.PushScope(MesaScript_Table());
+    SetActiveScriptEnvironment(&scriptEnvironment);
 
     static const char* mesaScriptSetupCode = "fn add(x, y) { return x + y } fn checkeq(expected, actual) { if (expected == actual) { print('test pass') } else { print('test fail') } }";
 
