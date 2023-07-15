@@ -1452,6 +1452,9 @@ InterpretExpression(ASTNode* ast)
                         // todo error
                     }
                 } break;
+                default: {
+                    SendRuntimeException("Unknown BINOP expression.");
+                } break;
             }
         } break;
         case ASTNodeType::RELOP: {
@@ -1492,6 +1495,12 @@ InterpretExpression(ASTNode* ast)
                     result.type = TValue::ValueType::Boolean;
                     return result;
                 } break;
+                case RelOp::GT: {
+                    TValue result;
+                    result.boolValue = l.realValue > r.realValue;
+                    result.type = TValue::ValueType::Boolean;
+                    return result;
+                } break;
                 case RelOp::GE: {
                     TValue result;
                     result.boolValue = l.realValue >= r.realValue;
@@ -1521,6 +1530,9 @@ InterpretExpression(ASTNode* ast)
                     result.boolValue = (l.realValue == 1.f || r.realValue == 1.f);
                     result.type = TValue::ValueType::Boolean;
                     return result;
+                } break;
+                default: {
+                    SendRuntimeException("Unknown RELOP expression.");
                 } break;
             }
         } break;
