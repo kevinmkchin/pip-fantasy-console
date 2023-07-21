@@ -9,10 +9,6 @@
 #include "singleheaders/stb_image.h"
 #define STB_SPRINTF_IMPLEMENTATION
 #include "singleheaders/stb_sprintf.h"
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "singleheaders/stb_truetype.h"
-#define VERTEXT_IMPLEMENTATION
-#include "singleheaders/vertext.h"
 #include "core/InputSystem.h"
 #include "core/MesaIMGUI.h"
 

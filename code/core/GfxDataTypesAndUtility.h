@@ -73,8 +73,8 @@ namespace Gfx
                                              u32               bitmap_height,
                                              GLenum            target_format,
                                              GLenum            source_format,
-                                             GLenum            filter_mode);
+                                             GLenum            filter_mode = GL_NEAREST);
     
-    TextureHandle CreateGPUTextureFromDisk(const char* filePath);
+    TextureHandle CreateGPUTextureFromDisk(const char* filePath, GLenum targetFormat = GL_RGBA);
 
 }

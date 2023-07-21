@@ -25,7 +25,6 @@ namespace MesaGUI
         vtxt_font* ptr = nullptr;
         u32 textureId = 0;
     };
-    Font FontCreateFromFile(const std::string& fontFilePath, u8 fontSize, bool useNearestFiltering = false);
 
     struct UIRect
     {

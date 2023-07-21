@@ -4,18 +4,23 @@
 #include <stack>
 
 #include "MesaMath.h"
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "../singleheaders/stb_truetype.h"
+#define VERTEXT_IMPLEMENTATION
 #include "../singleheaders/vertext.h"
 #include "../singleheaders/stb_sprintf.h"
 
 #include "MesaUtility.h"
 #include "GfxRenderer.h"
+#include "GfxDataTypesAndUtility.h"
 #include "GfxShader.h"
 #include "PrintLog.h"
 #include "FileSystem.h"
 
 namespace MesaGUI
 {
-    static std::unordered_map<std::string, vtxt_font> __vtxtLoadedFonts;
+    static NiceArray<vtxt_font, 10> __vtxtLoadedFonts;
+    
     Font FontCreateFromFile(const std::string& fontFilePath, u8 fontSize, bool useNearestFiltering)
     {
         Font fontToReturn;
@@ -27,31 +32,54 @@ namespace MesaGUI
         vtxt_init_font(&fontHandle, (u8*)fontfile.memory, fontSize);
         FreeFileBinary(fontfile);
 
-        glGenTextures(1, &fontToReturn.textureId);
-        glBindTexture(GL_TEXTURE_2D, fontToReturn.textureId);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (useNearestFiltering ? GL_NEAREST : GL_LINEAR));
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (useNearestFiltering ? GL_NEAREST : GL_LINEAR));
-        glTexImage2D(
-                GL_TEXTURE_2D,              // texture target type
-                0,                          // level-of-detail number n = n-th mipmap reduction image
-                GL_RED,               // format of data to store (target): num of color components
-                fontHandle.font_atlas.width,                // texture width
-                fontHandle.font_atlas.height,               // texture height
-                0,                          // must be 0 (legacy)
-                GL_RED,               // format of data being loaded (source)
-                GL_UNSIGNED_BYTE,           // data type of the texture data
-                fontHandle.font_atlas.pixels);                    // data
-        glGenerateMipmap(GL_TEXTURE_2D);    // generate mip maps automatically
-        glBindTexture(GL_TEXTURE_2D, 0);
+        Gfx::TextureHandle fontTexture = 
+            Gfx::CreateGPUTextureFromBitmap(fontHandle.font_atlas.pixels, fontHandle.font_atlas.width, 
+                fontHandle.font_atlas.height, GL_RED, GL_RED, (useNearestFiltering ? GL_NEAREST : GL_LINEAR));
+        fontToReturn.textureId = fontTexture.textureId;
         free(fontHandle.font_atlas.pixels);
 
-        __vtxtLoadedFonts.emplace(fontFilePath, fontHandle);
-
-        fontToReturn.ptr = &__vtxtLoadedFonts[fontFilePath];
+        __vtxtLoadedFonts.PushBack(fontHandle);
+        fontToReturn.ptr = &__vtxtLoadedFonts.Back();
         return fontToReturn;
     }
+
+     Font FontCreateFromBitmap(Gfx::TextureHandle bitmapTexture)
+     {
+         const int bitmapH = bitmapTexture.width;
+         const int bitmapW = bitmapTexture.height;
+         const int glyphH = bitmapH / 16;
+         const int glyphW = bitmapW / 16;
+
+         Font bitmapFont;
+         bitmapFont.textureId = bitmapTexture.textureId;
+
+         vtxt_font fontHandle;
+         fontHandle.font_height_px = glyphH;
+         fontHandle.ascender = float(glyphH);
+         fontHandle.descender = 0;
+         fontHandle.linegap = 1;
+         fontHandle.font_atlas.width = bitmapW;
+         fontHandle.font_atlas.height = bitmapH;
+
+         for(int codepoint = 0; codepoint < 256; ++codepoint)
+         {
+             vtxt_glyph *glyph = &fontHandle.glyphs[codepoint];
+             glyph->codepoint = codepoint;
+             glyph->width = float(glyphW);
+             glyph->height = float(glyphH);
+             glyph->advance = float(glyphW);
+             glyph->offset_x = 0;
+             glyph->offset_y = float(-glyphH);
+             glyph->min_u = float(codepoint % 16 * glyphW) / bitmapW;
+             glyph->min_v = 1.f - (float((codepoint / 16 + 1) * glyphH) / bitmapH);
+             glyph->max_u = float((codepoint % 16 + 1) * glyphW) / bitmapW;
+             glyph->max_v = 1.f - (float(codepoint / 16 * glyphH) / bitmapH);
+         }
+
+         __vtxtLoadedFonts.PushBack(fontHandle);
+         bitmapFont.ptr = &__vtxtLoadedFonts.Back();
+         return bitmapFont;
+     }
 
     static Gfx::Shader __main_ui_shader;
     static const char* __main_ui_shader_vs =
@@ -802,12 +830,41 @@ namespace MesaGUI
         MeshCreate(__text_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
 
         // __default_font = FontCreateFromFile(data_path("Baskic8.otf"), 32, true);
-        __fonts[0] = FontCreateFromFile(data_path("PressStart2P.ttf"), 16, true);
-        __fonts[1] = FontCreateFromFile(data_path("Baskic8.otf"), 16, true);
-        __fonts[2] = FontCreateFromFile(data_path("EndlessBossBattle.ttf"), 16, true);
-        __fonts[3] = FontCreateFromFile(data_path("8BitDragon.ttf"), 16, true);
+        // __fonts[1] = FontCreateFromFile(data_path("Baskic8.otf"), 16, true);
+        // __fonts[2] = FontCreateFromFile(data_path("EndlessBossBattle.ttf"), 16, true);
+        __fonts[5] = FontCreateFromFile(data_path("PressStart2P.ttf"), 16, true);
+        __fonts[0] = FontCreateFromFile(data_path("BitFontMaker2Tes.ttf"), 12, true);
+        __fonts[1] = FontCreateFromFile(data_path("BitFontMaker2Tes.ttf"), 13, true);
+        __fonts[2] = FontCreateFromFile(data_path("BitFontMaker2Tes.ttf"), 14, true);
+        __fonts[3] = FontCreateFromFile(data_path("BitFontMaker2Tes.ttf"), 15, true);
+        __fonts[4] = FontCreateFromFile(data_path("BitFontMaker2Tes.ttf"), 16, true);
 
-        __default_font = __fonts[0];//FontCreateFromFile(data_path("PressStart2P.ttf"), 16, true);
+        BitmapHandle bm_anikki;
+        ReadImage(bm_anikki, data_path("Anikki_square_8x8.png").c_str());
+        for (u32 y = 0; y < bm_anikki.height; ++y)
+        {
+            for (u32 x = 0; x < bm_anikki.width; ++x)
+            {
+                unsigned char *bitmapData = (unsigned char *)bm_anikki.memory;
+                unsigned char *pixelData = bitmapData + (y * 3 * bm_anikki.width + x * 3);
+                if (pixelData[0] == 255 && pixelData[1] != 255 && pixelData[2] == 255)
+                {
+                    pixelData[0] = 0;
+                    pixelData[1] = 0;
+                    pixelData[2] = 0;
+                }
+                else
+                {
+                    pixelData[0] = 255;
+                    pixelData[1] = 0;
+                    pixelData[2] = 0;
+                }
+            }
+        }
+        Gfx::TextureHandle tex_0 = Gfx::CreateGPUTextureFromBitmap((unsigned char *) bm_anikki.memory, bm_anikki.width, bm_anikki.height, GL_RED, GL_RGB);
+        __fonts[6] = FontCreateFromBitmap(tex_0);
+
+        __default_font = __fonts[6];
 
 
         if(ui_ss.empty())
@@ -875,13 +932,12 @@ namespace MesaGUI
 
     void Draw()
     {
-        int fontAtlasDebugY = 10;
-        for (int i = 0; i < 4; ++i)
-        {
-            DoImage(UIRect(10, fontAtlasDebugY, __fonts[i].ptr->font_atlas.width, __fonts[i].ptr->font_atlas.height), __fonts[i].textureId);
-            fontAtlasDebugY += __fonts[i].ptr->font_atlas.height + 5;
-        }
-
+        // int fontAtlasDebugY = 100;
+        // for (int i = 6; i < 7; ++i)
+        // {
+        //     DoImage(UIRect(10, fontAtlasDebugY, __fonts[i].ptr->font_atlas.width, __fonts[i].ptr->font_atlas.height), __fonts[i].textureId);
+        //     fontAtlasDebugY += __fonts[i].ptr->font_atlas.height + 5;
+        // }
 
         i32 kevGuiScreenWidth = Gfx::GetCoreRenderer()->guiLayer.width;
         i32 kevGuiScreenHeight = Gfx::GetCoreRenderer()->guiLayer.height;
