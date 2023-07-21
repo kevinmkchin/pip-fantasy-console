@@ -278,10 +278,10 @@ TODO:
 #define _INCLUDE_VERTEXT_H_
 
 #ifndef VTXT_ASCII_FROM
-#define VTXT_ASCII_FROM ' '    // starting ASCII codepoint to collect font data for
+#define VTXT_ASCII_FROM 0    // starting ASCII codepoint to collect font data for
 #endif
 #ifndef VTXT_ASCII_TO
-#define VTXT_ASCII_TO '~'      // ending ASCII codepoint to collect font data for
+#define VTXT_ASCII_TO 255      // ending ASCII codepoint to collect font data for
 #endif
 #define VTXT_GLYPH_COUNT VTXT_ASCII_TO - VTXT_ASCII_FROM + 1
 
@@ -320,7 +320,7 @@ typedef struct vtxt_bitmap
 typedef struct vtxt_glyph
 {
     float           width, height, advance,offset_x,offset_y,min_u,min_v,max_u,max_v;
-    char            codepoint;
+    unsigned char   codepoint;
 } vtxt_glyph;
 
 /** vtxt_font is a handle to hold font information. It's around ~4KB, so don't copy it around all the time.
@@ -496,7 +496,7 @@ vtxt_init_font(vtxt_font* font_handle, unsigned char* font_buffer, int font_heig
     // Font metrics
     stbtt_fontinfo stb_font_info;
     stbtt_InitFont(&stb_font_info, font_buffer, 0);
-    float stb_scale = stbtt_ScaleForMappingEmToPixels(&stb_font_info, (float)font_height_in_pixels);
+    float stb_scale = stbtt_ScaleForPixelHeight(&stb_font_info, (float)font_height_in_pixels);
     int stb_ascender;
     int stb_descender;
     int stb_linegap;
@@ -511,7 +511,7 @@ vtxt_init_font(vtxt_font* font_handle, unsigned char* font_buffer, int font_heig
     int tallest_glyph_height = 0;
     int aggregate_glyph_width = 0;
     // load glyph data
-    for(char char_index = VTXT_ASCII_FROM; char_index <= VTXT_ASCII_TO; ++char_index) // ASCII
+    for (int char_index = VTXT_ASCII_FROM; char_index <= VTXT_ASCII_TO; ++char_index) // ASCII
     {
         vtxt_glyph glyph;
         

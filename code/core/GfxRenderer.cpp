@@ -125,7 +125,7 @@ namespace Gfx
     {
         glBindFramebuffer(GL_FRAMEBUFFER, gameLayer.FBO);
         glViewport(0, 0, gameLayer.width, gameLayer.height);
-        glClearColor(RGB255TO1(46, 88, 120), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
+        glClearColor(RGB255TO1(211, 203, 190), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         UseShader(spriteShader);

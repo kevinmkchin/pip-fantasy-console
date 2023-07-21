@@ -177,7 +177,7 @@ namespace Gfx
         return texture;
     }
 
-    TextureHandle CreateGPUTextureFromDisk(const char* filePath)
+    TextureHandle CreateGPUTextureFromDisk(const char* filePath, GLenum targetFormat)
     {
         TextureHandle texture;
 
@@ -190,7 +190,7 @@ namespace Gfx
         bool bUseNearest = true; // TODO get from somewhere else
         texture = CreateGPUTextureFromBitmap((unsigned char*) textureBitmapHandle.memory,
                                              textureBitmapHandle.width,textureBitmapHandle.height,
-                                             GL_RGBA,
+                                             targetFormat,
                                              (textureBitmapHandle.bitDepth == 3 ? GL_RGB : GL_RGBA),
                                              (bUseNearest ? GL_NEAREST : GL_LINEAR_MIPMAP_LINEAR));
         GLHasErrors();

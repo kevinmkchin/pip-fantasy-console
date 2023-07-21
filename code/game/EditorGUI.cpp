@@ -23,7 +23,7 @@ void DoCodeEditor()
     MesaGUI::DoPanel(
         MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 20, 
             EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-6, 340),
-        vec4(RGB255TO1(48, 56, 65), 1.f));
+        vec4(RGB255TO1(126, 145, 159), 1.f));
 
     MesaGUI::DoText(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2+2, 20+8+2, 8, MesaGUI::TextAlignment::Left, codeSampleBuf.c_str());
 }
