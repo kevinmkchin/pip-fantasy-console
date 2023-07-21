@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
         MesaGUI::EditorEndWindow();
 */
 
-        DoCodeEditor();
+        DoEditorGUI();
 
         static float lastFPSShowTime = Time.time;
         static float framerate = 0.f;
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
             framerate = (1.f / Time.deltaTime);
             lastFPSShowTime = Time.time;
         }
-        MesaGUI::DoText(0, 16, 16, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
+        MesaGUI::DoText(0, 18, 18, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
 
         // DrawProfilerGUI();
         g_gfx.Render();
