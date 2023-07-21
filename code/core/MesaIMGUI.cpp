@@ -20,6 +20,8 @@
 namespace MesaGUI
 {
     static NiceArray<vtxt_font, 10> __vtxtLoadedFonts;
+    static Font __fonts[32];
+    static Font __default_font;
     
     Font FontCreateFromFile(const std::string& fontFilePath, u8 fontSize, bool useNearestFiltering)
     {
@@ -45,10 +47,10 @@ namespace MesaGUI
 
      Font FontCreateFromBitmap(Gfx::TextureHandle bitmapTexture)
      {
-         const int bitmapH = bitmapTexture.width;
-         const int bitmapW = bitmapTexture.height;
-         const int glyphH = bitmapH / 16;
+         const int bitmapW = bitmapTexture.width;
+         const int bitmapH = bitmapTexture.height;
          const int glyphW = bitmapW / 16;
+         const int glyphH = bitmapH / 16;
 
          Font bitmapFont;
          bitmapFont.textureId = bitmapTexture.textureId;
@@ -132,9 +134,6 @@ namespace MesaGUI
 
     static Gfx::Mesh __ui_mesh;
     static Gfx::Mesh __text_mesh;
-
-    static Font __default_font;
-    static Font __fonts[32];
 
     static char __reservedTextMemory[16000000];
     static u32 __reservedTextMemoryIndexer = 0;
@@ -840,7 +839,8 @@ namespace MesaGUI
         __fonts[4] = FontCreateFromFile(data_path("BitFontMaker2Tes.ttf"), 16, true);
 
         BitmapHandle bm_anikki;
-        ReadImage(bm_anikki, data_path("Anikki_square_8x8.png").c_str());
+        ReadImage(bm_anikki, data_path("Curses6x9.png").c_str());
+        //ReadImage(bm_anikki, data_path("Anikki_square_8x8.png").c_str());
         for (u32 y = 0; y < bm_anikki.height; ++y)
         {
             for (u32 x = 0; x < bm_anikki.width; ++x)

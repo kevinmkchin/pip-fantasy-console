@@ -21,6 +21,4 @@ struct CodeEditor
     u64 cursorPos;
 };
 
-
-void DoCodeEditor();
-
+void DoEditorGUI();
