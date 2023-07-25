@@ -18,18 +18,43 @@ std::string codeSampleBuf =
                "    }\n" 
                "}";
 
-void DoCodeEditor()
-{
-    MesaGUI::DoPanel(
-        MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 20, 
-                        EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-6, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
-        vec4(RGB255TO1(101, 124, 140), 1.f));
+// I select an entity template: it's code shows up in the code editor -> a code editor state is created
+// I can keep multiple code editor states open at once (multiple tabs, one tab for each entity code)
+//     Each CodeEditor state has the buffer to write to, the cursor location, scroll location 
+//     (how many lines down from the top?)
+// Does the entity code get updated constantly or only when saved?
 
-    MesaGUI::DoText(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2+2, 20+8+2, 9, MesaGUI::TextAlignment::Left, codeSampleBuf.c_str());
+struct CodeEditorState
+{
+    std::string codeBuf;
+    u32 codeCursor = 0;
+    u32 firstVisibleLineNumber = 0;
+};
+
+void DoCodeEditor(CodeEditorState *codeEditorState)
+{
+    MesaGUI::DoPanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 20, 
+                                     EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-6, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
+                     vec4(RGB255TO1(126, 145, 159), 1.f));
+                     //vec4(RGB255TO1(101, 124, 140), 1.f));
+
+    MesaGUI::EditorBeginWindow(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 22, 
+                                               EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-8, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 30));
+    MesaGUI::EditorEndWindow();
+
+    MesaGUI::DoText(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2+2, 20+8+2, 9, MesaGUI::TextAlignment::Left, codeEditorState->codebuf.c_str());
 }
 
 void DoEditorGUI()
 {
+    static bool doOnce = false;
+    if (!doOnce)
+    {
+        doOnce = true;
+        // Load code editor for some entity type.
+
+    }
+
     const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 + 28;
     const int entityViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 - 40;
 
@@ -50,5 +75,6 @@ void DoEditorGUI()
                         entityViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
         vec4(RGB255TO1(126, 145, 159), 1.f));
 
+    CodeEditorState
     DoCodeEditor();
 }
