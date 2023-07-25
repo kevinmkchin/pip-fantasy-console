@@ -25,6 +25,7 @@ set(SOURCE_FILES
         code/game/EditorGUI.cpp
         code/game/Game.cpp
         code/game/Space.cpp
+        code/game/AssetManager.cpp
         )
 
 
