@@ -44,9 +44,12 @@ namespace MesaGUI
         Font textFont;
         vec4 textColor = vec4(1.f, 1.f, 1.f, 1.f);
 
+        int paddingTop = 1;
+        int paddingBottom = 1;
+        int paddingLeft = 1;
+        int paddingRight = 1;
+ 
         vec4 editorWindowBackgroundColor = vec4(0.1f, 0.1f, 0.1f, 0.85f);
-        int editorTextSize = 16;
-
     };
 
     struct UIZone
@@ -63,8 +66,13 @@ namespace MesaGUI
     void SDLProcessEvent(const SDL_Event* evt);
     void Draw();
 
-    // Note(Kevin): I'm going to use the Do prefix for the primitive "building block" GUI elements
-    // more complete GUI elements will not have this prefix.
+    void PushUIStyle(UIStyle style);
+    void PopUIStyle();
+    UIStyle GetActiveUIStyleCopy();
+    UIStyle& GetActiveUIStyleReference();
+
+
+    // Primitive "building block" GUI elements with the most parameters
     void PrimitivePanel(UIRect rect, vec4 colorRGBA);
     void PrimitivePanel(UIRect rect, int cornerWidth, u32 glTextureId = 0, float normalizedCornerSizeInUV = 0.3f);
     bool PrimitiveButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor);
@@ -73,19 +81,18 @@ namespace MesaGUI
     void PrimtiveImage(UIRect rect, u32 glTextureId = 0);
     void PrimitiveIntegerInputField(ui_id id, UIRect rect, int* v);
     void PrimitiveFloatInputField(ui_id id, UIRect rect, float* v);
-    //void DoCheckbox(const char* label, );
+    //void PrimtiveCheckbox(const char* label, );
 
-    void PushUIStyle(UIStyle style);
-    void PopUIStyle();
-    UIStyle GetActiveUIStyleCopy();
-    UIStyle& GetActiveUIStyleReference();
+
+    bool LabelledButton(UIRect rect, const char* label, TextAlignment textAlignment);
+
 
     void BeginZone(UIRect windowRect);
+    void GetXYInZone(int *x, int *y);
+    void MoveXYInZone(int x, int y);
     void EndZone();
 
-    bool LabelledButton(UIRect rect, const char* label, int textSize, TextAlignment textAlignment);
-
-    // void EditorText(const char* textFmt, ...);
+    void EditorText(const char* text);
     bool EditorLabelledButton(const char* label);
     void EditorIncrementableIntegerField(const char* label, int* v, int increment = 1);
     void EditorIncrementableFloatField(const char* label, float* v, float increment = 0.1f);

@@ -2,6 +2,7 @@
 #include "Space.h"
 #include "script/MesaScript.h"
 #include "../core/InputSystem.h"
+#include "AssetManager.h"
 
 
 Space activeSpace;
@@ -31,26 +32,35 @@ void TemporaryGameInit()
         5. Space initialization script's PostGameObjectCreationInit should run? doesn't matter for now.
     */
 
-    EntityTemplate et0;
-    EntityTemplate et1;
-    EntityTemplate et2;
+    EntityAsset et0;
+    EntityAsset et1;
+    EntityAsset et2;
 
+    et0.name = "entity 0";
     et0.code = "fn Update(self) { \n"
                "    if (input['left']) {\n"
-               "        self['x'] = self['x'] - 1\n" 
+               "        self['x'] = self['x'] - 3\n" 
                "    }\n" 
                "    if (input['right']) {\n"
-               "        self['x'] = self['x'] + 1\n" 
+               "        self['x'] = self['x'] + 3\n" 
                "    }\n" 
                "    if (input['up']) {\n"
-               "        self['y'] = self['y'] + 1\n" 
+               "        self['y'] = self['y'] + 3\n" 
                "    }\n" 
                "    if (input['down']) {\n"
-               "        self['y'] = self['y'] - 1\n" 
+               "        self['y'] = self['y'] - 3\n" 
                "    }\n" 
                "}";
+
+    et1.name = "entity 1";
     et1.code = "fn Update() { print('et1 update') }";
+
+    et2.name = "entity 2";
     et2.code = "fn Update() { print('et2 update') }";
+
+    GetAll_Entity()->push_back(et0);
+    GetAll_Entity()->push_back(et1);
+    GetAll_Entity()->push_back(et2);
 
     scriptEnvironments[0] = CompileEntityBehaviourAsNewScriptEnvironment(et0.code);
     scriptEnvironments[1] = CompileEntityBehaviourAsNewScriptEnvironment(et1.code);

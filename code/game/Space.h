@@ -5,11 +5,12 @@
 
 #include <vector>
 
-struct EntityTemplate
+struct EntityAsset
 {
     // what sprite / animation to start with, what animations are available?
     // what is the code / behaviour of all instances of this entity?
 
+    std::string name = "";
     std::string code = "";
 };
 
