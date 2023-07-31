@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
             framerate = (1.f / Time.deltaTime);
             lastFPSShowTime = Time.time;
         }
-        MesaGUI::DoText(0, 18, 18, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
+        MesaGUI::PrimitiveTextFmt(0, 18, 18, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
 
         // DrawProfilerGUI();
         g_gfx.Render();
