@@ -2,8 +2,6 @@
 
 ### Bugs
 
-- GUI incorrect zones when window resize
-  - prob cuz mouse x y will be incorrect.
 - Make sure vertext height thing didn't regress (text height inconsistency for loading vs forming vertices)
 
 ### Engine
@@ -67,6 +65,7 @@
 
 # Done
 
+- bugfix: GUI incorrect zones when window resize prob cuz mouse x y will be incorrect.
 - index tables with strings
 - initialize array elements
 - sort of lists/arrays - actual array implementation <- MAYBE JUST MAKE AN ENTIRE NEW ARRAY TYPE??? THAT MIGHT BE SO MUCH CLEANER AND NICER -> is there ANY reason to use a table as also an array?

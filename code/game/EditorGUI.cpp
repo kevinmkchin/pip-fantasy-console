@@ -33,19 +33,19 @@ struct CodeEditorState
 
 void DoCodeEditor(CodeEditorState *codeEditorState)
 {
-    MesaGUI::DoPanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 20, 
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 20, 
                                      EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-6, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
                      vec4(RGB255TO1(126, 145, 159), 1.f));
                      //vec4(RGB255TO1(101, 124, 140), 1.f));
 
-    MesaGUI::EditorBeginWindow(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 22, 
+    MesaGUI::BeginZone(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 22, 
                                                EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-8, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 30));
-    MesaGUI::EditorEndWindow();
+    MesaGUI::EndZone();
 
-    MesaGUI::DoText(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2+2, 20+8+2, 9, MesaGUI::TextAlignment::Left, codeEditorState->codebuf.c_str());
+    MesaGUI::PrimitiveText(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2+2, 20+8+2, 9, MesaGUI::TextAlignment::Left, codeEditorState->codeBuf.c_str());
 }
 
-void DoEditorGUI()
+void DoAssetsWindow()
 {
     static bool doOnce = false;
     if (!doOnce)
@@ -58,23 +58,39 @@ void DoEditorGUI()
     const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 + 28;
     const int entityViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 - 40;
 
-    MesaGUI::DoPanel(
-        MesaGUI::UIRect(6, 20, 
-                        assetsViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
-        vec4(RGB255TO1(126, 145, 159), 1.f));
-    MesaGUI::DoTextUnformatted(8, 32, 9, MesaGUI::TextAlignment::Left, "Search");
-    MesaGUI::DoTextUnformatted(8, 42, 9, MesaGUI::TextAlignment::Left, "v entities");
-    MesaGUI::DoTextUnformatted(8, 52, 9, MesaGUI::TextAlignment::Left, "  - folders");
-    MesaGUI::DoTextUnformatted(8, 62, 9, MesaGUI::TextAlignment::Left, "v sprites");
-    MesaGUI::DoTextUnformatted(8, 72, 9, MesaGUI::TextAlignment::Left, "  - folders");
-    MesaGUI::DoTextUnformatted(8, 82, 9, MesaGUI::TextAlignment::Left, "v spaces");
-    MesaGUI::DoTextUnformatted(8, 92, 9, MesaGUI::TextAlignment::Left, "  - folders");
+    MesaGUI::BeginZone(MesaGUI::UIRect(6, 20, assetsViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(6, 20, assetsViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26), vec4(RGB255TO1(126, 145, 159), 1.f));
 
-    MesaGUI::DoPanel(
+    // MesaGUI::DoTextUnformatted(8, 32, 9, MesaGUI::TextAlignment::Left, "Search");
+    // MesaGUI::DoTextUnformatted(8, 42, 9, MesaGUI::TextAlignment::Left, "v entities");
+    // MesaGUI::DoTextUnformatted(8, 52, 9, MesaGUI::TextAlignment::Left, "  - folders");
+    // MesaGUI::DoTextUnformatted(8, 62, 9, MesaGUI::TextAlignment::Left, "v sprites");
+    // MesaGUI::DoTextUnformatted(8, 72, 9, MesaGUI::TextAlignment::Left, "  - folders");
+    // MesaGUI::DoTextUnformatted(8, 82, 9, MesaGUI::TextAlignment::Left, "v spaces");
+    // MesaGUI::DoTextUnformatted(8, 92, 9, MesaGUI::TextAlignment::Left, "  - folders");
+
+    for (int i = 0; i < 5; ++i)
+    {
+        MesaGUI::EditorLabelledButton("Entity");
+    }
+
+    MesaGUI::EndZone();
+}
+
+void DoEditorGUI()
+{
+
+    const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 + 28;
+    const int entityViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 - 40;
+
+    DoAssetsWindow();
+
+    MesaGUI::PrimitivePanel(
         MesaGUI::UIRect(6 + assetsViewW + 6, 20,
                         entityViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
         vec4(RGB255TO1(126, 145, 159), 1.f));
 
-    CodeEditorState
-    DoCodeEditor();
+    CodeEditorState codeEdit_0;
+    codeEdit_0.codeBuf = codeSampleBuf;
+    DoCodeEditor(&codeEdit_0);
 }

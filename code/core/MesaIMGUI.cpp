@@ -143,7 +143,7 @@ namespace MesaGUI
     static NiceArray<char, 128> activeTextInputBuffer;
 
     static std::stack<UIStyle> ui_ss; // UI Style Stack
-    static UIWindowGuide activeWindowGuide;
+    static UIZone activeZone;
 
     static ui_id freshIdCounter = 0;
     static ui_id hoveredUI = null_ui_id;
@@ -339,7 +339,7 @@ namespace MesaGUI
     }
 
 
-    bool DoButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor)
+    bool PrimitiveButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor)
     {
         bool result = false;
 
@@ -378,7 +378,7 @@ namespace MesaGUI
         return result;
     }
 
-    void DoPanel(UIRect rect, vec4 colorRGBA)
+    void PrimitivePanel(UIRect rect, vec4 colorRGBA)
     {
         RectDrawRequest drawRequest;
         drawRequest.rect = rect;
@@ -388,7 +388,7 @@ namespace MesaGUI
         drawQueue.push(&rectDrawRequestsBuffer.Back());
     }
 
-    void DoPanel(UIRect rect, int cornerWidth, u32 glTextureId, float normalizedCornerSizeInUV)
+    void PrimitivePanel(UIRect rect, int cornerWidth, u32 glTextureId, float normalizedCornerSizeInUV)
     {
         CorneredRectDrawRequest drawRequest;
         drawRequest.rect = rect;
@@ -401,7 +401,7 @@ namespace MesaGUI
         drawQueue.push(&corneredRectDrawRequestsBuffer.Back());
     }
 
-    void DoText(int x, int y, int size, TextAlignment alignment, const char* textFmt, ...)
+    void PrimitiveTextFmt(int x, int y, int size, TextAlignment alignment, const char* textFmt, ...)
     {
         if (textFmt == NULL) return;
 
@@ -435,7 +435,7 @@ namespace MesaGUI
         drawQueue.push(&textDrawRequestsBuffer.Back());
     }
 
-    void DoTextUnformatted(int x, int y, int size, TextAlignment alignment, const char* text)
+    void PrimitiveText(int x, int y, int size, TextAlignment alignment, const char* text)
     {
         if (text == NULL) return;
 
@@ -466,7 +466,7 @@ namespace MesaGUI
         drawQueue.push(&textDrawRequestsBuffer.Back());
     }
 
-    void DoImage(UIRect rect, u32 glTextureId)
+    void PrimtiveImage(UIRect rect, u32 glTextureId)
     {
         CorneredRectDrawRequest drawRequest;
         drawRequest.rect = rect;
@@ -479,7 +479,7 @@ namespace MesaGUI
         drawQueue.push(&corneredRectDrawRequestsBuffer.Back());
     }
 
-    void DoIntegerInputField(ui_id id, UIRect rect, int* v)
+    void PrimitiveIntegerInputField(ui_id id, UIRect rect, int* v)
     {
         bool bSetInactiveAndReturnValue = false;
 
@@ -565,16 +565,16 @@ namespace MesaGUI
         {
             if (activeTextInputBuffer.count > 0)
             {
-                DoText(rect.x + rect.w, rect.y + rect.h, 14, TextAlignment::Right, activeTextInputBuffer.data);
+                PrimitiveText(rect.x + rect.w, rect.y + rect.h, 14, TextAlignment::Right, activeTextInputBuffer.data);
             }
         }
         else
         {
-            DoText(rect.x + rect.w, rect.y + rect.h, 14, TextAlignment::Right, std::to_string(*v).c_str());
+            PrimitiveText(rect.x + rect.w, rect.y + rect.h, 14, TextAlignment::Right, std::to_string(*v).c_str());
         }
     }
 
-    void DoFloatInputField(ui_id id, UIRect rect, float* v)
+    void PrimitiveFloatInputField(ui_id id, UIRect rect, float* v)
     {
         bool bSetInactiveAndReturnValue = false;
 
@@ -669,14 +669,14 @@ namespace MesaGUI
         {
             if (activeTextInputBuffer.count > 0)
             {
-                DoText(rect.x + rect.w, rect.y + rect.h, 14, TextAlignment::Right, activeTextInputBuffer.data);
+                PrimitiveText(rect.x + rect.w, rect.y + rect.h, 14, TextAlignment::Right, activeTextInputBuffer.data);
             }
         }
         else
         {
             char cbuf[32];
             stbsp_sprintf(cbuf, "%.2f", *v);
-            DoText(rect.x + rect.w, rect.y + rect.h, 14, TextAlignment::Right, cbuf);
+            PrimitiveText(rect.x + rect.w, rect.y + rect.h, 14, TextAlignment::Right, cbuf);
         }
     }
 
@@ -716,33 +716,31 @@ namespace MesaGUI
             textX = (int) rect.x + rect.w - textPadding.x;
         }
 
-        bool buttonValue = DoButton(FreshID(), rect, ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor);
-        DoTextUnformatted(textX, rect.y + rect.h - textPadding.y, textSize, textAlignment, label);
+        bool buttonValue = PrimitiveButton(FreshID(), rect, ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor);
+        PrimitiveText(textX, rect.y + rect.h - textPadding.y, textSize, textAlignment, label);
         return buttonValue;
     }
 
 
 
-    void EditorBeginWindow(UIRect windowRect)
+    void BeginZone(UIRect windowRect)
     {
-        if (activeWindowGuide.windowId != null_ui_id)
+        if (activeZone.zoneId != null_ui_id)
         {
-            PrintLog.Error("EditorBeginWindow and EditorEndWindows don't match.");
+            PrintLog.Error("BeginZone and EndZone don't match.");
             return;
         }
 
         ui_id windowId = FreshID();
-        activeWindowGuide.windowId = windowId;
-        activeWindowGuide.initialWindowRect = windowRect;
-        activeWindowGuide.xOffsetFromInitialWindow = 5;
-        activeWindowGuide.yOffsetFromInitialWindow = 5;
-        // TODO(Kevin): Set active ui style to editor default style?
-        DoPanel(windowRect, ui_ss.top().editorWindowBackgroundColor);
+        activeZone.zoneId = windowId;
+        activeZone.zoneRect = windowRect;
+        activeZone.topLeftXOffset = 5;
+        activeZone.topLeftYOffset = 5;
     }
 
-    void EditorEndWindow()
+    void EndZone()
     {
-        activeWindowGuide.windowId = null_ui_id;
+        activeZone.zoneId = null_ui_id;
     }
 
     bool EditorLabelledButton(const char* label)
@@ -752,64 +750,64 @@ namespace MesaGUI
         float textH;
         vtxt_get_text_bounding_box_info(&textW, &textH, label, ui_ss.top().textFont.ptr, labelTextSize);
 
-        int buttonX = activeWindowGuide.initialWindowRect.x + activeWindowGuide.xOffsetFromInitialWindow;
-        int buttonY = activeWindowGuide.initialWindowRect.y + activeWindowGuide.yOffsetFromInitialWindow;
+        int buttonX = activeZone.zoneRect.x + activeZone.topLeftXOffset;
+        int buttonY = activeZone.zoneRect.y + activeZone.topLeftYOffset;
         int buttonW = GM_max((int) textW + 4, 50);
         int buttonH = labelTextSize + 4;
         int buttonPaddingAbove = 0;
         int buttonPaddingBelow = 5;
         UIRect buttonRect = UIRect(buttonX, buttonY + buttonPaddingAbove, buttonW, buttonH);
         bool result = LabelledButton(buttonRect, label, labelTextSize, TextAlignment::Center);
-        activeWindowGuide.yOffsetFromInitialWindow += buttonPaddingAbove + buttonH + buttonPaddingBelow;
+        activeZone.topLeftYOffset += buttonPaddingAbove + buttonH + buttonPaddingBelow;
         return result;
     }
 
     void EditorIncrementableIntegerField(const char* label, int* v, int increment)
     {
-        int x = activeWindowGuide.initialWindowRect.x + activeWindowGuide.xOffsetFromInitialWindow;
-        int y = activeWindowGuide.initialWindowRect.y + activeWindowGuide.yOffsetFromInitialWindow;
+        int x = activeZone.zoneRect.x + activeZone.topLeftXOffset;
+        int y = activeZone.zoneRect.y + activeZone.topLeftYOffset;
         int w = 120;
         int h = 20;
         int paddingAbove = 0;
         int paddingBelow = 5;
 
-        DoPanel(UIRect(x, y, w-2, h), vec4(0.4f, 0.4f, 0.4f, 1.f));
-        DoIntegerInputField(FreshID(), UIRect(x + 1, y + 1, w-4, h - 2), v);
-        if (DoButton(FreshID(), UIRect(x + w, y + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
+        PrimitivePanel(UIRect(x, y, w-2, h), vec4(0.4f, 0.4f, 0.4f, 1.f));
+        PrimitiveIntegerInputField(FreshID(), UIRect(x + 1, y + 1, w-4, h - 2), v);
+        if (PrimitiveButton(FreshID(), UIRect(x + w, y + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
         {
             (*v) += increment;
         }
-        if (DoButton(FreshID(), UIRect(x + w, y + (h / 2) + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
+        if (PrimitiveButton(FreshID(), UIRect(x + w, y + (h / 2) + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
         {
             (*v) -= increment;
         }
-        DoTextUnformatted(x + w + 22, y + h, 20, TextAlignment::Left, label);
+        PrimitiveText(x + w + 22, y + h, 20, TextAlignment::Left, label);
 
-        activeWindowGuide.yOffsetFromInitialWindow += paddingAbove + h + paddingBelow;
+        activeZone.topLeftYOffset += paddingAbove + h + paddingBelow;
     }
 
     void EditorIncrementableFloatField(const char* label, float* v, float increment)
     {
-        int x = activeWindowGuide.initialWindowRect.x + activeWindowGuide.xOffsetFromInitialWindow;
-        int y = activeWindowGuide.initialWindowRect.y + activeWindowGuide.yOffsetFromInitialWindow;
+        int x = activeZone.zoneRect.x + activeZone.topLeftXOffset;
+        int y = activeZone.zoneRect.y + activeZone.topLeftYOffset;
         int w = 120;
         int h = 20;
         int paddingAbove = 0;
         int paddingBelow = 5;
 
-        DoPanel(UIRect(x, y, w-2, h), vec4(0.4f, 0.4f, 0.4f, 1.f));
-        DoFloatInputField(FreshID(), UIRect(x + 1, y + 1, w-4, h - 2), v);
-        if (DoButton(FreshID(), UIRect(x + w, y + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
+        PrimitivePanel(UIRect(x, y, w-2, h), vec4(0.4f, 0.4f, 0.4f, 1.f));
+        PrimitiveFloatInputField(FreshID(), UIRect(x + 1, y + 1, w-4, h - 2), v);
+        if (PrimitiveButton(FreshID(), UIRect(x + w, y + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
         {
             (*v) += increment;
         }
-        if (DoButton(FreshID(), UIRect(x + w, y + (h / 2) + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
+        if (PrimitiveButton(FreshID(), UIRect(x + w, y + (h / 2) + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
         {
             (*v) -= increment;
         }
-        DoTextUnformatted(x + w + 22, y + h, 20, TextAlignment::Left, label);
+        PrimitiveText(x + w + 22, y + h, 20, TextAlignment::Left, label);
 
-        activeWindowGuide.yOffsetFromInitialWindow += paddingAbove + h + paddingBelow;
+        activeZone.topLeftYOffset += paddingAbove + h + paddingBelow;
     }
 
 
@@ -897,12 +895,15 @@ namespace MesaGUI
 
     void SDLProcessEvent(const SDL_Event* evt)
     {
+        Gfx::CoreRenderer *renderer = Gfx::GetCoreRenderer();
         SDL_Event event = *evt;
         switch (event.type)
         {
             case SDL_MOUSEMOTION: {
-                mousePosX = event.motion.x;
-                mousePosY = event.motion.y;
+                i32 winW, winH = 0;
+                renderer->GetBackBufferSize(&winW, &winH);
+                mousePosX = int(float(event.motion.x) * (float(renderer->guiLayer.width) / float(winW)));
+                mousePosY = int(float(event.motion.y) * (float(renderer->guiLayer.height) / float(winH)));
             }break;
             case SDL_MOUSEBUTTONDOWN:
             {

@@ -49,63 +49,45 @@ namespace MesaGUI
 
     };
 
-    struct UIWindowGuide
+    struct UIZone
     {
-        ui_id windowId = null_ui_id;
-        UIRect initialWindowRect;
-        int xOffsetFromInitialWindow;
-        int yOffsetFromInitialWindow;
+        ui_id zoneId = null_ui_id;
+        UIRect zoneRect;
+        int topLeftXOffset;
+        int topLeftYOffset;
     };
 
     ui_id FreshID();
-
     void Init();
-
     void NewFrame();
-
     void SDLProcessEvent(const SDL_Event* evt);
-
     void Draw();
 
     // Note(Kevin): I'm going to use the Do prefix for the primitive "building block" GUI elements
     // more complete GUI elements will not have this prefix.
-    void DoPanel(UIRect rect, vec4 colorRGBA);
-
-    void DoPanel(UIRect rect, int cornerWidth, u32 glTextureId = 0, float normalizedCornerSizeInUV = 0.3f);
-
-    bool DoButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor);
-
-    void DoText(int x, int y, int size, TextAlignment alignment, const char* textFmt, ...);
-
-    void DoTextUnformatted(int x, int y, int size, TextAlignment alignment, const char* text);
-
-    void DoImage(UIRect rect, u32 glTextureId = 0);
-
-    void DoIntegerInputField(ui_id id, UIRect rect, int* v);
-
-    void DoFloatInputField(ui_id id, UIRect rect, float* v);
-
+    void PrimitivePanel(UIRect rect, vec4 colorRGBA);
+    void PrimitivePanel(UIRect rect, int cornerWidth, u32 glTextureId = 0, float normalizedCornerSizeInUV = 0.3f);
+    bool PrimitiveButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor);
+    void PrimitiveText(int x, int y, int size, TextAlignment alignment, const char* text);
+    void PrimitiveTextFmt(int x, int y, int size, TextAlignment alignment, const char* textFmt, ...);
+    void PrimtiveImage(UIRect rect, u32 glTextureId = 0);
+    void PrimitiveIntegerInputField(ui_id id, UIRect rect, int* v);
+    void PrimitiveFloatInputField(ui_id id, UIRect rect, float* v);
+    //void DoCheckbox(const char* label, );
 
     void PushUIStyle(UIStyle style);
     void PopUIStyle();
     UIStyle GetActiveUIStyleCopy();
     UIStyle& GetActiveUIStyleReference();
 
+    void BeginZone(UIRect windowRect);
+    void EndZone();
+
     bool LabelledButton(UIRect rect, const char* label, int textSize, TextAlignment textAlignment);
 
-    void EditorIncrementableIntegerField(const char* label, int* v, int increment = 1);
-
-    void EditorIncrementableFloatField(const char* label, float* v, float increment = 0.1f);
-
-    //void DoCheckbox(const char* label, );
-
-
-    void EditorBeginWindow(UIRect windowRect);
-
-    void EditorEndWindow();
-
     // void EditorText(const char* textFmt, ...);
-
     bool EditorLabelledButton(const char* label);
+    void EditorIncrementableIntegerField(const char* label, int* v, int increment = 1);
+    void EditorIncrementableFloatField(const char* label, float* v, float increment = 0.1f);
 }
 
