@@ -1,6 +1,7 @@
 #include "EditorGUI.h"
 
 #include "../core/MesaIMGUI.h"
+#include "AssetManager.h"
 
 std::string codeSampleBuf = 
                "fn Update(self) { \n"
@@ -18,6 +19,10 @@ std::string codeSampleBuf =
                "    }\n" 
                "}";
 
+
+EntityAsset *s_SelectedEntityAsset = NULL;
+
+
 // I select an entity template: it's code shows up in the code editor -> a code editor state is created
 // I can keep multiple code editor states open at once (multiple tabs, one tab for each entity code)
 //     Each CodeEditor state has the buffer to write to, the cursor location, scroll location 
@@ -26,7 +31,7 @@ std::string codeSampleBuf =
 
 struct CodeEditorState
 {
-    std::string codeBuf;
+    std::string codeBuf = "";
     u32 codeCursor = 0;
     u32 firstVisibleLineNumber = 0;
 };
@@ -47,14 +52,6 @@ void DoCodeEditor(CodeEditorState *codeEditorState)
 
 void DoAssetsWindow()
 {
-    static bool doOnce = false;
-    if (!doOnce)
-    {
-        doOnce = true;
-        // Load code editor for some entity type.
-
-    }
-
     const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 + 28;
     const int entityViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 - 40;
 
@@ -69,9 +66,21 @@ void DoAssetsWindow()
     // MesaGUI::DoTextUnformatted(8, 82, 9, MesaGUI::TextAlignment::Left, "v spaces");
     // MesaGUI::DoTextUnformatted(8, 92, 9, MesaGUI::TextAlignment::Left, "  - folders");
 
-    for (int i = 0; i < 5; ++i)
+    std::string text_aefa = "Active Entity Asset: ";
+    if (s_SelectedEntityAsset) 
+        text_aefa += s_SelectedEntityAsset->name;
+    else 
+        text_aefa += "NULL";
+    MesaGUI::EditorText(text_aefa.c_str());
+
+    std::vector<EntityAsset>* entityAssetList = GetAll_Entity();
+    for (size_t i = 0; i < entityAssetList->size(); ++i)
     {
-        MesaGUI::EditorLabelledButton("Entity");
+        EntityAsset& e = entityAssetList->at(i);
+        if (MesaGUI::EditorLabelledButton(e.name.c_str()))
+        {
+            s_SelectedEntityAsset = &e;
+        }
     }
 
     MesaGUI::EndZone();
@@ -79,6 +88,18 @@ void DoAssetsWindow()
 
 void DoEditorGUI()
 {
+    static bool doOnce = false;
+    if (!doOnce)
+    {
+        doOnce = true;
+        //CreateBlankAsset_Entity("entity_0");
+        //CreateBlankAsset_Entity("entity_1");
+        //CreateBlankAsset_Entity("entity_2");
+        //CreateBlankAsset_Entity("entity_3");
+        //CreateBlankAsset_Entity("entity_4");
+
+        // Load code editor for some entity type.
+    }
 
     const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 + 28;
     const int entityViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 - 40;
@@ -91,6 +112,7 @@ void DoEditorGUI()
         vec4(RGB255TO1(126, 145, 159), 1.f));
 
     CodeEditorState codeEdit_0;
-    codeEdit_0.codeBuf = codeSampleBuf;
+    codeEdit_0.codeBuf = "empty";
+    if (s_SelectedEntityAsset) codeEdit_0.codeBuf = s_SelectedEntityAsset->code;
     DoCodeEditor(&codeEdit_0);
 }

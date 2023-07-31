@@ -419,7 +419,6 @@ namespace MesaGUI
         va_start(argptr, textFmt);
         int numCharactersWritten = stbsp_vsprintf(formattedTextBuffer, textFmt, argptr);
         va_end(argptr);
-        ASSERT(numCharactersWritten > 0);
         __reservedTextMemoryIndexer += numCharactersWritten + 1;
 
         TextDrawRequest drawRequest;
@@ -450,7 +449,6 @@ namespace MesaGUI
 
         char* textBuffer = __reservedTextMemory + __reservedTextMemoryIndexer;
         int numCharactersWritten = stbsp_sprintf(textBuffer, text);
-        ASSERT(numCharactersWritten > 0);
         __reservedTextMemoryIndexer += numCharactersWritten + 1;
 
         TextDrawRequest drawRequest;
@@ -701,10 +699,10 @@ namespace MesaGUI
         return ui_ss.top();
     }
 
-    bool LabelledButton(UIRect rect, const char* label, int textSize, TextAlignment textAlignment)
+    bool LabelledButton(UIRect rect, const char* label, TextAlignment textAlignment)
     {
-        float ascenderTextSize = (float)textSize;
-        float yTextPaddingRatio = (1.f - (ascenderTextSize / (float) rect.h)) / 2.f;
+        int ascenderTextSize = ui_ss.top().textFont.ptr->font_height_px;
+        float yTextPaddingRatio = (1.f - (float(ascenderTextSize) / float(rect.h))) / 2.f;
         ivec2 textPadding = ivec2(10, (int) roundf(rect.h * yTextPaddingRatio));
         int textX = rect.x + textPadding.x;
         if (textAlignment == TextAlignment::Center)
@@ -717,7 +715,7 @@ namespace MesaGUI
         }
 
         bool buttonValue = PrimitiveButton(FreshID(), rect, ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor);
-        PrimitiveText(textX, rect.y + rect.h - textPadding.y, textSize, textAlignment, label);
+        PrimitiveText(textX, rect.y + rect.h - textPadding.y, ascenderTextSize, textAlignment, label);
         return buttonValue;
     }
 
@@ -738,38 +736,76 @@ namespace MesaGUI
         activeZone.topLeftYOffset = 5;
     }
 
+    void GetXYInZone(int *x, int *y)
+    {
+        *x = activeZone.zoneRect.x + activeZone.topLeftXOffset;
+        *y = activeZone.zoneRect.y + activeZone.topLeftYOffset;
+    }
+
+    void MoveXYInZone(int x, int y)
+    {
+        activeZone.topLeftXOffset += x;
+        activeZone.topLeftYOffset += y;
+    }
+
     void EndZone()
     {
         activeZone.zoneId = null_ui_id;
     }
 
+
+    void EditorText(const char* text)
+    {
+        UIStyle& uistyle = ui_ss.top();
+
+        int x;
+        int y;
+        GetXYInZone(&x, &y);
+
+        int sz = ui_ss.top().textFont.ptr->font_height_px;
+
+        PrimitiveText(x + uistyle.paddingLeft, y + sz + uistyle.paddingTop, sz, TextAlignment::Left, text);
+
+        MoveXYInZone(0, sz + uistyle.paddingTop + uistyle.paddingBottom);
+    }
+
     bool EditorLabelledButton(const char* label)
     {
-        int labelTextSize = ui_ss.top().editorTextSize;
+        UIStyle& uistyle = ui_ss.top();
+
+        int labelTextSize = uistyle.textFont.ptr->font_height_px;
         float textW;
         float textH;
-        vtxt_get_text_bounding_box_info(&textW, &textH, label, ui_ss.top().textFont.ptr, labelTextSize);
+        vtxt_get_text_bounding_box_info(&textW, &textH, label, uistyle.textFont.ptr, labelTextSize);
 
-        int buttonX = activeZone.zoneRect.x + activeZone.topLeftXOffset;
-        int buttonY = activeZone.zoneRect.y + activeZone.topLeftYOffset;
+        int buttonX;
+        int buttonY;
+        GetXYInZone(&buttonX, &buttonY);
+        buttonX += uistyle.paddingLeft;
+        buttonY += uistyle.paddingTop;
         int buttonW = GM_max((int) textW + 4, 50);
         int buttonH = labelTextSize + 4;
-        int buttonPaddingAbove = 0;
-        int buttonPaddingBelow = 5;
-        UIRect buttonRect = UIRect(buttonX, buttonY + buttonPaddingAbove, buttonW, buttonH);
-        bool result = LabelledButton(buttonRect, label, labelTextSize, TextAlignment::Center);
-        activeZone.topLeftYOffset += buttonPaddingAbove + buttonH + buttonPaddingBelow;
+
+        UIRect buttonRect = UIRect(buttonX, buttonY, buttonW, buttonH);
+        bool result = LabelledButton(buttonRect, label, TextAlignment::Center);
+
+        MoveXYInZone(0, uistyle.paddingTop + buttonH + uistyle.paddingBottom);
+
         return result;
     }
 
     void EditorIncrementableIntegerField(const char* label, int* v, int increment)
     {
-        int x = activeZone.zoneRect.x + activeZone.topLeftXOffset;
-        int y = activeZone.zoneRect.y + activeZone.topLeftYOffset;
+        UIStyle& uistyle = ui_ss.top();
+
+        int x;
+        int y;
+        GetXYInZone(&x, &y);
+
         int w = 120;
         int h = 20;
-        int paddingAbove = 0;
-        int paddingBelow = 5;
+        int paddingAbove = uistyle.paddingTop;
+        int paddingBelow = uistyle.paddingBottom;
 
         PrimitivePanel(UIRect(x, y, w-2, h), vec4(0.4f, 0.4f, 0.4f, 1.f));
         PrimitiveIntegerInputField(FreshID(), UIRect(x + 1, y + 1, w-4, h - 2), v);
@@ -783,17 +819,21 @@ namespace MesaGUI
         }
         PrimitiveText(x + w + 22, y + h, 20, TextAlignment::Left, label);
 
-        activeZone.topLeftYOffset += paddingAbove + h + paddingBelow;
+        MoveXYInZone(0, paddingAbove + h + paddingBelow);
     }
 
     void EditorIncrementableFloatField(const char* label, float* v, float increment)
     {
-        int x = activeZone.zoneRect.x + activeZone.topLeftXOffset;
-        int y = activeZone.zoneRect.y + activeZone.topLeftYOffset;
+        UIStyle& uistyle = ui_ss.top();
+
+        int x;
+        int y;
+        GetXYInZone(&x, &y);
+
         int w = 120;
         int h = 20;
-        int paddingAbove = 0;
-        int paddingBelow = 5;
+        int paddingAbove = uistyle.paddingTop;
+        int paddingBelow = uistyle.paddingBottom;
 
         PrimitivePanel(UIRect(x, y, w-2, h), vec4(0.4f, 0.4f, 0.4f, 1.f));
         PrimitiveFloatInputField(FreshID(), UIRect(x + 1, y + 1, w-4, h - 2), v);
@@ -807,7 +847,7 @@ namespace MesaGUI
         }
         PrimitiveText(x + w + 22, y + h, 20, TextAlignment::Left, label);
 
-        activeZone.topLeftYOffset += paddingAbove + h + paddingBelow;
+        MoveXYInZone(0, paddingAbove + h + paddingBelow);
     }
 
 
