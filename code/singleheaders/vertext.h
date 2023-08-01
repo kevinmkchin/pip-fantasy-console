@@ -666,6 +666,7 @@ __private_vtxt_append_glyph(const char in_glyph, vtxt_font* font, int text_heigh
     float bot = _vtxt_cursor_y + glyph.offset_y + glyph.height;
     float left = _vtxt_cursor_x + glyph.offset_x + x_offset_from_cursor;
     float right = _vtxt_cursor_x + glyph.offset_x + glyph.width + x_offset_from_cursor;
+
     if(_vtxt_config & VTXT_FLIP_Y)
     {
         top = _vtxt_cursor_y - glyph.offset_y;
@@ -679,6 +680,10 @@ __private_vtxt_append_glyph(const char in_glyph, vtxt_font* font, int text_heigh
         left = ((left / _vtxt_screen_w_for_clipspace) * 2.f) - 1.f;
         right = ((right / _vtxt_screen_w_for_clipspace) * 2.f) - 1.f;
     }
+
+    _vtxt_cursor_x += (int) glyph.advance; // Advance the cursor
+    
+    if (in_glyph <= 32) return; // No need to append vertices for invisible characters 
 
     if(_vtxt_config & VTXT_CREATE_INDEX_BUFFER)
     {
@@ -746,9 +751,6 @@ __private_vtxt_append_glyph(const char in_glyph, vtxt_font* font, int text_heigh
 
         _vtxt_vertex_count += 6;
     }
-
-    // Advance the cursor
-    _vtxt_cursor_x += (int) glyph.advance;
 }
 
 VTXT_DEF void
