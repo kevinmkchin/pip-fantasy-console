@@ -2,6 +2,7 @@
 
 ### Bugs
 
+- GUI incorrect zones when window resize with black bars, window aspect ratio != game ratio
 - Make sure vertext height thing didn't regress (text height inconsistency for loading vs forming vertices)
 
 ### Engine
@@ -56,6 +57,9 @@
 
 
 ### Way the fuck down the line
+##### Uncategorized
+- lots of potential optimizations in MesaIMGUI
+
 ##### Language features
 - replace all std data structs with alternate optimized implementations in C?
 - REFACTOR
