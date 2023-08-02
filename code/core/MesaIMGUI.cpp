@@ -10,6 +10,7 @@
 #include "../singleheaders/vertext.h"
 #include "../singleheaders/stb_sprintf.h"
 
+#include "MemoryAllocator.h"
 #include "MesaUtility.h"
 #include "GfxRenderer.h"
 #include "GfxDataTypesAndUtility.h"
@@ -285,10 +286,9 @@ namespace MesaGUI
         }
     };
 
-    static NiceArray<RectDrawRequest, 256> rectDrawRequestsBuffer;
-    static NiceArray<CorneredRectDrawRequest, 256> corneredRectDrawRequestsBuffer;
-    static NiceArray<TextDrawRequest, 256> textDrawRequestsBuffer;
+    static MemoryLinearBuffer drawRequestsFrameStorageBuffer;
     static std::queue<UIDrawRequest*> drawQueue;
+#define MESAIMGUI_NEW_DRAW_REQUEST(type) new (MEMORY_LINEAR_ALLOCATE(&drawRequestsFrameStorageBuffer, type)) type()
 
     static bool IsActive(ui_id id)
     {
@@ -367,38 +367,35 @@ namespace MesaGUI
             SetHovered(id);
         }
 
-        RectDrawRequest drawRequest;
-        drawRequest.rect = rect;
-        drawRequest.color = IsHovered(id) ? hoveredColor : normalColor;
-        if (IsActive(id)) drawRequest.color = activeColor;
+        RectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(RectDrawRequest);
+        drawRequest->rect = rect;
+        drawRequest->color = IsHovered(id) ? hoveredColor : normalColor;
+        if (IsActive(id)) drawRequest->color = activeColor;
 
-        rectDrawRequestsBuffer.PushBack(drawRequest);
-        drawQueue.push(&rectDrawRequestsBuffer.Back());
+        drawQueue.push(drawRequest);
 
         return result;
     }
 
     void PrimitivePanel(UIRect rect, vec4 colorRGBA)
     {
-        RectDrawRequest drawRequest;
-        drawRequest.rect = rect;
-        drawRequest.color = colorRGBA;
+        RectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(RectDrawRequest);
+        drawRequest->rect = rect;
+        drawRequest->color = colorRGBA;
 
-        rectDrawRequestsBuffer.PushBack(drawRequest);
-        drawQueue.push(&rectDrawRequestsBuffer.Back());
+        drawQueue.push(drawRequest);
     }
 
     void PrimitivePanel(UIRect rect, int cornerWidth, u32 glTextureId, float normalizedCornerSizeInUV)
     {
-        CorneredRectDrawRequest drawRequest;
-        drawRequest.rect = rect;
-        drawRequest.color = vec4(0.157f, 0.172f, 0.204f, 1.f);
-        drawRequest.textureId = glTextureId;
-        drawRequest.cornerWidth = cornerWidth;
-        drawRequest.normalizedCornerSizeInUV = normalizedCornerSizeInUV;
+        CorneredRectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(CorneredRectDrawRequest);
+        drawRequest->rect = rect;
+        drawRequest->color = vec4(0.157f, 0.172f, 0.204f, 1.f);
+        drawRequest->textureId = glTextureId;
+        drawRequest->cornerWidth = cornerWidth;
+        drawRequest->normalizedCornerSizeInUV = normalizedCornerSizeInUV;
 
-        corneredRectDrawRequestsBuffer.PushBack(drawRequest);
-        drawQueue.push(&corneredRectDrawRequestsBuffer.Back());
+        drawQueue.push(drawRequest);
     }
 
     void PrimitiveTextFmt(int x, int y, int size, TextAlignment alignment, const char* textFmt, ...)
@@ -421,17 +418,16 @@ namespace MesaGUI
         va_end(argptr);
         __reservedTextMemoryIndexer += numCharactersWritten + 1;
 
-        TextDrawRequest drawRequest;
-        drawRequest.text = formattedTextBuffer;
-        drawRequest.size = size;
-        drawRequest.x = x;
-        drawRequest.y = y;
-        drawRequest.alignment = alignment;
-        drawRequest.font = ui_ss.top().textFont;
-        drawRequest.color = ui_ss.top().textColor;
+        TextDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(TextDrawRequest);
+        drawRequest->text = formattedTextBuffer;
+        drawRequest->size = size;
+        drawRequest->x = x;
+        drawRequest->y = y;
+        drawRequest->alignment = alignment;
+        drawRequest->font = ui_ss.top().textFont;
+        drawRequest->color = ui_ss.top().textColor;
 
-        textDrawRequestsBuffer.PushBack(drawRequest);
-        drawQueue.push(&textDrawRequestsBuffer.Back());
+        drawQueue.push(drawRequest);
     }
 
     void PrimitiveText(int x, int y, int size, TextAlignment alignment, const char* text)
@@ -451,30 +447,28 @@ namespace MesaGUI
         int numCharactersWritten = stbsp_sprintf(textBuffer, text);
         __reservedTextMemoryIndexer += numCharactersWritten + 1;
 
-        TextDrawRequest drawRequest;
-        drawRequest.text = textBuffer;
-        drawRequest.size = size;
-        drawRequest.x = x;
-        drawRequest.y = y;
-        drawRequest.alignment = alignment;
-        drawRequest.font = ui_ss.top().textFont;
-        drawRequest.color = ui_ss.top().textColor;
+        TextDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(TextDrawRequest);
+        drawRequest->text = textBuffer;
+        drawRequest->size = size;
+        drawRequest->x = x;
+        drawRequest->y = y;
+        drawRequest->alignment = alignment;
+        drawRequest->font = ui_ss.top().textFont;
+        drawRequest->color = ui_ss.top().textColor;
 
-        textDrawRequestsBuffer.PushBack(drawRequest);
-        drawQueue.push(&textDrawRequestsBuffer.Back());
+        drawQueue.push(drawRequest);
     }
 
     void PrimtiveImage(UIRect rect, u32 glTextureId)
     {
-        CorneredRectDrawRequest drawRequest;
-        drawRequest.rect = rect;
-        drawRequest.color = vec4(0.157f, 0.172f, 0.204f, 1.f);
-        drawRequest.textureId = glTextureId;
-        drawRequest.cornerWidth = 0;
-        drawRequest.normalizedCornerSizeInUV = 0.f;
+        CorneredRectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(CorneredRectDrawRequest);
+        drawRequest->rect = rect;
+        drawRequest->color = vec4(0.157f, 0.172f, 0.204f, 1.f);
+        drawRequest->textureId = glTextureId;
+        drawRequest->cornerWidth = 0;
+        drawRequest->normalizedCornerSizeInUV = 0.f;
 
-        corneredRectDrawRequestsBuffer.PushBack(drawRequest);
-        drawQueue.push(&corneredRectDrawRequestsBuffer.Back());
+        drawQueue.push(drawRequest);
     }
 
     void PrimitiveIntegerInputField(ui_id id, UIRect rect, int* v)
@@ -552,12 +546,11 @@ namespace MesaGUI
             SetHovered(id);
         }
 
-        RectDrawRequest drawRequest;
-        drawRequest.rect = rect;
-        drawRequest.color = IsActive(id) ? vec4(0.f, 0.f, 0.f, 1.f) : vec4(0.2f, 0.2f, 0.2f, 1.f);//vec4(1.f, 1.f, 1.f, 1.f) : vec4(0.8f, 0.8f, 0.8f, 1.f);
+        RectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(RectDrawRequest);
+        drawRequest->rect = rect;
+        drawRequest->color = IsActive(id) ? vec4(0.f, 0.f, 0.f, 1.f) : vec4(0.2f, 0.2f, 0.2f, 1.f);//vec4(1.f, 1.f, 1.f, 1.f) : vec4(0.8f, 0.8f, 0.8f, 1.f);
 
-        rectDrawRequestsBuffer.PushBack(drawRequest);
-        drawQueue.push(&rectDrawRequestsBuffer.Back());
+        drawQueue.push(drawRequest);
 
         if (IsActive(id))
         {
@@ -656,12 +649,11 @@ namespace MesaGUI
             SetHovered(id);
         }
 
-        RectDrawRequest drawRequest;
-        drawRequest.rect = rect;
-        drawRequest.color = IsActive(id) ? vec4(0.f, 0.f, 0.f, 1.f) : vec4(0.2f, 0.2f, 0.2f, 1.f);
+        RectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(RectDrawRequest);
+        drawRequest->rect = rect;
+        drawRequest->color = IsActive(id) ? vec4(0.f, 0.f, 0.f, 1.f) : vec4(0.2f, 0.2f, 0.2f, 1.f);
 
-        rectDrawRequestsBuffer.PushBack(drawRequest);
-        drawQueue.push(&rectDrawRequestsBuffer.Back());
+        drawQueue.push(drawRequest);
 
         if (IsActive(id))
         {
@@ -826,8 +818,7 @@ namespace MesaGUI
     {
         UIStyle& uistyle = ui_ss.top();
 
-        int x;
-        int y;
+        int x, y;
         GetXYInZone(&x, &y);
 
         int w = 120;
@@ -859,9 +850,12 @@ namespace MesaGUI
 
     void Init()
     {
+        MemoryLinearInitialize(&drawRequestsFrameStorageBuffer, 1000000);
+
         hoveredUI = null_ui_id;
         activeUI = null_ui_id;
         Gfx::GLCreateShaderProgram(__main_ui_shader, __main_ui_shader_vs, __main_ui_shader_fs);
+        Gfx::GLCreateShaderProgram(__rounded_corner_rect_shader, __rounded_corner_rect_shader_vs, __rounded_corner_rect_shader_fs);
         Gfx::GLCreateShaderProgram(__text_shader, __text_shader_vs, __text_shader_fs);
         MeshCreate(__ui_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
         MeshCreate(__text_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
@@ -921,16 +915,13 @@ namespace MesaGUI
         }
         anyElementHoveredThisFrame = false;
 
-        rectDrawRequestsBuffer.ResetCount();
-        corneredRectDrawRequestsBuffer.ResetCount();
-        textDrawRequestsBuffer.ResetCount();
-
         keyboardInputASCIIKeycodeThisFrame.ResetCount();
         keyboardInputASCIIKeycodeThisFrame.ResetToZero();
 
         freshIdCounter = 0;
 
         __reservedTextMemoryIndexer = 0;
+        drawRequestsFrameStorageBuffer.arenaOffset = 0;
     }
 
     void SDLProcessEvent(const SDL_Event* evt)
