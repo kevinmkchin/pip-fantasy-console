@@ -59,6 +59,9 @@
 ### Way the fuck down the line
 ##### Uncategorized
 - lots of potential optimizations in MesaIMGUI
+- MesaIMGUI should probably eat keyboard inputs
+- MesaIMGUI overlapping elements or buttons
+- SDL_SCANCODE independent input key enums
 
 ##### Language features
 - replace all std data structs with alternate optimized implementations in C?

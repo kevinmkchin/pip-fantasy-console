@@ -1,27 +1,10 @@
 #include "EditorGUI.h"
 
+#include "../core/PrintLog.h"
 #include "../core/MesaIMGUI.h"
 #include "AssetManager.h"
 
-std::string codeSampleBuf = 
-               "fn Update(self) { \n"
-               "    if (input['left']) {\n"
-               "        self['x'] = self['x']-1\n" 
-               "    }\n" 
-               "    if (input['right']) {\n"
-               "        self['x'] = self['x']+1\n" 
-               "    }\n" 
-               "    if (input['up']) {\n"
-               "        self['y'] = self['y'] + 1\n" 
-               "    }\n" 
-               "    if (input['down']) {\n"
-               "        self['y'] = self['y'] - 1\n" 
-               "    }\n" 
-               "}";
-
-
 EntityAsset *s_SelectedEntityAsset = NULL;
-
 
 // I select an entity template: it's code shows up in the code editor -> a code editor state is created
 // I can keep multiple code editor states open at once (multiple tabs, one tab for each entity code)
@@ -29,25 +12,21 @@ EntityAsset *s_SelectedEntityAsset = NULL;
 //     (how many lines down from the top?)
 // Does the entity code get updated constantly or only when saved?
 
-struct CodeEditorState
-{
-    std::string codeBuf = "";
-    u32 codeCursor = 0;
-    u32 firstVisibleLineNumber = 0;
-};
+MesaGUI::CodeEditorState s_ActiveCodeEditorState;
 
-void DoCodeEditor(CodeEditorState *codeEditorState)
+void DoCodeEditor(MesaGUI::CodeEditorState *codeEditorState)
 {
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 20, 
-                                     EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-6, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
+                                            EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-6, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
                      vec4(RGB255TO1(126, 145, 159), 1.f));
                      //vec4(RGB255TO1(101, 124, 140), 1.f));
 
     MesaGUI::BeginZone(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 22, 
-                                               EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-8, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 30));
-    MesaGUI::EndZone();
+                                       EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-8, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 30));
 
-    MesaGUI::PrimitiveText(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2+2, 20+8+2, 9, MesaGUI::TextAlignment::Left, codeEditorState->codeBuf.c_str());
+    MesaGUI::EditorCodeEditor(&s_ActiveCodeEditorState, EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-18, EDITOR_FIXED_INTERNAL_RESOLUTION_H-40, s_SelectedEntityAsset != NULL);
+
+    MesaGUI::EndZone();
 }
 
 void DoAssetsWindow()
@@ -68,9 +47,14 @@ void DoAssetsWindow()
 
     std::string text_aefa = "Active Entity Asset: ";
     if (s_SelectedEntityAsset) 
+    {
         text_aefa += s_SelectedEntityAsset->name;
+    }
     else 
+    {
         text_aefa += "NULL";
+        s_ActiveCodeEditorState.codeBuf = "";
+    }
     MesaGUI::EditorText(text_aefa.c_str());
 
     std::vector<EntityAsset>* entityAssetList = GetAll_Entity();
@@ -80,7 +64,16 @@ void DoAssetsWindow()
         if (MesaGUI::EditorLabelledButton(e.name.c_str()))
         {
             s_SelectedEntityAsset = &e;
+
+            s_ActiveCodeEditorState = MesaGUI::CodeEditorState();
+            s_ActiveCodeEditorState.codeBuf = s_SelectedEntityAsset->code;
         }
+    }
+    MesaGUI::MoveXYInZone(0, 10);
+    if (s_SelectedEntityAsset && MesaGUI::EditorLabelledButton("Save Code Changes"))
+    {
+        s_SelectedEntityAsset->code = s_ActiveCodeEditorState.codeBuf;
+        PrintLog.Message("Saving code changes...");
     }
 
     MesaGUI::EndZone();
@@ -92,13 +85,27 @@ void DoEditorGUI()
     if (!doOnce)
     {
         doOnce = true;
-        //CreateBlankAsset_Entity("entity_0");
-        //CreateBlankAsset_Entity("entity_1");
-        //CreateBlankAsset_Entity("entity_2");
-        //CreateBlankAsset_Entity("entity_3");
-        //CreateBlankAsset_Entity("entity_4");
+        CreateBlankAsset_Entity("entity_0");
+        CreateBlankAsset_Entity("entity_1");
+        CreateBlankAsset_Entity("entity_2");
+        std::vector<EntityAsset>* entityAssets = GetAll_Entity();
 
-        // Load code editor for some entity type.
+        entityAssets->at(0).code = "fn Update(self) { \n"
+                   "    if (input['left']) {\n"
+                   "        self['x'] = self['x'] - 3\n" 
+                   "    }\n" 
+                   "    if (input['right']) {\n"
+                   "        self['x'] = self['x'] + 3\n" 
+                   "    }\n" 
+                   "    if (input['up']) {\n"
+                   "        self['y'] = self['y'] + 3\n" 
+                   "    }\n" 
+                   "    if (input['down']) {\n"
+                   "        self['y'] = self['y'] - 3\n" 
+                   "    }\n" 
+                   "}";
+        entityAssets->at(1).code = "fn Update() { print('et1 update') }";
+        entityAssets->at(2).code = "fn Update() { print('et2 update') }";
     }
 
     const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 + 28;
@@ -111,8 +118,5 @@ void DoEditorGUI()
                         entityViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
         vec4(RGB255TO1(126, 145, 159), 1.f));
 
-    CodeEditorState codeEdit_0;
-    codeEdit_0.codeBuf = "empty";
-    if (s_SelectedEntityAsset) codeEdit_0.codeBuf = s_SelectedEntityAsset->code;
-    DoCodeEditor(&codeEdit_0);
+    DoCodeEditor(&s_ActiveCodeEditorState);
 }

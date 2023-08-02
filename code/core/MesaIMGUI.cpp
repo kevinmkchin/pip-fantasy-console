@@ -2,6 +2,7 @@
 
 #include <queue>
 #include <stack>
+#include <string>
 
 #include "MesaMath.h"
 #define STB_TRUETYPE_IMPLEMENTATION
@@ -46,43 +47,43 @@ namespace MesaGUI
         return fontToReturn;
     }
 
-     Font FontCreateFromBitmap(Gfx::TextureHandle bitmapTexture)
-     {
-         const int bitmapW = bitmapTexture.width;
-         const int bitmapH = bitmapTexture.height;
-         const int glyphW = bitmapW / 16;
-         const int glyphH = bitmapH / 16;
+    Font FontCreateFromBitmap(Gfx::TextureHandle bitmapTexture)
+    {
+        const int bitmapW = bitmapTexture.width;
+        const int bitmapH = bitmapTexture.height;
+        const int glyphW = bitmapW / 16;
+        const int glyphH = bitmapH / 16;
 
-         Font bitmapFont;
-         bitmapFont.textureId = bitmapTexture.textureId;
+        Font bitmapFont;
+        bitmapFont.textureId = bitmapTexture.textureId;
 
-         vtxt_font fontHandle;
-         fontHandle.font_height_px = glyphH;
-         fontHandle.ascender = float(glyphH);
-         fontHandle.descender = 0;
-         fontHandle.linegap = 1;
-         fontHandle.font_atlas.width = bitmapW;
-         fontHandle.font_atlas.height = bitmapH;
+        vtxt_font fontHandle;
+        fontHandle.font_height_px = glyphH;
+        fontHandle.ascender = float(glyphH);
+        fontHandle.descender = 0;
+        fontHandle.linegap = 1;
+        fontHandle.font_atlas.width = bitmapW;
+        fontHandle.font_atlas.height = bitmapH;
 
-         for(int codepoint = 0; codepoint < 256; ++codepoint)
-         {
-             vtxt_glyph *glyph = &fontHandle.glyphs[codepoint];
-             glyph->codepoint = codepoint;
-             glyph->width = float(glyphW);
-             glyph->height = float(glyphH);
-             glyph->advance = float(glyphW);
-             glyph->offset_x = 0;
-             glyph->offset_y = float(-glyphH);
-             glyph->min_u = float(codepoint % 16 * glyphW) / bitmapW;
-             glyph->min_v = 1.f - (float((codepoint / 16 + 1) * glyphH) / bitmapH);
-             glyph->max_u = float((codepoint % 16 + 1) * glyphW) / bitmapW;
-             glyph->max_v = 1.f - (float(codepoint / 16 * glyphH) / bitmapH);
-         }
+        for(int codepoint = 0; codepoint < 256; ++codepoint)
+        {
+            vtxt_glyph *glyph = &fontHandle.glyphs[codepoint];
+            glyph->codepoint = codepoint;
+            glyph->width = float(glyphW);
+            glyph->height = float(glyphH);
+            glyph->advance = float(glyphW);
+            glyph->offset_x = 0;
+            glyph->offset_y = float(-glyphH);
+            glyph->min_u = float(codepoint % 16 * glyphW) / bitmapW;
+            glyph->min_v = 1.f - (float((codepoint / 16 + 1) * glyphH) / bitmapH);
+            glyph->max_u = float((codepoint % 16 + 1) * glyphW) / bitmapW;
+            glyph->max_v = 1.f - (float(codepoint / 16 * glyphH) / bitmapH);
+        }
 
-         __vtxtLoadedFonts.PushBack(fontHandle);
-         bitmapFont.ptr = &__vtxtLoadedFonts.Back();
-         return bitmapFont;
-     }
+        __vtxtLoadedFonts.PushBack(fontHandle);
+        bitmapFont.ptr = &__vtxtLoadedFonts.Back();
+        return bitmapFont;
+    }
 
     static Gfx::Shader __main_ui_shader;
     static const char* __main_ui_shader_vs =
@@ -185,7 +186,7 @@ namespace MesaGUI
     static char __reservedTextMemory[16000000];
     static u32 __reservedTextMemoryIndexer = 0;
 
-    static NiceArray<SDL_Keycode, 16> keyboardInputASCIIKeycodeThisFrame;
+    static NiceArray<SDL_Keycode, 32> keyboardInputASCIIKeycodeThisFrame;
 
     static NiceArray<char, 128> activeTextInputBuffer;
 
@@ -924,6 +925,148 @@ namespace MesaGUI
         MoveXYInZone(0, paddingAbove + h + paddingBelow);
     }
 
+    static void CodeEditor_MoveCursorForward(CodeEditorState* state)
+    {
+        if (state->codeBuf.at(state->cursor) == '\n')
+        {
+            state->cursorColumn = 0;
+            state->cursorRow += 1;
+        }
+        else
+        {
+            state->cursorColumn += 1;
+        }
+        state->lastEditedOrClickedColumnPos = state->cursorColumn;
+        ++state->cursor;
+    }
+    static void CodeEditor_MoveCursorBackward(CodeEditorState* state)
+    {
+        if (state->cursor > 0)
+        {
+            if (state->codeBuf.at(state->cursor - 1) == '\n')
+            {
+                int bruh = 1 + (int) state->codeBuf.substr(0, state->cursor - 1).find_last_of('\n');
+                state->cursorColumn = state->cursor - 1 - bruh;
+                state->cursorRow -= 1;
+            }
+            else
+            {
+                state->cursorColumn -= 1;
+            }
+            state->lastEditedOrClickedColumnPos = state->cursorColumn;
+            --state->cursor;
+        }
+    }
+    void EditorCodeEditor(CodeEditorState *state, u32 width, u32 height, bool enabled)
+    {
+        int x, y;
+        GetXYInZone(&x, &y);
+        UIRect codeEditorRect = UIRect(x, y, width, height);
+
+        ui_id id = FreshID();
+
+        if (IsActive(id))
+        {
+            if (!enabled)// || MouseWentUp() && !IsHovered(id))
+            {
+                SetActive(null_ui_id);
+            }
+            else 
+            {
+                for (int i = 0; i < keyboardInputASCIIKeycodeThisFrame.count; ++i)
+                {
+                    SDL_Keycode keycodeASCII = keyboardInputASCIIKeycodeThisFrame.At(i);
+
+                    if (' ' <= keycodeASCII && keycodeASCII <= '~')
+                    {
+                        state->codeBuf.insert(state->cursor, 1, char(keycodeASCII));
+                        CodeEditor_MoveCursorForward(state);
+                    }
+                    else if (keycodeASCII == SDLK_BACKSPACE)
+                    {
+                        CodeEditor_MoveCursorBackward(state);
+                        state->codeBuf.erase(state->cursor, 1);
+                    }
+                    else if (keycodeASCII == SDLK_RETURN)
+                    {
+                        state->codeBuf.insert(state->cursor, 1, '\n');
+                        CodeEditor_MoveCursorForward(state);
+                    }
+                    else if (keycodeASCII == SDLK_TAB)
+                    {
+                        // TODO subtract cursor position along line % 4 (or 2 if i want) from 4 (or 2) and then move by that amount
+                        state->codeBuf.insert(state->cursor, 4, ' ');
+                        CodeEditor_MoveCursorForward(state);
+                        CodeEditor_MoveCursorForward(state);
+                        CodeEditor_MoveCursorForward(state);
+                        CodeEditor_MoveCursorForward(state);
+                    }
+                    else if (keycodeASCII == SDLK_LEFT)
+                    {
+                        if (state->cursor > 0) CodeEditor_MoveCursorBackward(state);
+                    }
+                    else if (keycodeASCII == SDLK_RIGHT)
+                    {
+                        if (state->cursor < u32(state->codeBuf.size())) CodeEditor_MoveCursorForward(state);
+                    }
+                    else if (keycodeASCII == SDLK_DOWN)
+                    {
+                        // remember where the cursor was along the line during last EDIT
+                        // then go to next line at the same column or furthest along before \n or EOS
+                        
+                    }
+                    else if (keycodeASCII == SDLK_UP)
+                    {
+
+                    }
+                }
+            }
+        }
+        else if (IsHovered(id))
+        {
+            if (MouseWentDown() && enabled)
+            {
+                SetActive(id);
+            }
+        }
+
+        if (MouseInside(codeEditorRect))
+        {
+            SetHovered(id);
+        }
+
+        PrimitivePanel(codeEditorRect, 6, IsActive(id) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
+
+        int lineNumbersDisplayWidth = 15;
+
+        int textBeginAnchorX = x + lineNumbersDisplayWidth + 8;
+        int textBeginAnchorY = y + 13;
+
+        if (IsActive(id)) PrimitivePanel(UIRect(textBeginAnchorX - 1 + state->cursorColumn * 6, textBeginAnchorY-9 + state->cursorRow * 10, 1, 9), vec4(1,1,1,1));
+        // I could make each type of text to highlight a different primitive text that is rendered
+        // so all keywords are rendered as one set of text batch with one color, all variables rendered as one set with one color, functions, etc. 
+        UIStyle uiss = GetActiveUIStyleCopy();
+        uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 1.f);
+        PushUIStyle(uiss);
+        if (!state->codeBuf.empty()) PrimitiveText(textBeginAnchorX, textBeginAnchorY, 9, MesaGUI::TextAlignment::Left, state->codeBuf.c_str());
+        PopUIStyle();
+
+        std::string lineNumbersBuf;
+        for (int i = 0; i < 43; ++i)
+        {
+            int lineNum = state->firstVisibleLine + i;
+            lineNumbersBuf += std::to_string(lineNum) + '\n';
+        }
+
+        uiss = GetActiveUIStyleCopy();
+        uiss.textColor = vec4(1.f, 1.f, 1.f, 0.38f);
+        PushUIStyle(uiss);
+        PrimitiveText(textBeginAnchorX - 8, textBeginAnchorY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str());
+        PopUIStyle();
+    }
+
+
+
 
 
     ui_id FreshID()
@@ -1013,7 +1156,8 @@ namespace MesaGUI
         SDL_Event event = *evt;
         switch (event.type)
         {
-            case SDL_MOUSEMOTION: {
+            case SDL_MOUSEMOTION: 
+            {
                 i32 winW, winH = 0;
                 renderer->GetBackBufferSize(&winW, &winH);
                 mousePosX = int(float(event.motion.x) * (float(renderer->guiLayer.width) / float(winW)));

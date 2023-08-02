@@ -7,6 +7,8 @@ typedef int ui_id;
 
 #include <SDL.h>
 
+#include <string>
+
 #include "MesaMath.h"
 #include "MesaCommon.h"
 struct vtxt_font;
@@ -87,7 +89,12 @@ namespace MesaGUI
 
     bool LabelledButton(UIRect rect, const char* label, TextAlignment textAlignment);
 
-
+    /** Zones
+     * For aligning UI elements in order like a DearImGui window.
+     * TODO Can be set to stop clicks from going through (if i click inside zone, then click doesn't go through to zones or program behind?)
+     * TODO think about: 
+     * Can be set to capture focus?
+     * Can be set to collapse? */
     void BeginZone(UIRect windowRect);
     void GetXYInZone(int *x, int *y);
     void MoveXYInZone(int x, int y);
@@ -97,5 +104,20 @@ namespace MesaGUI
     bool EditorLabelledButton(const char* label);
     void EditorIncrementableIntegerField(const char* label, int* v, int increment = 1);
     void EditorIncrementableFloatField(const char* label, float* v, float increment = 0.1f);
+    struct CodeEditorState
+    {
+        std::string codeBuf = "";
+        u32 cursor = 0;
+        u32 cursorRow = 0;
+        u32 cursorColumn = 0;
+        u32 lastEditedOrClickedColumnPos = 0;
+        u32 firstVisibleLine = 0;
+
+        // helpers?
+        // col RowEndColumn(row)
+        // curs RowHomeCursor(row)
+        // curs RowEndCursor(row)
+    };
+    void EditorCodeEditor(CodeEditorState *state, u32 width, u32 height, bool enabled);
 }
 
