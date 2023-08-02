@@ -87,50 +87,96 @@ namespace MesaGUI
     static Gfx::Shader __main_ui_shader;
     static const char* __main_ui_shader_vs =
             "#version 330 core\n"
+            "uniform mat4 matrixOrtho;\n"
             "layout (location = 0) in vec2 pos;\n"
             "layout (location = 1) in vec2 uv;\n"
             "out vec2 texUV;\n"
-            "uniform mat4 matrixOrtho;\n"
             "void main() {\n"
-            "   gl_Position = matrixOrtho * vec4(pos, 0.0, 1.0);\n"
-            "   texUV = uv;\n"
+            "    gl_Position = matrixOrtho * vec4(pos, 0.0, 1.0);\n"
+            "    texUV = uv;\n"
             "}\n";
     static const char* __main_ui_shader_fs =
             "#version 330 core\n"
-            "in vec2 texUV;\n"
-            "out vec4 colour;\n"
             "uniform sampler2D textureSampler0;\n"
             "uniform bool useColour = false;\n"
             "uniform vec4 uiColour;\n"
+            "in vec2 texUV;\n"
+            "out vec4 colour;\n"
             "void main() {\n"
-            "   if (useColour) {\n"
-            "       colour = uiColour;\n"
-            "   } else {\n"
-            "       colour = texture(textureSampler0, texUV);\n"
-            "   }\n"
+            "    if (useColour) {\n"
+            "        colour = uiColour;\n"
+            "    } else {\n"
+            "        colour = texture(textureSampler0, texUV);\n"
+            "    }\n"
+            "}\n";
+
+    static Gfx::Shader __rounded_corner_rect_shader;
+    static const char* __rounded_corner_rect_shader_vs =
+            "#version 330 core\n"
+            "uniform mat4 matrixOrtho;\n"
+            "layout (location = 0) in vec2 pos;\n"
+            "layout (location = 1) in vec2 uv;\n"
+            "out vec2 fragPos;\n"
+            "void main() {\n"
+            "    fragPos = pos;\n"
+            "    gl_Position = matrixOrtho * vec4(pos, 0.0, 1.0);\n"
+            "}\n";
+    static const char* __rounded_corner_rect_shader_fs =
+            "#version 330 core\n"
+            "uniform ivec4 rect;\n"
+            "uniform int cornerRadius;\n"
+            "uniform vec4 uiColour;\n"
+            "in vec2 fragPos;\n"
+            "out vec4 colour;\n"
+            "void main() {\n"
+            "    vec4 frect = vec4(rect);\n"
+            "    float fradius = float(cornerRadius);\n"
+            "\n"
+            "    bool xokay = (frect.x + fradius) < fragPos.x && fragPos.x < (frect.x + frect.z - fradius);\n"
+            "    bool yokay = (frect.y + fradius) < fragPos.y && fragPos.y < (frect.y + frect.w - fradius);\n"
+            "\n"
+            "    if (xokay || yokay) { \n"
+            "        colour = uiColour;\n"
+            "    } else {\n"
+            "        vec2 cornerPoint;\n"
+            "        if (fragPos.x < frect.x + fradius && fragPos.y < frect.y + fradius) { // top left\n"
+            "            cornerPoint = vec2(frect.x + fradius, frect.y + fradius);\n"
+            "        } else if (fragPos.x < frect.x + fradius && fragPos.y > frect.y + frect.w - fradius) { // bottom left\n"
+            "            cornerPoint = vec2(frect.x + fradius, frect.y + frect.w - fradius);\n"
+            "        } else if (fragPos.x > frect.x + frect.z - fradius && fragPos.y < frect.y + fradius) { // top right\n"
+            "            cornerPoint = vec2(frect.x + frect.z - fradius, frect.y + fradius);\n"
+            "        } else if (fragPos.x > frect.x + frect.z - fradius && fragPos.y > frect.y + frect.w - fradius) { // bottom right\n"
+            "            cornerPoint = vec2(frect.x + frect.z - fradius, frect.y + frect.w - fradius);\n"
+            "        }\n"
+            "        if (distance(cornerPoint, fragPos) < fradius) {\n"
+            "            colour = uiColour;\n"
+            "        } else {\n"
+            "            colour = vec4(0.0, 0.0, 0.0, 0.0);\n"
+            "        }\n"
+            "    }\n"
             "}\n";
 
     static Gfx::Shader __text_shader;
     static const char* __text_shader_vs =
             "#version 330 core\n"
+            "uniform mat4 matrixModel;\n"
+            "uniform mat4 matrixOrtho;\n"
             "layout (location = 0) in vec2 pos;\n"
             "layout (location = 1) in vec2 uv;\n"
             "out vec2 texUV;\n"
-            "uniform mat4 matrixModel;\n"
-            "uniform mat4 matrixOrtho;\n"
             "void main() {\n"
-            "   gl_Position = matrixOrtho * matrixModel * vec4(pos, 0.0, 1.0);\n"
-            "   texUV = uv;\n"
+            "    gl_Position = matrixOrtho * matrixModel * vec4(pos, 0.0, 1.0);\n"
+            "    texUV = uv;\n"
             "}\n";
     static const char* __text_shader_fs =
             "#version 330 core\n"
-            "in vec2 texUV;\n"
-            "out vec4 colour;\n"
             "uniform sampler2D textureSampler0;\n"
             "uniform vec4 uiColour;\n"
+            "in vec2 texUV;\n"
+            "out vec4 colour;\n"
             "void main() {\n"
-            "   float textAlpha = texture(textureSampler0, texUV).x;\n"
-            "   colour = vec4(uiColour.xyz, uiColour.w * textAlpha);\n"
+            "    float textAlpha = texture(textureSampler0, texUV).x;\n"
+            "    colour = vec4(uiColour.xyz, uiColour.w * textAlpha);\n"
             "}\n";
 
     static Gfx::Mesh __ui_mesh;
@@ -183,10 +229,37 @@ namespace MesaGUI
         }
     };
 
+    struct RoundedCornerRectDrawRequest : UIDrawRequest
+    {
+        UIRect rect;
+        int radius = 10;
+
+        void Draw()
+        {
+            float left = (float)rect.x;
+            float top = (float)rect.y;
+            float bottom = (float)rect.y + rect.h;
+            float right = (float)rect.x + rect.w;
+            float vb[] = { left, top, 0.f, 1.f,
+                           left, bottom, 0.f, 0.f,
+                           right, bottom, 1.f, 0.f,
+                           right, top, 1.f, 1.f, };
+            u32 ib[] = { 0, 1, 3, 1, 2, 3 };
+
+            Gfx::UseShader(__rounded_corner_rect_shader);
+            Gfx::GLBind4i(__rounded_corner_rect_shader, "rect", rect.x, rect.y, rect.w, rect.h);
+            Gfx::GLBind1i(__rounded_corner_rect_shader, "cornerRadius", radius);
+            Gfx::GLBind4f(__rounded_corner_rect_shader, "uiColour", color.x, color.y, color.z, color.w);
+
+            RebindBufferObjects(__ui_mesh, vb, ib, ARRAY_COUNT(vb), ARRAY_COUNT(ib), GL_DYNAMIC_DRAW);
+            RenderMesh(__ui_mesh);
+        }
+    };
+
     struct CorneredRectDrawRequest : UIDrawRequest
     {
         UIRect rect;
-        int cornerWidth = 10;
+        int radius = 10;
 
         GLuint textureId = 0;
         float normalizedCornerSizeInUV = 0.3f; // [0,1] with 0.5 being half way across texture
@@ -197,7 +270,7 @@ namespace MesaGUI
             float top = (float)rect.y;
             float bottom = (float)rect.y + rect.h;
             float right = (float)rect.x + rect.w;
-            float corner = (float)cornerWidth;
+            float corner = (float)radius;
             float uv0 = normalizedCornerSizeInUV;
             float uv1 = 1.f - uv0;
 
@@ -386,13 +459,23 @@ namespace MesaGUI
         drawQueue.push(drawRequest);
     }
 
-    void PrimitivePanel(UIRect rect, int cornerWidth, u32 glTextureId, float normalizedCornerSizeInUV)
+    void PrimitivePanel(UIRect rect, int cornerRadius, vec4 colorRGBA)
+    {
+        RoundedCornerRectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(RoundedCornerRectDrawRequest);
+        drawRequest->rect = rect;
+        drawRequest->color = colorRGBA;
+        drawRequest->radius = cornerRadius;
+
+        drawQueue.push(drawRequest);
+    }
+
+    void PrimitivePanel(UIRect rect, int cornerRadius, u32 glTextureId, float normalizedCornerSizeInUV)
     {
         CorneredRectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(CorneredRectDrawRequest);
         drawRequest->rect = rect;
         drawRequest->color = vec4(0.157f, 0.172f, 0.204f, 1.f);
         drawRequest->textureId = glTextureId;
-        drawRequest->cornerWidth = cornerWidth;
+        drawRequest->radius = cornerRadius;
         drawRequest->normalizedCornerSizeInUV = normalizedCornerSizeInUV;
 
         drawQueue.push(drawRequest);
@@ -465,7 +548,7 @@ namespace MesaGUI
         drawRequest->rect = rect;
         drawRequest->color = vec4(0.157f, 0.172f, 0.204f, 1.f);
         drawRequest->textureId = glTextureId;
-        drawRequest->cornerWidth = 0;
+        drawRequest->radius = 0;
         drawRequest->normalizedCornerSizeInUV = 0.f;
 
         drawQueue.push(drawRequest);
@@ -977,6 +1060,9 @@ namespace MesaGUI
 
         Gfx::UseShader(__main_ui_shader);
         Gfx::GLBindMatrix4fv(__main_ui_shader, "matrixOrtho", 1, matrixOrtho.ptr());
+
+        Gfx::UseShader(__rounded_corner_rect_shader);
+        Gfx::GLBindMatrix4fv(__rounded_corner_rect_shader, "matrixOrtho", 1, matrixOrtho.ptr());
 
         Gfx::UseShader(__text_shader);
         Gfx::GLBindMatrix4fv(__text_shader, "matrixOrtho", 1, matrixOrtho.ptr());
