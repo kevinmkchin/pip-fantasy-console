@@ -24,3 +24,4 @@ void MemoryLinearInitialize(MemoryLinearBuffer* buffer, size_t sizeBytes);
 
 void* MemoryLinearAllocate(MemoryLinearBuffer* buffer, size_t wantedBytes, size_t align = 16);
 
+#define MEMORY_LINEAR_ALLOCATE(buffer, type) MemoryLinearAllocate(buffer, sizeof(type), alignof(type))
