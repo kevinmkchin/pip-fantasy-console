@@ -97,6 +97,7 @@ i32 ModifyASCIIBasedOnModifiers(i32 keycodeASCII, bool shift)
                 case 44: { keycode = 60; } break;
                 case 46: { keycode = 62; } break;
                 case 47: { keycode = 63; } break;
+                case 96: { keycode = 126; } break;
             }
         }
     }

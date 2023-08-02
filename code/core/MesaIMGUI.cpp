@@ -1097,7 +1097,7 @@ namespace MesaGUI
         __fonts[4] = FontCreateFromFile(data_path("BitFontMaker2Tes.ttf"), 16, true);
 
         BitmapHandle bm_anikki;
-        ReadImage(bm_anikki, data_path("Curses6x9.png").c_str());
+        ReadImage(bm_anikki, data_path("Kevin6x9.png").c_str());//data_path("Curses6x9.png").c_str());
         //ReadImage(bm_anikki, data_path("Anikki_square_8x8.png").c_str());
         for (u32 y = 0; y < bm_anikki.height; ++y)
         {
