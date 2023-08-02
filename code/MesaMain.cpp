@@ -20,6 +20,7 @@ static SDL_Window* g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
 static bool g_ProgramShouldShutdown = false;
 static Gfx::CoreRenderer g_gfx;
+static bool s_IsEditor = false;
 
 static bool InitializeEverything()
 {
@@ -80,14 +81,21 @@ static void ProcessSDLEvents()
 
 static void StartEditor()
 {
+    s_IsEditor = true;
     g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
     SDL_SetWindowMinimumSize(g_SDLWindow, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
 }
 
-static void StartGameFile()
+//static void StartGameFile()
+static void StartGameSpace()
 {
+    s_IsEditor = false;
     // get game w and game h from game file
     // g_gfx.SetGameResolution(w, h);
+    g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
+    SDL_SetWindowMinimumSize(g_SDLWindow, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
+
+    TemporaryGameInit();
 }
 
 static void LoadFantasyConsole()
@@ -102,8 +110,6 @@ int main(int argc, char* argv[])
 
     LoadFantasyConsole();
 
-    TemporaryGameInit();
-
     while (!g_ProgramShouldShutdown)
     {
         if (Time.UpdateDeltaTime() > 0.1f) { continue; } // if delta time is too large, will cause glitches
@@ -112,7 +118,11 @@ int main(int argc, char* argv[])
         ProcessSDLEvents();
 
         // console_update(Time.unscaledDeltaTime);
-        TemporaryGameLoop();
+
+        if (s_IsEditor)
+            DoEditorGUI();
+        else
+            TemporaryGameLoop();
 
 /*
         auto sty = MesaGUI::GetActiveUIStyleCopy();
@@ -132,7 +142,14 @@ int main(int argc, char* argv[])
         MesaGUI::EditorEndWindow();
 */
 
-        DoEditorGUI();
+        if (s_IsEditor && MesaGUI::LabelledButton(MesaGUI::UIRect(100, 2, 80, 16), "Start Space", MesaGUI::TextAlignment::Center))
+        {
+            StartGameSpace();
+        }
+        else if (!s_IsEditor && MesaGUI::LabelledButton(MesaGUI::UIRect(100, 2, 100, 16), "Back to Editor", MesaGUI::TextAlignment::Center))
+        {
+            StartEditor();
+        }
 
         static float lastFPSShowTime = Time.time;
         static float framerate = 0.f;
