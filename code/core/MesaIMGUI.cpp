@@ -962,7 +962,7 @@ namespace MesaGUI
     {
         if (reallocMemory) AllocateMemoryCodeEditorState(state);
 
-        strcpy_s(state->code_buf, len + 1, initString);
+        memcpy(state->code_buf, initString, len);
         state->code_len = len;
         if (state->code_buf[state->code_len - 1] != '\n')
         {
@@ -1037,22 +1037,69 @@ namespace MesaGUI
 
     void InsertChars(code_editor_state_t *state, char *c, u32 len)
     {
-        // note chars can be inserted mid row
+        char *const codeBufInsertDest = state->code_buf + _get_cursor(state);
+        char *const codeBufMoveDest = codeBufInsertDest + len;
+        
+        memmove(codeBufMoveDest, codeBufInsertDest, state->code_len - u32(codeBufInsertDest - state->code_buf));
+        state->code_len += len;
+        memcpy(codeBufInsertDest, c, len);
 
-        // memmove up, insert chars
-        // memmove up, insert rows
+        state->row_offsets_len = 0;
+        for (u32 i = 0; i < state->code_len; ++i)
+        {
+            // insert new row offset
+            state->row_offsets_buf[state->row_offsets_len] = i;
+            state->row_offsets_len += 1;
+            // i goes until \n or == state->code_len
+            while (i < state->code_len && state->code_buf[i] != '\n') ++i;
+        }
 
-        // set where cursor should be
+        u32 offset = u32(codeBufMoveDest - state->code_buf);
+        for (u32 row = 0; row < state->row_offsets_len; ++row)
+        {
+            if (state->row_offsets_buf[row] <= offset && (row+1 == state->row_offsets_len || offset < state->row_offsets_buf[row+1]))
+            {
+                u32 rowOffset = state->row_offsets_buf[row];
+                u32 col = offset - rowOffset;
+                state->cursor_row = row;
+                state->cursor_col = col;
+                state->lasted_edited_cursor_col = col;
+            }
+        }
+
+        // TODO if about to exceed capacity, then reallocate more
     }
 
-    void EraseChars(code_editor_state_t *state /*selection (begin row, end col, end row, end col)*/)
+    void EraseChars(code_editor_state_t *state, u32 beginRow, u32 beginCol, u32 endRow, u32 endCol)
     {
-        // note chars can be erased mid row
+        char *const src = state->code_buf + state->row_offsets_buf[endRow] + endCol;
+        char *const dst = state->code_buf + state->row_offsets_buf[beginRow] + beginCol;
+        ASSERT(src > dst);
+        memmove(dst, src, state->code_len - u32(src - state->code_buf));
+        state->code_len -= u32(src - dst);
 
-        // erase chars, memmove down
-        // erase rows, memmove down
+        state->row_offsets_len = 0;
+        for (u32 i = 0; i < state->code_len; ++i)
+        {
+            // insert new row offset
+            state->row_offsets_buf[state->row_offsets_len] = i;
+            state->row_offsets_len += 1;
+            // i goes until \n or == state->code_len
+            while (i < state->code_len && state->code_buf[i] != '\n') ++i;
+        }
 
-        // set where cursor should be
+        u32 offset = u32(dst - state->code_buf);
+        for (u32 row = 0; row < state->row_offsets_len; ++row)
+        {
+            if (state->row_offsets_buf[row] <= offset && (row + 1 == state->row_offsets_len || offset < state->row_offsets_buf[row + 1]))
+            {
+                u32 rowOffset = state->row_offsets_buf[row];
+                u32 col = offset - rowOffset;
+                state->cursor_row = row;
+                state->cursor_col = col;
+                state->lasted_edited_cursor_col = col;
+            }
+        }
     }
 
     void EditorCodeEditor(code_editor_state_t *state, u32 width, u32 height, bool enabled)
@@ -1077,27 +1124,36 @@ namespace MesaGUI
 
                     if (' ' <= keycodeASCII && keycodeASCII <= '~')
                     {
-                        //state->codeBuf.insert(state->cursor, 1, char(keycodeASCII));
-                        //CodeEditor_MoveCursorForward(state);
+                        InsertChars(state, (char *)&keycodeASCII, 1);
                     }
                     else if (keycodeASCII == SDLK_BACKSPACE)
                     {
-                        //CodeEditor_MoveCursorBackward(state);
-                        //state->codeBuf.erase(state->cursor, 1);
+                        u32 off, br, bc, er, ec;
+                        off = state->row_offsets_buf[state->cursor_row];
+                        if (state->cursor_col != 0 || off != 0)
+                        {
+                            br = state->cursor_row;
+                            bc = state->cursor_col - 1;
+                            er = state->cursor_row;
+                            ec = state->cursor_col;
+                            if (state->cursor_col == 0)
+                            {
+                                br = state->cursor_row - 1;
+                                bc = state->row_offsets_buf[er] - state->row_offsets_buf[br] - 1;
+                            }
+                            EraseChars(state, br, bc, er, ec);
+                        }
                     }
                     else if (keycodeASCII == SDLK_RETURN)
                     {
-                        //state->codeBuf.insert(state->cursor, 1, '\n');
-                        //CodeEditor_MoveCursorForward(state);
+                        char key = '\n';
+                        InsertChars(state, &key, 1);
                     }
                     else if (keycodeASCII == SDLK_TAB)
                     {
+                        char *key = "    ";
+                        InsertChars(state, key, 4);
                         //// TODO subtract cursor position along line % 4 (or 2 if i want) from 4 (or 2) and then move by that amount
-                        //state->codeBuf.insert(state->cursor, 4, ' ');
-                        //CodeEditor_MoveCursorForward(state);
-                        //CodeEditor_MoveCursorForward(state);
-                        //CodeEditor_MoveCursorForward(state);
-                        //CodeEditor_MoveCursorForward(state);
                     }
                     else if (keycodeASCII == SDLK_LEFT)
                     {
@@ -1114,6 +1170,14 @@ namespace MesaGUI
                     else if (keycodeASCII == SDLK_UP)
                     {
                         MoveCursor(state, 0, -1);
+                    }
+                    else if (keycodeASCII == SDLK_HOME)
+                    {
+                        // todo
+                    }
+                    else if (keycodeASCII == SDLK_END)
+                    {
+                        // todo
                     }
                 }
             }
@@ -1142,7 +1206,7 @@ namespace MesaGUI
         // I could make each type of text to highlight a different primitive text that is rendered
         // so all keywords are rendered as one set of text batch with one color, all variables rendered as one set with one color, functions, etc. 
         UIStyle uiss = GetActiveUIStyleCopy();
-        if (state->code_len > 0)
+        if (state->code_len > 1)
         {
             uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 1.f);
             PushUIStyle(uiss);
