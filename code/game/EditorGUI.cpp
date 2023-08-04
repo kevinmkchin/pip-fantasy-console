@@ -12,9 +12,9 @@ EntityAsset *s_SelectedEntityAsset = NULL;
 //     (how many lines down from the top?)
 // Does the entity code get updated constantly or only when saved?
 
-MesaGUI::CodeEditorState s_ActiveCodeEditorState;
+MesaGUI::code_editor_state_t s_ActiveCodeEditorState;
 
-void DoCodeEditor(MesaGUI::CodeEditorState *codeEditorState)
+void DoCodeEditor(MesaGUI::code_editor_state_t *codeEditorState)
 {
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 20, 
                                             EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-6, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
@@ -53,7 +53,6 @@ void DoAssetsWindow()
     else 
     {
         text_aefa += "NULL";
-        s_ActiveCodeEditorState.codeBuf = "";
     }
     MesaGUI::EditorText(text_aefa.c_str());
 
@@ -65,14 +64,13 @@ void DoAssetsWindow()
         {
             s_SelectedEntityAsset = &e;
 
-            s_ActiveCodeEditorState = MesaGUI::CodeEditorState();
-            s_ActiveCodeEditorState.codeBuf = s_SelectedEntityAsset->code;
+            MesaGUI::InitializeCodeEditorState(&s_ActiveCodeEditorState, false, s_SelectedEntityAsset->code.c_str(), s_SelectedEntityAsset->code.size());
         }
     }
     MesaGUI::MoveXYInZone(0, 10);
     if (s_SelectedEntityAsset && MesaGUI::EditorLabelledButton("Save Code Changes"))
     {
-        s_SelectedEntityAsset->code = s_ActiveCodeEditorState.codeBuf;
+        s_SelectedEntityAsset->code = std::string(s_ActiveCodeEditorState.code_buf);
         PrintLog.Message("Saving code changes...");
     }
 
@@ -106,6 +104,8 @@ void DoEditorGUI()
                    "}";
         entityAssets->at(1).code = "fn Update() { print('et1 update') }";
         entityAssets->at(2).code = "fn Update() { print('et2 update') }";
+
+        MesaGUI::AllocateMemoryCodeEditorState(&s_ActiveCodeEditorState);
     }
 
     const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 + 28;

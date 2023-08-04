@@ -925,39 +925,137 @@ namespace MesaGUI
         MoveXYInZone(0, paddingAbove + h + paddingBelow);
     }
 
-    static void CodeEditor_MoveCursorForward(CodeEditorState* state)
+
+
+    u32 _get_cursor(code_editor_state_t *state)
     {
-        if (state->codeBuf.at(state->cursor) == '\n')
+        return state->row_offsets_buf[state->cursor_row] + state->cursor_col;
+    }
+
+    u32 GetRowLength(code_editor_state_t *state)
+    {
+        if (state->cursor_row < state->row_offsets_len - 1)
         {
-            state->cursorColumn = 0;
-            state->cursorRow += 1;
+            return state->row_offsets_buf[state->cursor_row + 1] - state->row_offsets_buf[state->cursor_row];
         }
         else
         {
-            state->cursorColumn += 1;
+            return state->code_len - state->row_offsets_buf[state->cursor_row];
         }
-        state->lastEditedOrClickedColumnPos = state->cursorColumn;
-        ++state->cursor;
     }
-    static void CodeEditor_MoveCursorBackward(CodeEditorState* state)
+
+    void AllocateMemoryCodeEditorState(code_editor_state_t *state)
     {
-        if (state->cursor > 0)
+        if (state->code_buf) free(state->code_buf);
+        if (state->row_offsets_buf) free(state->row_offsets_buf);
+
+        state->code_buf_capacity = 32000;
+        state->code_buf = (char*) malloc(state->code_buf_capacity);
+        state->row_offsets_buf_capacity = 8000;
+        state->row_offsets_buf = (u32*) malloc(state->row_offsets_buf_capacity);
+
+        state->code_len = 0;
+        state->row_offsets_len = 0;
+    }
+
+    void InitializeCodeEditorState(code_editor_state_t *state, bool reallocMemory, const char *initString, u32 len)
+    {
+        if (reallocMemory) AllocateMemoryCodeEditorState(state);
+
+        strcpy_s(state->code_buf, len + 1, initString);
+        state->code_len = len;
+        if (state->code_buf[state->code_len - 1] != '\n')
         {
-            if (state->codeBuf.at(state->cursor - 1) == '\n')
+            state->code_buf[state->code_len] = '\n';
+            state->code_len += 1;
+        }
+
+        state->row_offsets_len = 0;
+        for (u32 i = 0; i < state->code_len; ++i)
+        {
+            // insert new row offset
+            state->row_offsets_buf[state->row_offsets_len] = i;
+            state->row_offsets_len += 1;
+            // i goes until \n or == state->code_len
+            while (i < state->code_len && state->code_buf[i] != '\n') ++i;
+        }
+
+        state->cursor_row = 0;
+        state->cursor_col = 0;
+        state->lasted_edited_cursor_col = 0;
+    }
+
+    void MoveCursor(code_editor_state_t *state, i8 colDirection, i8 rowDirection)
+    {
+        const u32 homeCol = 0;
+        const u32 endCol = GetRowLength(state) - 1;
+
+        if (colDirection > 0)
+        {
+            if (state->cursor_col < endCol)
             {
-                int bruh = 1 + (int) state->codeBuf.substr(0, state->cursor - 1).find_last_of('\n');
-                state->cursorColumn = state->cursor - 1 - bruh;
-                state->cursorRow -= 1;
+                state->cursor_col += 1;
             }
-            else
+            else if (state->cursor_row < state->row_offsets_len - 1)
             {
-                state->cursorColumn -= 1;
+                state->cursor_row += 1;
+                state->cursor_col = 0;
             }
-            state->lastEditedOrClickedColumnPos = state->cursorColumn;
-            --state->cursor;
+            state->lasted_edited_cursor_col = state->cursor_col;
+        }
+        else if (colDirection < 0)
+        {
+            if (state->cursor_col > homeCol)
+            {
+                state->cursor_col -= 1;
+            }
+            else if (state->cursor_row > 0)
+            {
+                state->cursor_row -= 1;
+                state->cursor_col = GetRowLength(state) - 1;
+            }
+            state->lasted_edited_cursor_col = state->cursor_col;
+        }
+
+        if (rowDirection > 0)
+        {
+            if (state->cursor_row < state->row_offsets_len - 1)
+            {
+                state->cursor_row += 1;
+            }
+            state->cursor_col = GM_min(state->lasted_edited_cursor_col, GetRowLength(state) - 1);
+        }
+        else if (rowDirection < 0)
+        {
+            if (state->cursor_row > 0)
+            {
+                state->cursor_row -= 1;
+            }
+            state->cursor_col = GM_min(state->lasted_edited_cursor_col, GetRowLength(state) - 1);
         }
     }
-    void EditorCodeEditor(CodeEditorState *state, u32 width, u32 height, bool enabled)
+
+    void InsertChars(code_editor_state_t *state, char *c, u32 len)
+    {
+        // note chars can be inserted mid row
+
+        // memmove up, insert chars
+        // memmove up, insert rows
+
+        // set where cursor should be
+    }
+
+    void EraseChars(code_editor_state_t *state /*selection (begin row, end col, end row, end col)*/)
+    {
+        // note chars can be erased mid row
+
+        // erase chars, memmove down
+        // erase rows, memmove down
+
+        // set where cursor should be
+    }
+
+    void EditorCodeEditor(code_editor_state_t *state, u32 width, u32 height, bool enabled)
     {
         int x, y;
         GetXYInZone(&x, &y);
@@ -979,45 +1077,43 @@ namespace MesaGUI
 
                     if (' ' <= keycodeASCII && keycodeASCII <= '~')
                     {
-                        state->codeBuf.insert(state->cursor, 1, char(keycodeASCII));
-                        CodeEditor_MoveCursorForward(state);
+                        //state->codeBuf.insert(state->cursor, 1, char(keycodeASCII));
+                        //CodeEditor_MoveCursorForward(state);
                     }
                     else if (keycodeASCII == SDLK_BACKSPACE)
                     {
-                        CodeEditor_MoveCursorBackward(state);
-                        state->codeBuf.erase(state->cursor, 1);
+                        //CodeEditor_MoveCursorBackward(state);
+                        //state->codeBuf.erase(state->cursor, 1);
                     }
                     else if (keycodeASCII == SDLK_RETURN)
                     {
-                        state->codeBuf.insert(state->cursor, 1, '\n');
-                        CodeEditor_MoveCursorForward(state);
+                        //state->codeBuf.insert(state->cursor, 1, '\n');
+                        //CodeEditor_MoveCursorForward(state);
                     }
                     else if (keycodeASCII == SDLK_TAB)
                     {
-                        // TODO subtract cursor position along line % 4 (or 2 if i want) from 4 (or 2) and then move by that amount
-                        state->codeBuf.insert(state->cursor, 4, ' ');
-                        CodeEditor_MoveCursorForward(state);
-                        CodeEditor_MoveCursorForward(state);
-                        CodeEditor_MoveCursorForward(state);
-                        CodeEditor_MoveCursorForward(state);
+                        //// TODO subtract cursor position along line % 4 (or 2 if i want) from 4 (or 2) and then move by that amount
+                        //state->codeBuf.insert(state->cursor, 4, ' ');
+                        //CodeEditor_MoveCursorForward(state);
+                        //CodeEditor_MoveCursorForward(state);
+                        //CodeEditor_MoveCursorForward(state);
+                        //CodeEditor_MoveCursorForward(state);
                     }
                     else if (keycodeASCII == SDLK_LEFT)
                     {
-                        if (state->cursor > 0) CodeEditor_MoveCursorBackward(state);
+                        MoveCursor(state, -1, 0);
                     }
                     else if (keycodeASCII == SDLK_RIGHT)
                     {
-                        if (state->cursor < u32(state->codeBuf.size())) CodeEditor_MoveCursorForward(state);
+                        MoveCursor(state, 1, 0);
                     }
                     else if (keycodeASCII == SDLK_DOWN)
                     {
-                        // remember where the cursor was along the line during last EDIT
-                        // then go to next line at the same column or furthest along before \n or EOS
-                        
+                        MoveCursor(state, 0, 1);
                     }
                     else if (keycodeASCII == SDLK_UP)
                     {
-
+                        MoveCursor(state, 0, -1);
                     }
                 }
             }
@@ -1042,19 +1138,22 @@ namespace MesaGUI
         int textBeginAnchorX = x + lineNumbersDisplayWidth + 8;
         int textBeginAnchorY = y + 13;
 
-        if (IsActive(id)) PrimitivePanel(UIRect(textBeginAnchorX - 1 + state->cursorColumn * 6, textBeginAnchorY-9 + state->cursorRow * 10, 1, 9), vec4(1,1,1,1));
+        if (IsActive(id)) PrimitivePanel(UIRect(textBeginAnchorX - 1 + state->cursor_col * 6, textBeginAnchorY-10 + state->cursor_row * 10, 1, 9), vec4(1,1,1,1));
         // I could make each type of text to highlight a different primitive text that is rendered
         // so all keywords are rendered as one set of text batch with one color, all variables rendered as one set with one color, functions, etc. 
         UIStyle uiss = GetActiveUIStyleCopy();
-        uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 1.f);
-        PushUIStyle(uiss);
-        if (!state->codeBuf.empty()) PrimitiveText(textBeginAnchorX, textBeginAnchorY, 9, MesaGUI::TextAlignment::Left, state->codeBuf.c_str());
-        PopUIStyle();
+        if (state->code_len > 0)
+        {
+            uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 1.f);
+            PushUIStyle(uiss);
+            PrimitiveText(textBeginAnchorX, textBeginAnchorY, 9, MesaGUI::TextAlignment::Left, std::string(state->code_buf, state->code_len - 1).c_str());
+            PopUIStyle();
+        }
 
         std::string lineNumbersBuf;
         for (int i = 0; i < 43; ++i)
         {
-            int lineNum = state->firstVisibleLine + i;
+            int lineNum = state->first_visible_row + i;
             lineNumbersBuf += std::to_string(lineNum) + '\n';
         }
 
