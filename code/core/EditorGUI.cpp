@@ -1,8 +1,9 @@
 #include "EditorGUI.h"
 
-#include "../core/PrintLog.h"
-#include "../core/MesaIMGUI.h"
-#include "AssetManager.h"
+#include "PrintLog.h"
+#include "MesaIMGUI.h"
+#include "EditorCodeEditor.h"
+#include "../game/AssetManager.h"
 
 EntityAsset *s_SelectedEntityAsset = NULL;
 
@@ -12,9 +13,9 @@ EntityAsset *s_SelectedEntityAsset = NULL;
 //     (how many lines down from the top?)
 // Does the entity code get updated constantly or only when saved?
 
-MesaGUI::code_editor_state_t s_ActiveCodeEditorState;
+code_editor_state_t s_ActiveCodeEditorState;
 
-void DoCodeEditor(MesaGUI::code_editor_state_t *codeEditorState)
+void DoCodeEditor(code_editor_state_t *codeEditorState)
 {
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 20, 
                                             EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-6, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
@@ -24,7 +25,7 @@ void DoCodeEditor(MesaGUI::code_editor_state_t *codeEditorState)
     MesaGUI::BeginZone(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 22, 
                                        EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-8, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 30));
 
-    MesaGUI::EditorCodeEditor(&s_ActiveCodeEditorState, EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-18, EDITOR_FIXED_INTERNAL_RESOLUTION_H-40, s_SelectedEntityAsset != NULL);
+    EditorCodeEditor(&s_ActiveCodeEditorState, EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-18, EDITOR_FIXED_INTERNAL_RESOLUTION_H-40, s_SelectedEntityAsset != NULL);
 
     MesaGUI::EndZone();
 }
@@ -64,7 +65,7 @@ void DoAssetsWindow()
         {
             s_SelectedEntityAsset = &e;
 
-            MesaGUI::InitializeCodeEditorState(&s_ActiveCodeEditorState, false, s_SelectedEntityAsset->code.c_str(), s_SelectedEntityAsset->code.size());
+            InitializeCodeEditorState(&s_ActiveCodeEditorState, false, s_SelectedEntityAsset->code.c_str(), (u32)s_SelectedEntityAsset->code.size());
         }
     }
     MesaGUI::MoveXYInZone(0, 10);
@@ -86,7 +87,7 @@ void DoEditorGUI()
         CreateBlankAsset_Entity("entity_0");
         CreateBlankAsset_Entity("entity_1");
         CreateBlankAsset_Entity("entity_2");
-        std::vector<EntityAsset>* entityAssets = GetAll_Entity();
+        std::vector<EntityAsset> *entityAssets = GetAll_Entity();
 
         entityAssets->at(0).code = "fn Update(self) { \n"
                    "    if (input['left']) {\n"
@@ -105,7 +106,7 @@ void DoEditorGUI()
         entityAssets->at(1).code = "fn Update() { print('et1 update') }";
         entityAssets->at(2).code = "fn Update() { print('et2 update') }";
 
-        MesaGUI::AllocateMemoryCodeEditorState(&s_ActiveCodeEditorState);
+        AllocateMemoryCodeEditorState(&s_ActiveCodeEditorState);
     }
 
     const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 + 28;

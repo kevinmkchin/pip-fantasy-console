@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../core/MesaCommon.h"
-#include "../core/MesaMath.h"
+#include "MesaCommon.h"
+#include "MesaMath.h"
 
 /*
 

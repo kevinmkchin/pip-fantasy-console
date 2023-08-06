@@ -20,9 +20,10 @@ set(SOURCE_FILES
         code/core/InputSystem.cpp
         code/core/MesaIMGUI.cpp
         code/core/MemoryAllocator.cpp
+        code/core/EditorState.cpp
+        code/core/EditorGUI.cpp
+        code/core/EditorCodeEditor.cpp
         code/game/script/MesaScript.cpp
-        code/game/EditorState.cpp
-        code/game/EditorGUI.cpp
         code/game/Game.cpp
         code/game/Space.cpp
         code/game/AssetManager.cpp

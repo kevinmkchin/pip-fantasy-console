@@ -11,10 +11,10 @@
 #include "singleheaders/stb_sprintf.h"
 #include "core/InputSystem.h"
 #include "core/MesaIMGUI.h"
+#include "core/EditorGUI.h"
 
 #include "game/Game.h"
 #include "game/script/MesaScript.h"
-#include "game/EditorGUI.h"
 
 static SDL_Window* g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
