@@ -7,9 +7,11 @@
 
 ### Engine
 
+MESASCRIPT EPIC:
 - Complete MesaScript a0.1 -> MesaGUI code editor -> select entity type to edit their code -> entity type can choose sprite
 - MesaScript integration
 - MesaGUI code editor
+  - better inputs (ctrl and shift modifier checks)
 
 ### Language features
 
@@ -21,7 +23,7 @@
   - should strings be reference counted objects? probably not? not sure
 - access map elements via dot (e.g. map.x or map.f(param))
 - reference counting TESTS
-
+        
 - need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
   - deleting an entry is different from deleting the object stored in that entry. if we can delete entire objects, then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).  
 - rename tables to MAP or DICTIONARY
