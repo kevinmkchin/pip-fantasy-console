@@ -228,8 +228,9 @@ void EditorCodeEditor(code_editor_state_t *state, u32 width, u32 height, bool en
                 }
                 else if (keycodeASCII == SDLK_TAB)
                 {
+                    u32 tabAmt = 4 - (state->cursor_col % 4);
                     char *key = "    ";
-                    InsertChars(state, key, 4);
+                    InsertChars(state, key, tabAmt);
                     // TODO subtract cursor position along line % 4 (or 2 if i want) from 4 (or 2) and then move by that amount
                 }
                 else if (keycodeASCII == SDLK_LEFT)
@@ -281,7 +282,7 @@ void EditorCodeEditor(code_editor_state_t *state, u32 width, u32 height, bool en
 
     if (MesaGUI::IsActive(id)) 
     {
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX - 1 + state->cursor_col * 6, textBeginAnchorY-10 + state->cursor_row * 12, 1, 9), vec4(1,1,1,1));
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX - 1 + state->cursor_col * 6, textBeginAnchorY-13 + state->cursor_row * 12, 1, 16), vec4(1,1,1,1));
     }
     // I could make each type of text to highlight a different primitive text that is rendered
     // so all keywords are rendered as one set of text batch with one color, all variables rendered as one set with one color, functions, etc. 
