@@ -491,11 +491,11 @@ namespace MesaGUI
     {
         if (textFmt == NULL) return;
 
-#if INTERNAL_BUILD & SLOW_BUILD
+#if INTERNAL_BUILD
         // Giving 500,000 bytes of free space in the frame text buffer to be safe
         if (__reservedTextMemoryIndexer >= ARRAY_COUNT(__reservedTextMemory) - 500000)
         {
-            PrintLog.WarningFmt("Attempting to draw text in GUI.cpp but not enough reserved memory to store text.");
+            PrintLog.Warning("Attempting to draw text in GUI.cpp but not enough reserved memory to store text.");
             return;
         }
 #endif
@@ -523,11 +523,11 @@ namespace MesaGUI
     {
         if (text == NULL) return;
 
-#if INTERNAL_BUILD & SLOW_BUILD
+#if INTERNAL_BUILD
         // Giving 500,000 bytes of free space in the frame text buffer to be safe
         if (__reservedTextMemoryIndexer >= ARRAY_COUNT(__reservedTextMemory) - 500000)
         {
-            PrintLog.WarningFmt("Attempting to draw text in GUI.cpp but not enough reserved memory to store text.");
+            PrintLog.Warning("Attempting to draw text in GUI.cpp but not enough reserved memory to store text.");
             return;
         }
 #endif

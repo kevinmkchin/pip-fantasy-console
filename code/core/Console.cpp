@@ -8,19 +8,28 @@
 #include "InputSystem.h"
 
 
-
+#define MESSAGES_CHAR_CAPACITY 4000
 static noclip::console sNoclipConsole;
-// static char sConsoleMessagesBuffer[] = {};
+static char sConsoleMessagesBuffer[MESSAGES_CHAR_CAPACITY] = { 0 };
 static NiceArray<char, 128> sConsoleCommandInputBuffer;
 
+
+static void SendMessageToConsole(const char *msg, size_t len)
+{
+    memmove(sConsoleMessagesBuffer, sConsoleMessagesBuffer + len, MESSAGES_CHAR_CAPACITY - len);
+    memcpy(sConsoleMessagesBuffer + MESSAGES_CHAR_CAPACITY - len, msg, len);
+#if INTERNAL_BUILD
+    printf("%s", msg);
+#endif
+}
 
 static void ExecuteConsoleCommand(const char *cmd)
 {
     if (*cmd == '\0') return;
-    std::istringstream cmd_input_str(cmd);
-    std::ostringstream cmd_output_str;
-    sNoclipConsole.execute(cmd_input_str, cmd_output_str);
-    printf("%s\n", (cmd_output_str.str().c_str()));
+    std::istringstream cmdInputStream(cmd);
+    std::ostringstream cmdOutputStream;
+    sNoclipConsole.execute(cmdInputStream, cmdOutputStream);
+    SendMessageToConsole(cmdOutputStream.str().c_str(), cmdOutputStream.str().length());
 }
 
 void SendInputToConsole(SDL_KeyboardEvent& keyevent)
@@ -88,6 +97,16 @@ void DoBootScreen()
                                  (sinf(Time.time * 4.f + b) + 1.f) * 0.5f, 
                                  (sinf(Time.time * 4.f + c) + 1.f) * 0.5f, 1));
 
+    int zeros = 0;
+    while (zeros < 4000 && *(sConsoleMessagesBuffer + zeros) == 0)
+    {
+        ++zeros;
+    }
+    //printf("%d\n", zeros);
+    if (zeros < 4000)
+    {
+        MesaGUI::PrimitiveText(40, 40, 9, MesaGUI::TextAlignment::Left, sConsoleMessagesBuffer + zeros);
+    }
 
     sConsoleCommandInputBuffer.PushBack('_');
     if (sConsoleCommandInputBuffer.count > 0)
@@ -99,9 +118,21 @@ void DoBootScreen()
 
 #include "../MesaMain.h"
 
+void ElephantJPG()
+{
+    const std::string elephantASCII = "    _    _\n"
+                                      "   /=\\\"\"/=\\       This is 16 color, pleasant to\n"
+                                      "  (=(0_0 |=)__    create. It would be unpleasant\n"
+                                      "   \\_\\ _/_/   )   to draw with 16,777,216 colors.\n"
+                                      "     /_/   _  /\\\n"
+                                      "    |/ |\\ || |\n"
+                                      "       ~ ~  ~\n\n";
+    SendMessageToConsole(elephantASCII.c_str(), elephantASCII.size());
+}
+
 void SetupConsoleCommands()
 {
     sNoclipConsole.bind_cmd("editor", StartEditor);
-    // sNoclipConsole.bind_cmd("elephant", ElephantJPG);
+    sNoclipConsole.bind_cmd("elephant", ElephantJPG);
 }
 
