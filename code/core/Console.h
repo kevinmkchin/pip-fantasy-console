@@ -4,10 +4,15 @@
 
 #include "MesaCommon.h"
 #include "MesaMath.h"
-//#include "MesaUtility.h"
 
+/** Usage: print messages */
+void SendMessageToConsole(const char *msg, size_t len);
+
+/** Usage: only send input when the console is active.  */
 void SendInputToConsole(SDL_KeyboardEvent& keyevent);
 
-void DoBootScreen();
-
 void SetupConsoleCommands();
+
+
+/* -- Front ends -- */
+void DoBootScreen();

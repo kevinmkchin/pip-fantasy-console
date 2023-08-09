@@ -112,6 +112,8 @@ to give the stored behaviour an input to read from.
 
 namespace noclip
 {
+    #define NOCLIP_ERROR_TAG "Command Line Error: "
+
     typedef std::function<void(std::istream& is, std::ostream& os)> console_function_t;
 
     struct console
@@ -137,7 +139,7 @@ namespace noclip
                     if(is.fail())
                     {
                         const char* vt = typeid(T).name();
-                        os << "NOCLIP::CONSOLE ERROR: Type mismatch. CVar '" << vid 
+                        os << NOCLIP_ERROR_TAG << "Type mismatch. CVar '" << vid 
                         << "' is of type '" << vt << "'." << std::endl;
 
                         is.clear();
@@ -219,7 +221,7 @@ namespace noclip
             auto cmd_iter = cmd_table.find(cmd_id);
             if(cmd_iter == cmd_table.end())
             {
-                output << "NOCLIP::CONSOLE ERROR: Input '" << cmd_id << "' isn't a command." << std::endl;
+                output << NOCLIP_ERROR_TAG << "Input '" << cmd_id << "' isn't a command." << std::endl;
                 return;
             }
 
@@ -261,7 +263,7 @@ namespace noclip
             if(is.fail())
             {
                 is.clear();
-                os << "NOCLIP::CONSOLE ERROR: Incorrect argument types." << std::endl;
+                os << NOCLIP_ERROR_TAG << "Incorrect argument types." << std::endl;
                 return;
             }
             f_ptr(temps...);
@@ -329,7 +331,7 @@ namespace noclip
                     auto v_iter = cvar_setter_lambdas.find(vid);
                     if(v_iter == cvar_setter_lambdas.end())
                     {
-                        os << "NOCLIP::CONSOLE ERROR: There is no bound variable with id '" << vid << "'." << std::endl;
+                        os << NOCLIP_ERROR_TAG << "There is no bound variable with id '" << vid << "'." << std::endl;
                         return;
                     }
                     else
@@ -346,7 +348,7 @@ namespace noclip
                     auto v_iter = cvar_getter_lambdas.find(vid);
                     if(v_iter == cvar_getter_lambdas.end())
                     {
-                        os << "NOCLIP::CONSOLE ERROR: There is no bound variable with id '" << vid << "'." << std::endl;
+                        os << NOCLIP_ERROR_TAG << "There is no bound variable with id '" << vid << "'." << std::endl;
                         return;
                     }
                     else
