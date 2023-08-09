@@ -358,12 +358,14 @@ namespace noclip
             cmd_table["help"] =
                 [](std::istream& is, std::ostream& os)
                 {
+                    os << std::endl;
                     os << "-- mesa computer system help --" << std::endl;
                     os << "mesa computer system is a game making tool." << std::endl;
                     os << std::endl;
                     os << "help : outputs help message" << std::endl;
                     os << "editor : loads the editor" << std::endl;
                     os << "---------- end help -----------" << std::endl;
+                    os << std::endl;
 
                     /*
                     print help about the built in commands

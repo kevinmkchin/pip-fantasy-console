@@ -33,8 +33,15 @@ set(SOURCE_FILES
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
+add_compile_definitions(INTERNAL_BUILD=1)
 
 # Build options, additional include directories, library linking, copying DLLs to executable directory
+
+if(INTERNAL_BUILD MATCHES 0)
+    message(STATUS "External build")
+else()
+    message(STATUS "INTERNAL_BUILD")
+endif()
 
 ## Windows
 if(WIN32)

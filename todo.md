@@ -2,7 +2,7 @@
 
 - move fib.ms test code into the editor itself.
 - boot sound (SDL_mixer)
-- console messages in boot screen
+- vertext rewrite for better usability better API
 
 
 ### Bugs
