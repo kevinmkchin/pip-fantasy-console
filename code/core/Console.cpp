@@ -16,14 +16,6 @@ static NiceArray<char, 128> sConsoleCommandInputBuffer;
 
 static void ExecuteConsoleCommand(const char *cmd)
 {
-//     // TODO (Check if this bug still exists after switching to noclip) - FUCKING MEMORY BUG TEXT_COMMAND GETS NULL TERMINATED EARLY SOMETIMES
-//     char text_command_buffer[CONSOLE_COLS_MAX];
-// #if _WIN32
-//     strcpy_s(text_command_buffer, CONSOLE_COLS_MAX, text_command);//because text_command might point to read-only data
-// #elif __APPLE__
-//     strcpy(text_command_buffer, text_command);//because text_command might point to read-only data
-// #endif
-
     if (*cmd == '\0') return;
     std::istringstream cmd_input_str(cmd);
     std::ostringstream cmd_output_str;
@@ -110,6 +102,6 @@ void DoBootScreen()
 void SetupConsoleCommands()
 {
     sNoclipConsole.bind_cmd("editor", StartEditor);
-    sNoclipConsole.bind_cmd("game", StartGameSpace);
+    // sNoclipConsole.bind_cmd("elephant", ElephantJPG);
 }
 
