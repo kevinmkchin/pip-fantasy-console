@@ -71,7 +71,7 @@ void DoAssetsWindow()
     MesaGUI::MoveXYInZone(0, 10);
     if (s_SelectedEntityAsset && MesaGUI::EditorLabelledButton("Save Code Changes"))
     {
-        s_SelectedEntityAsset->code = std::string(s_ActiveCodeEditorState.code_buf);
+        s_SelectedEntityAsset->code = std::string(s_ActiveCodeEditorState.code_buf, s_ActiveCodeEditorState.code_len);
         PrintLog.Message("Saving code changes...");
     }
 
