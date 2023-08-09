@@ -6,7 +6,7 @@
 
 // Simple utility functions to avoid mistyping directory name
 // audio_path("audio.ogg") -> data/audio/audio.ogg
-#include "../../ext/cmake_project_path.h"
+#include "cmake_MesaProjectDefines.h"
 inline std::string wd_path() { return std::string(PROJECT_WORKING_DIR); }
 inline std::string wd_path(const std::string& name) { return wd_path() + std::string(name); }
 inline std::string data_path() { return wd_path() + "data/"; }

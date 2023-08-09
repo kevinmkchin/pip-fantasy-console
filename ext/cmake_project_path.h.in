@@ -1,3 +1,0 @@
-#pragma once
-
-#cmakedefine PROJECT_WORKING_DIR "@CMAKE_CURRENT_SOURCE_DIR@/wd/"
