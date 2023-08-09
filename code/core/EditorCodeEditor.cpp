@@ -229,7 +229,7 @@ void EditorCodeEditor(code_editor_state_t *state, u32 width, u32 height, bool en
                 else if (keycodeASCII == SDLK_TAB)
                 {
                     u32 tabAmt = 4 - (state->cursor_col % 4);
-                    char *key = "    ";
+                    char key[5] = "    ";
                     InsertChars(state, key, tabAmt);
                     // TODO subtract cursor position along line % 4 (or 2 if i want) from 4 (or 2) and then move by that amount
                 }

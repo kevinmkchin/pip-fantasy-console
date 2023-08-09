@@ -12,6 +12,7 @@ set(SOURCE_FILES
         code/MesaMain.cpp
         code/core/MesaUtility.cpp
         code/core/Timer.cpp
+        code/core/Console.cpp
         code/core/GfxRenderer.cpp
         code/core/GfxDataTypesAndUtility.cpp
         code/core/GfxShader.cpp

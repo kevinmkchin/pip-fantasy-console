@@ -6,9 +6,11 @@
 #define GL3W_IMPLEMENTATION
 #include <gl3w.h>
 #include "MesaOpenGL.h"
+
 #include "MesaUtility.h"
 #include "PrintLog.h"
 #include "MesaIMGUI.h"
+#include "../MesaMain.h"
 
 // TODO(Kevin): maybe renderer shouldn't need to know about this shit:
 #include "../game/Game.h"
@@ -96,7 +98,9 @@ namespace Gfx
     #endif
         s_ActiveSDLWindow = SDL_GL_GetCurrentWindow();
 
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // alpha blending func: a * (rgb) + (1 - a) * (rgb) = final color output
+        // alpha blending func: (srcRGB) * srcA + (dstRGB) * (1 - srcA)  = final color output
+        // alpha blending func: (srcA) * a + (dstA) * 1 = final alpha output
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
         glBlendEquation(GL_FUNC_ADD);
 
         CreateFrameBuffers();
@@ -114,7 +118,10 @@ namespace Gfx
 
     void CoreRenderer::Render()
     {
-        RenderGameLayer();
+        if (CurrentProgramMode() == MesaProgramMode::Game)
+        {
+            RenderGameLayer();            
+        }
         RenderGUILayer();
         //RenderDebugUILayer();
 
@@ -127,6 +134,9 @@ namespace Gfx
         glViewport(0, 0, gameLayer.width, gameLayer.height);
         glClearColor(RGB255TO1(211, 203, 190), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_BLEND);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
+        glDisable(GL_DEPTH_TEST);
 
         UseShader(spriteShader);
 
@@ -230,7 +240,7 @@ namespace Gfx
         glClearDepth(10.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
         glDisable(GL_DEPTH_TEST);
 
         MesaGUI::Draw();
@@ -261,17 +271,21 @@ namespace Gfx
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(0, 0, backBufferWidth, backBufferHeight);
         glDepthRange(0, 10);
-        glClearColor(RGB255TO1(0, 0, 0), 1.f);
+        glClearColor(RGB255TO1(255, 64, 129), 1.f);
         glClearDepth(1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
         glDisable(GL_DEPTH_TEST);
 
-        // Draw game frame
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, gameLayer.colorTexId);
-        RenderMesh(screenSizeQuad);
+
+        if (CurrentProgramMode() == MesaProgramMode::Game)
+        {
+            // Draw game frame
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, gameLayer.colorTexId);
+            RenderMesh(screenSizeQuad);
+        }
 
         // Draw GUI frame
         glActiveTexture(GL_TEXTURE0);

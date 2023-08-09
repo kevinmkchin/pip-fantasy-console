@@ -1,3 +1,5 @@
+#include "MesaMain.h"
+
 #include "core/MesaCommon.h"
 #include "core/MesaUtility.h"
 #include "core/Timer.h"
@@ -9,7 +11,9 @@
 #include "singleheaders/stb_image.h"
 #define STB_SPRINTF_IMPLEMENTATION
 #include "singleheaders/stb_sprintf.h"
+
 #include "core/InputSystem.h"
+#include "core/Console.h"
 #include "core/MesaIMGUI.h"
 #include "core/EditorGUI.h"
 
@@ -20,7 +24,12 @@ static SDL_Window* g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
 static bool g_ProgramShouldShutdown = false;
 static Gfx::CoreRenderer g_gfx;
-static bool s_IsEditor = false;
+static MesaProgramMode g_ProgramMode = MesaProgramMode::Invalid;
+
+MesaProgramMode CurrentProgramMode()
+{
+    return g_ProgramMode;
+}
 
 static bool InitializeEverything()
 {
@@ -79,17 +88,17 @@ static void ProcessSDLEvents()
     }
 }
 
-static void StartEditor()
+void StartEditor()
 {
-    s_IsEditor = true;
+    g_ProgramMode = MesaProgramMode::Editor;
     g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
     SDL_SetWindowMinimumSize(g_SDLWindow, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
 }
 
 //static void StartGameFile()
-static void StartGameSpace()
+void StartGameSpace()
 {
-    s_IsEditor = false;
+    g_ProgramMode = MesaProgramMode::Game;
     // get game w and game h from game file
     // g_gfx.SetGameResolution(w, h);
     g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
@@ -100,7 +109,10 @@ static void StartGameSpace()
 
 static void LoadFantasyConsole()
 {
-    StartEditor();
+    g_ProgramMode = MesaProgramMode::BootScreen;
+
+    g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
+    SDL_SetWindowMinimumSize(g_SDLWindow, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
 }
 
 int main(int argc, char* argv[])
@@ -119,11 +131,18 @@ int main(int argc, char* argv[])
 
         // console_update(Time.unscaledDeltaTime);
 
-        if (s_IsEditor)
-            DoEditorGUI();
-        else
-            TemporaryGameLoop();
-
+        switch (g_ProgramMode)
+        {
+            case MesaProgramMode::BootScreen:
+                DoBootScreen();
+                break;
+            case MesaProgramMode::Editor:
+                DoEditorGUI();
+                break;
+            case MesaProgramMode::Game:
+                TemporaryGameLoop();
+                break;
+        }
 /*
         auto sty = MesaGUI::GetActiveUIStyleCopy();
         sty.textColor = vec4(0.f,0.f,0.f,1.f);
@@ -142,23 +161,23 @@ int main(int argc, char* argv[])
         MesaGUI::EditorEndWindow();
 */
 
-        if (s_IsEditor && MesaGUI::LabelledButton(MesaGUI::UIRect(100, 2, 80, 16), "Start Space", MesaGUI::TextAlignment::Center))
+        if (g_ProgramMode == MesaProgramMode::Editor && MesaGUI::LabelledButton(MesaGUI::UIRect(100, 2, 80, 16), "Start Space", MesaGUI::TextAlignment::Center))
         {
             StartGameSpace();
         }
-        else if (!s_IsEditor && MesaGUI::LabelledButton(MesaGUI::UIRect(100, 2, 100, 16), "Back to Editor", MesaGUI::TextAlignment::Center))
+        else if (g_ProgramMode == MesaProgramMode::Game && MesaGUI::LabelledButton(MesaGUI::UIRect(100, 2, 100, 16), "Back to Editor", MesaGUI::TextAlignment::Center))
         {
             StartEditor();
         }
 
-        static float lastFPSShowTime = Time.time;
-        static float framerate = 0.f;
-        if (Time.time - lastFPSShowTime > 0.25f)
-        {
-            framerate = (1.f / Time.deltaTime);
-            lastFPSShowTime = Time.time;
-        }
-        MesaGUI::PrimitiveTextFmt(0, 18, 18, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
+        // static float lastFPSShowTime = Time.time;
+        // static float framerate = 0.f;
+        // if (Time.time - lastFPSShowTime > 0.25f)
+        // {
+        //     framerate = (1.f / Time.deltaTime);
+        //     lastFPSShowTime = Time.time;
+        // }
+        // MesaGUI::PrimitiveTextFmt(0, 18, 18, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
 
         // DrawProfilerGUI();
         g_gfx.Render();
