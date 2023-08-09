@@ -4,7 +4,6 @@ set (CMAKE_CXX_STANDARD 14)
 project(mesa)
 set(PROJECT_BUILD_VERSION "v0.0.a1")
 set(PROJECT_WORKING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/wd/")
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/code/core/cmake_MesaProjectDefines.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/code/core/cmake_MesaProjectDefines.h")
 
 
 set(SOURCE_FILES
@@ -33,6 +32,11 @@ set(SOURCE_FILES
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 add_compile_definitions(INTERNAL_BUILD=1)
+
+
+string(TIMESTAMP RIGHTNOW "%Y%m%d%H%M%S")
+set(PROJECT_BUILD_TIMESTAMP "${RIGHTNOW}")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/code/core/cmake_MesaProjectDefines.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/code/core/cmake_MesaProjectDefines.h")
 
 # Build options, additional include directories, library linking, copying DLLs to executable directory
 

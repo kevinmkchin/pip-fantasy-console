@@ -112,7 +112,20 @@ void DoBootScreen()
     sConsoleCommandInputBuffer.PushBack('_');
     if (sConsoleCommandInputBuffer.count > 0)
     {
-        MesaGUI::PrimitiveText(40, 400, 9, MesaGUI::TextAlignment::Left, sConsoleCommandInputBuffer.data);
+        MesaGUI::PrimitiveText(40, 344, 9, MesaGUI::TextAlignment::Left, sConsoleCommandInputBuffer.data);
+    }
+    sConsoleCommandInputBuffer.PopBack();
+}
+
+void DoSingleCommandLine()
+{
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, EDITOR_FIXED_INTERNAL_RESOLUTION_W, 13), 
+                            vec4(0.05f, 0.05f, 0.05f, 1));
+
+    sConsoleCommandInputBuffer.PushBack('_');
+    if (sConsoleCommandInputBuffer.count > 0)
+    {
+        MesaGUI::PrimitiveText(4, 11, 9, MesaGUI::TextAlignment::Left, sConsoleCommandInputBuffer.data);
     }
     sConsoleCommandInputBuffer.PopBack();
 }
@@ -138,6 +151,6 @@ void SetupConsoleCommands()
     sNoclipConsole.bind_cmd("elephant", ElephantJPG);
     sNoclipConsole.bind_cmd("exec", TemporaryRunMesaScriptInterpreterOnFile);
 
-    PrintLog.Message("Boot menu initialized.");
+    PrintLog.Message("--Boot menu initialized.");
 }
 
