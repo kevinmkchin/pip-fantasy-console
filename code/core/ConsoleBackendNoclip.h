@@ -358,26 +358,12 @@ namespace noclip
             cmd_table["help"] =
                 [](std::istream& is, std::ostream& os)
                 {
-                    os << "-- noclip::console help --" << std::endl;
-                    os << "Set and get bound variables with" << std::endl;
-                    os << "set <cvar id> <value>" << std::endl;
-                    os << "get <cvar id>" << std::endl;
+                    os << "-- mesa computer system help --" << std::endl;
+                    os << "mesa computer system is a game making tool." << std::endl;
                     os << std::endl;
-                    os << "Call bound and compiled C++ functions with" << std::endl;
-                    os << "<cmd id> <arg 0> <arg 1> ... <arg n>" << std::endl;
-                    os << std::endl;
-                    os << "Get help" << std::endl;
-                    os << "help : outputs noclip::console help" << std::endl;
-                    os << "listCVars : outputs info about every bound console variable" << std::endl;
-                    os << "listCmds : outputs info about every bound console command" << std::endl;
-                    os << std::endl;
-                    os << "Perform arithematic and modulo operations" << std::endl;
-                    os << "(+, -, *, /, %) <lhs> <rhs>" << std::endl;
-                    os << std::endl;
-                    os << "You can pass expressions as arguments" << std::endl;
-                    os << "+ (- 3 2) (* 4 5)" << std::endl;
-                    os << "set x (get y)" << std::endl;
-                    os << "-------- end help --------" << std::endl;
+                    os << "help : outputs help message" << std::endl;
+                    os << "editor : loads the editor" << std::endl;
+                    os << "---------- end help -----------" << std::endl;
 
                     /*
                     print help about the built in commands

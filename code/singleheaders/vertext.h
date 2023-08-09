@@ -435,7 +435,7 @@ VTXT_DEF void vtxt_get_text_bounding_box_info(float* width_out,
 
 #define _vtxt_internal static      // vtxt local static variable
 #ifndef VTXT_MAX_CHAR_IN_BUFFER
-#define VTXT_MAX_CHAR_IN_BUFFER 800    // maximum characters allowed in vertex buffer ("canvas")
+#define VTXT_MAX_CHAR_IN_BUFFER 80000  // maximum characters allowed in vertex buffer ("canvas")
 #endif
 #define VTXT_MAX_FONT_RESOLUTION 100   // maximum font resolution when initializing font
 #define VTXT_DESIRED_ATLAS_WIDTH 400   // width of the font atlas
