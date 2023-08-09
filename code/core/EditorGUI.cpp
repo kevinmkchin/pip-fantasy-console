@@ -17,26 +17,26 @@ code_editor_state_t s_ActiveCodeEditorState;
 
 void DoCodeEditor(code_editor_state_t *codeEditorState)
 {
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 20, 
-                                            EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-6, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
-                     vec4(RGB255TO1(126, 145, 159), 1.f));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 0, 
+                                            EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, EDITOR_FIXED_INTERNAL_RESOLUTION_H),
+                            vec4(RGB255TO1(103, 122, 137), 1.f));
+                     //vec4(RGB255TO1(126, 145, 159), 1.f));
                      //vec4(RGB255TO1(101, 124, 140), 1.f));
 
-    MesaGUI::BeginZone(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 22, 
-                                       EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-8, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 30));
+    MesaGUI::BeginZone(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 12, 
+                                       EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, EDITOR_FIXED_INTERNAL_RESOLUTION_H-14));
 
-    EditorCodeEditor(&s_ActiveCodeEditorState, EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-18, EDITOR_FIXED_INTERNAL_RESOLUTION_H-40, s_SelectedEntityAsset != NULL);
+    EditorCodeEditor(&s_ActiveCodeEditorState, EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-8, EDITOR_FIXED_INTERNAL_RESOLUTION_H-20, s_SelectedEntityAsset != NULL);
 
     MesaGUI::EndZone();
 }
 
 void DoAssetsWindow()
 {
-    const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 + 28;
-    const int entityViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 - 40;
+    const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
 
     MesaGUI::BeginZone(MesaGUI::UIRect(6, 20, assetsViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26));
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(6, 20, assetsViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26), vec4(RGB255TO1(126, 145, 159), 1.f));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, assetsViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H), vec4(RGB255TO1(126, 145, 159), 1.f));
 
     // MesaGUI::DoTextUnformatted(8, 32, 9, MesaGUI::TextAlignment::Left, "Search");
     // MesaGUI::DoTextUnformatted(8, 42, 9, MesaGUI::TextAlignment::Left, "v entities");
@@ -109,15 +109,14 @@ void DoEditorGUI()
         AllocateMemoryCodeEditorState(&s_ActiveCodeEditorState);
     }
 
-    const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 + 28;
-    const int entityViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 - 40;
+    const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
+    const int entityViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
 
     DoAssetsWindow();
 
     MesaGUI::PrimitivePanel(
-        MesaGUI::UIRect(6 + assetsViewW + 6, 20,
-                        entityViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26),
-        vec4(RGB255TO1(126, 145, 159), 1.f));
+        MesaGUI::UIRect(assetsViewW, 0, entityViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H),
+        vec4(RGB255TO1(103, 122, 137), 1.f));
 
     DoCodeEditor(&s_ActiveCodeEditorState);
 }

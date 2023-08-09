@@ -58,6 +58,7 @@ static bool InitializeEverything()
     MesaGUI::Init();
 
     InitializeLanguageCompilerAndRuntime();
+    SetupConsoleCommands();
 
 	return true;
 }
@@ -73,17 +74,21 @@ static void ProcessSDLEvents()
         // Lower level engine related input
         switch (event.type)
         {
-            case SDL_WINDOWEVENT: {
-                switch (event.window.event) {
+            case SDL_WINDOWEVENT:
+                switch (event.window.event) 
+                {
                     case SDL_WINDOWEVENT_RESIZED:
-                    case SDL_WINDOWEVENT_SIZE_CHANGED: {
+                    case SDL_WINDOWEVENT_SIZE_CHANGED:
                         g_gfx.UpdateBackBufferSize();
-                    }break;
+                        break;
                 }
-            }break;
-            case SDL_QUIT: {
+                break;
+            case SDL_QUIT:
                 g_ProgramShouldShutdown = true;
-            }break;
+                break;
+            case SDL_KEYDOWN:
+                SendInputToConsole(event.key);
+                break;
         }
     }
 }
@@ -143,6 +148,7 @@ int main(int argc, char* argv[])
                 TemporaryGameLoop();
                 break;
         }
+
 /*
         auto sty = MesaGUI::GetActiveUIStyleCopy();
         sty.textColor = vec4(0.f,0.f,0.f,1.f);
@@ -161,15 +167,6 @@ int main(int argc, char* argv[])
         MesaGUI::EditorEndWindow();
 */
 
-        if (g_ProgramMode == MesaProgramMode::Editor && MesaGUI::LabelledButton(MesaGUI::UIRect(100, 2, 80, 16), "Start Space", MesaGUI::TextAlignment::Center))
-        {
-            StartGameSpace();
-        }
-        else if (g_ProgramMode == MesaProgramMode::Game && MesaGUI::LabelledButton(MesaGUI::UIRect(100, 2, 100, 16), "Back to Editor", MesaGUI::TextAlignment::Center))
-        {
-            StartEditor();
-        }
-
         // static float lastFPSShowTime = Time.time;
         // static float framerate = 0.f;
         // if (Time.time - lastFPSShowTime > 0.25f)
@@ -178,6 +175,15 @@ int main(int argc, char* argv[])
         //     lastFPSShowTime = Time.time;
         // }
         // MesaGUI::PrimitiveTextFmt(0, 18, 18, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
+
+        if (g_ProgramMode == MesaProgramMode::Editor && MesaGUI::LabelledButton(MesaGUI::UIRect(100, 2, 80, 16), "Start Space", MesaGUI::TextAlignment::Center))
+        {
+            StartGameSpace();
+        }
+        else if (g_ProgramMode == MesaProgramMode::Game && MesaGUI::LabelledButton(MesaGUI::UIRect(100, 2, 100, 16), "Back to Editor", MesaGUI::TextAlignment::Center))
+        {
+            StartEditor();
+        }
 
         // DrawProfilerGUI();
         g_gfx.Render();

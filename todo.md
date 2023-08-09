@@ -1,5 +1,8 @@
 # TODO
 
+- move fib.ms test code into the editor itself.
+
+
 ### Bugs
 
 - GUI incorrect zones when window resize with black bars, window aspect ratio != game ratio

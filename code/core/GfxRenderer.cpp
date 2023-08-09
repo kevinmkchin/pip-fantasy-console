@@ -271,7 +271,7 @@ namespace Gfx
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(0, 0, backBufferWidth, backBufferHeight);
         glDepthRange(0, 10);
-        glClearColor(RGB255TO1(255, 64, 129), 1.f);
+        glClearColor(RGB255TO1(0, 0, 0), 1.f);
         glClearDepth(1.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_BLEND);

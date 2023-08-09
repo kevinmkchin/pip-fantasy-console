@@ -35,10 +35,23 @@ template<typename T, int _count> struct NiceArray
     int count = 0;
     const int capacity = _count;
 
+    // todo maybe Insert and Erase?
+
+    bool NotAtCapacity()
+    {
+        return count < capacity;
+    }
+
     void PushBack(T elem)
     {
         data[count] = elem;
         ++count;
+    }
+
+    void PopBack()
+    {
+        --count;
+        memset(data + count, 0, sizeof(*data));
     }
 
     T& At(int index)
