@@ -47,7 +47,7 @@ static bool InitializeEverything()
 
     g_SDLWindow = SDL_CreateWindow("Mesa Fantasy Console",
                                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SDL_WINDOW_STARTING_SIZE_W, SDL_WINDOW_STARTING_SIZE_H,
-                                   SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE); // TODO(Kevin): fix MyImGui mouse input error with resizing 
+                                   SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
     g_SDLGLContext = SDL_GL_CreateContext(g_SDLWindow);
 
@@ -56,13 +56,18 @@ static bool InitializeEverything()
     SDL_GL_SetSwapInterval(1);
 
     PrintLog.Message("Mesa Computer System " + std::string(PROJECT_BUILD_VERSION));
+    PrintLog.Message("--Screen size " + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_W) + 
+                     "x" + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_H));
 
     g_gfx.Init();
     MesaGUI::Init();
 
     InitializeLanguageCompilerAndRuntime();
     SetupConsoleCommands();
-    
+
+    PrintLog.Message("--Graphics loaded.");
+    PrintLog.Message("--Sound loaded.");
+
     PrintLog.Message("\n");
 
 	return true;

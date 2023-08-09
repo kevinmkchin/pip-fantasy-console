@@ -94,7 +94,7 @@ namespace Gfx
             fprintf(stderr, "Failed to initialize OpenGL\n");
             return false;
         }
-        PrintLog.Message("OpenGL initialized.");
+        PrintLog.Message("--OpenGL initialized.");
     #endif
         s_ActiveSDLWindow = SDL_GL_GetCurrentWindow();
 
