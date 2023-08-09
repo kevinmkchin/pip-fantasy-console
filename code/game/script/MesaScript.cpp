@@ -1995,7 +1995,7 @@ void InitializeLanguageCompilerAndRuntime()
 }
 
 // TODO(Kevin): move initialize and setup stuff somewhere else. make sure built-in methods like add get added to global scope not script scope.
-void TemporaryRunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir)
+void TemporaryRunMesaScriptInterpreterOnFile(const std::string& pathFromWorkingDir)
 {
     std::string fileStr = ReadFileString(wd_path(pathFromWorkingDir).c_str());
 
