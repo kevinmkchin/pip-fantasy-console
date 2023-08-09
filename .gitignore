@@ -10,6 +10,6 @@ cmake-build-*/
 *.DS_Store
 *.sublime-workspace
 
-ext/cmake_project_path.h
 CMakeSettings.json
+code/core/cmake_MesaProjectDefines.h
 ext/cmake_project_path.h

@@ -1,0 +1,4 @@
+#pragma once
+
+#cmakedefine PROJECT_WORKING_DIR "@PROJECT_WORKING_DIR@"
+#cmakedefine PROJECT_BUILD_VERSION "@PROJECT_BUILD_VERSION@"

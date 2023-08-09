@@ -14,6 +14,7 @@
 
 #include "core/InputSystem.h"
 #include "core/Console.h"
+#include "core/PrintLog.h"
 #include "core/MesaIMGUI.h"
 #include "core/EditorGUI.h"
 
@@ -54,11 +55,15 @@ static bool InitializeEverything()
 
     SDL_GL_SetSwapInterval(1);
 
+    PrintLog.Message("Mesa Computer System " + std::string(PROJECT_BUILD_VERSION));
+
     g_gfx.Init();
     MesaGUI::Init();
 
     InitializeLanguageCompilerAndRuntime();
     SetupConsoleCommands();
+    
+    PrintLog.Message("\n");
 
 	return true;
 }
@@ -118,8 +123,8 @@ void StartGameSpace()
 static void LoadFantasyConsole()
 {
     g_ProgramMode = MesaProgramMode::BootScreen;
-    std::string welcome = "== Mesa PC Boot Menu ==\n\n"
-                          "type 'help'\n";
+    std::string welcome = std::string("== Mesa PC Boot Menu ") +
+                          std::string(" ==\n\ntype 'help'\n");
     SendMessageToConsole(welcome.c_str(), welcome.size());
 
     g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);

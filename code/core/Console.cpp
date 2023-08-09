@@ -6,6 +6,7 @@
 #include "MesaIMGUI.h"
 #include "Timer.h"
 #include "InputSystem.h"
+#include "PrintLog.h"
 
 
 #define MESSAGES_CHAR_CAPACITY 4000
@@ -136,5 +137,7 @@ void SetupConsoleCommands()
     sNoclipConsole.bind_cmd("editor", StartEditor);
     sNoclipConsole.bind_cmd("elephant", ElephantJPG);
     sNoclipConsole.bind_cmd("exec", TemporaryRunMesaScriptInterpreterOnFile);
+
+    PrintLog.Message("Boot menu initialized.");
 }
 

@@ -2,10 +2,9 @@ cmake_minimum_required(VERSION 3.20)
 set (CMAKE_CXX_STANDARD 14)
 
 project(mesa)
-
-
-set(PROJECT_WORKING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/wd")
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ext/cmake_project_path.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/ext/cmake_project_path.h")
+set(PROJECT_BUILD_VERSION "v0.0.a1")
+set(PROJECT_WORKING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/wd/")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/code/core/cmake_MesaProjectDefines.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/code/core/cmake_MesaProjectDefines.h")
 
 
 set(SOURCE_FILES
@@ -38,9 +37,9 @@ add_compile_definitions(INTERNAL_BUILD=1)
 # Build options, additional include directories, library linking, copying DLLs to executable directory
 
 if(INTERNAL_BUILD MATCHES 0)
-    message(STATUS "External build")
+    message(STATUS "External build: " ${PROJECT_BUILD_VERSION})
 else()
-    message(STATUS "INTERNAL_BUILD")
+    message(STATUS "INTERNAL_BUILD: " ${PROJECT_BUILD_VERSION})
 endif()
 
 ## Windows
