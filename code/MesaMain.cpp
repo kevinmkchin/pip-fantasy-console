@@ -87,7 +87,10 @@ static void ProcessSDLEvents()
                 g_ProgramShouldShutdown = true;
                 break;
             case SDL_KEYDOWN:
-                SendInputToConsole(event.key);
+                if (CurrentProgramMode() == MesaProgramMode::BootScreen) 
+                {
+                    SendInputToConsole(event.key);
+                }
                 break;
         }
     }
@@ -115,6 +118,9 @@ void StartGameSpace()
 static void LoadFantasyConsole()
 {
     g_ProgramMode = MesaProgramMode::BootScreen;
+    std::string welcome = "== Mesa PC Boot Menu ==\n\n"
+                          "type 'help'\n";
+    SendMessageToConsole(welcome.c_str(), welcome.size());
 
     g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
     SDL_SetWindowMinimumSize(g_SDLWindow, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);

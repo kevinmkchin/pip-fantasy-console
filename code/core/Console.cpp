@@ -14,7 +14,7 @@ static char sConsoleMessagesBuffer[MESSAGES_CHAR_CAPACITY] = { 0 };
 static NiceArray<char, 128> sConsoleCommandInputBuffer;
 
 
-static void SendMessageToConsole(const char *msg, size_t len)
+void SendMessageToConsole(const char *msg, size_t len)
 {
     memmove(sConsoleMessagesBuffer, sConsoleMessagesBuffer + len, MESSAGES_CHAR_CAPACITY - len);
     memcpy(sConsoleMessagesBuffer + MESSAGES_CHAR_CAPACITY - len, msg, len);
