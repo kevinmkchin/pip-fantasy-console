@@ -1,8 +1,8 @@
 # TODO
 
-- move fib.ms test code into the editor itself.
 - boot sound (SDL_mixer)
 - vertext rewrite for better usability better API
+- move fib.ms test code into the editor itself.
 
 
 ### Bugs

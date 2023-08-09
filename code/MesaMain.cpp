@@ -128,8 +128,7 @@ static void LoadFantasyConsole()
 
 int main(int argc, char* argv[])
 {
-	InitializeEverything(); 
-    TemporaryRunMesaScriptInterpreterOnFile("fib.ms");
+	InitializeEverything();
 
     LoadFantasyConsole();
 

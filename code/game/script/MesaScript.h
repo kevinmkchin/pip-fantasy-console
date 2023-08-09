@@ -351,7 +351,7 @@ void InitializeLanguageCompilerAndRuntime();
 
 
 
-void TemporaryRunMesaScriptInterpreterOnFile(const char* pathFromWorkingDir);
+void TemporaryRunMesaScriptInterpreterOnFile(const std::string& pathFromWorkingDir);
 
 
 
