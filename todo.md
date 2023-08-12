@@ -8,7 +8,6 @@
 ### Bugs
 
 - GUI incorrect zones when window resize with black bars, window aspect ratio != game ratio
-- Make sure vertext height thing didn't regress (text height inconsistency for loading vs forming vertices)
 
 ### Engine
 
@@ -20,28 +19,27 @@ MESASCRIPT EPIC:
 
 ### Language features
 
-- fix return values being reference counted objects created locally (function scope about to be destroyed). function scope gets destroyed before return value is captured and assigned to a variable.
+- STRINGS: should strings be reference counted objects? probably not? not sure
 - fix cyclic references. maybe disallow them
 - FLOATS
   - flr, ceil, rnd
-- STRINGS
-  - should strings be reference counted objects? probably not? not sure
 - access map elements via dot (e.g. map.x or map.f(param))
-- reference counting TESTS
-        
 - need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
-  - deleting an entry is different from deleting the object stored in that entry. if we can delete entire objects, then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).  
-- rename tables to MAP or DICTIONARY
+  - deleting an entry is different from deleting the object stored in that entry. if we can delete entire objects, then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).
 - answer question about accessing local variables from other scopes
-- use custom assert for mesascript runtime
-
-- add relops for GCObject type TValues. for other ops, just crash? 
-- initialize table elements
-
+- rename tables to MAP or DICTIONARY
 - while loops & break
 - for loops
 - elifs
 - +=, -=, /=, *=*
+
+
+
+- reference counting TESTS
+- use custom assert for mesascript runtime
+- add relops for GCObject type TValues. for other ops, just crash? 
+- initialize table elements
+
 
 - introducing "null" or "nil" means there are always going to have to be null checks. instead, provide a function to check if a variable name exists or is alive.
 - you should be able to ask for a list of identifiers/names that reference a given GCObj -> if a GCObj has 4 refs, I should be able to find out what those refs are...although that might be tough if the reference has no identifier e.g. if the reference is from inside a list or map entry.
@@ -79,6 +77,8 @@ MESASCRIPT EPIC:
 
 # Done
 
+- fix return values being reference counted objects created locally (function scope about to be destroyed). function scope gets destroyed before return value is captured and assigned to a variable.
+  - the following should work in the future: newstring = GetString() + " world"; newlist = GetList() + [1, b, 3];
 - bugfix: GUI incorrect zones when window resize prob cuz mouse x y will be incorrect.
 - index tables with strings
 - initialize array elements

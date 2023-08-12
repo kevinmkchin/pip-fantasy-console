@@ -37,6 +37,47 @@ template<typename T, int _count> struct NiceArray
 
     // todo maybe Insert and Erase?
 
+    bool Contains(T v)
+    {
+        for (int i = 0; i < count; ++i)
+        {
+            if (*(data + i) == v) return true;
+        }
+        return false;
+    }
+
+    void EraseAt(int index)
+    {
+        if (index < count - 1)
+        {
+            memmove(data + index, data + index + 1, count - index - 1);
+        }
+        --count;
+    }
+
+    void EraseFirstOf(T v)
+    {
+        for (int i = 0; i < count; ++i)
+        {
+            if (*(data + i) == v)
+            {
+                EraseAt(i);
+                break;
+            }
+        }
+    }
+
+    void EraseAllOf(T v)
+    {
+        for (int i = 0; i < count; ++i)
+        {
+            if (*(data + i) == v)
+            {
+                EraseAt(i);
+            }
+        }
+    }
+
     bool NotAtCapacity()
     {
         return count < capacity;

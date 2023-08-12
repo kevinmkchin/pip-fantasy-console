@@ -327,6 +327,11 @@ struct MesaScript_ScriptEnvironment
         scopes.pop_back();
     }
 
+    size_t ScopesSize()
+    {
+        return scopes.size();
+    }
+
 private:
     std::vector<MesaScript_Table> scopes;
 };
