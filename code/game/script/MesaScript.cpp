@@ -67,7 +67,7 @@ void SendCompilationError(const char* msg, Token token)
     ASSERT(0);
 }
 
-void SendRuntimeException(const char* msg)
+void SendRuntimeException(const char* msg) // TODO(Kevin): RuntimeAssert(predicate, msg)
 {
     printf("Runtime exception: %s\n", msg);
     ASSERT(0); // todo do something other than halt and crash
@@ -286,8 +286,9 @@ std::vector<Token> Lexer(const std::string& code)
                 case ']': { tokenType = TokenType::RSqBrack; } break;
                 case ',': { tokenType = TokenType::Comma; } break;
                 case '\n': { ++currentLine; continue; /*tokenType = TokenType::EndOfLine;*/ } break;
+                case ';': { continue; } break;
                 default:{
-                    printf("error: unrecognized character in Lexer");
+                    printf("error: unrecognized character in Lexer\n");
                     continue;
                 }
             }
@@ -610,6 +611,8 @@ std::vector<ASTProcedureCall*> SCRIPT_PROCEDURE_EXECUTION_QUEUE;
 
 u64 ticker = 1; // 0 is invalid
 std::unordered_map<u64, MesaGCObject*> GCOBJECTS_DATABASE;
+NiceArray<u64, 16> TRANSIENT_GCOBJECTS;
+int lowestScopeDepthIndexOfTransientGCObjects = -1;
 
 MesaGCObject::GCObjectType GetTypeOfGCObject(u64 gcObjectId)
 {
@@ -638,14 +641,22 @@ void IncrementReferenceGCObject(u64 gcObjectId)
 {
     MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
     gcobj->refCount++;
+
+    if (TRANSIENT_GCOBJECTS.Contains(gcObjectId))
+    {
+        TRANSIENT_GCOBJECTS.EraseFirstOf(gcObjectId);
+        if (gcobj->refCount <= 0) ReleaseReferenceGCObject(gcObjectId);
+    }
 }
 
 void ReleaseReferenceGCObject(u64 gcObjectId)
 {
     MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
     gcobj->refCount--;
-    if (gcobj->refCount == 0)
+    if (gcobj->refCount <= 0)
     {
+        if (TRANSIENT_GCOBJECTS.Contains(gcObjectId)) return;
+
         if (gcobj->GetType() == MesaGCObject::GCObjectType::List)
         {
             MesaScript_List* list = AccessMesaScriptList(gcObjectId);
@@ -785,6 +796,10 @@ static MesaScript_All_Scope_Singleton MESASCRIPT_ALL_SCOPE;
 void SetActiveScriptEnvironment(MesaScript_ScriptEnvironment* env)
 {
     MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR = env;
+}
+int ActiveScopeDepthIndex()
+{
+    return (int) MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->ScopesSize() - 1;
 }
 MesaScript_Table* EmplaceMapInGlobalScope(const std::string& id)
 {
@@ -1580,8 +1595,8 @@ InterpretExpression(ASTNode* ast)
             if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(v->id))
             {
                 return MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->AccessAtKey(v->id);
-            
-}            else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(v->id))
+            }
+            else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(v->id))
             {
                 return MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(v->id);
             }
@@ -1656,6 +1671,7 @@ InterpretExpression(ASTNode* ast)
             {
                 ASTNode* elementExpr = v->listInitializingElements[i];
                 TValue elementValue = InterpretExpression(elementExpr);
+                // Return value gets captured here too
                 mesaList->Append(elementValue);
             }
 
@@ -1703,11 +1719,13 @@ InterpretStatement(ASTNode* statement)
         case ASTNodeType::PROCEDURECALL: {
             auto v = static_cast<ASTProcedureCall*>(statement);
             InterpretProcedureCall(v);
+            // This is the only place return value is wasted
         } break;
 
         case ASTNodeType::ASSIGN: {
             auto v = static_cast<ASTAssignment*>(statement);
-
+            
+            // Return value gets captured here too
             auto result = InterpretExpression(v->expr);
 
             ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
@@ -1753,6 +1771,7 @@ InterpretStatement(ASTNode* statement)
                 SendRuntimeException("Cannot find a list or map with the given identifier.");
             }
 
+            // Return value gets captured here too
             auto valueTValue = InterpretExpression(v->valueExpression);
 
             if(assigningToList)
@@ -1800,6 +1819,18 @@ InterpretStatement(ASTNode* statement)
             else if (v->else_body)
                 InterpretStatementList(v->else_body);
         } break;
+    }
+
+    ASSERT(lowestScopeDepthIndexOfTransientGCObjects <= ActiveScopeDepthIndex())
+    if (lowestScopeDepthIndexOfTransientGCObjects == ActiveScopeDepthIndex())
+    {
+        for (int i = 0; i < TRANSIENT_GCOBJECTS.count;)
+        {
+            auto gcobjid = TRANSIENT_GCOBJECTS.At(i);
+            TRANSIENT_GCOBJECTS.EraseAt(i);
+            ReleaseReferenceGCObject(gcobjid);
+        }
+        lowestScopeDepthIndexOfTransientGCObjects = -1;
     }
 }
 
@@ -1898,7 +1929,7 @@ TValue CPPBOUND_MESASCRIPT_RaiseTo(TValue base, TValue exponent)
 }
 
 static TValue
-InterpretProcedureCall(ASTProcedureCall* procedureCall)
+InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PART OF INTERPRETER, USE INTERPRETSTATEMENT INSTEAD
 {
     // If ProcedureCall is C++ bound function, then call that.
     // TValue result = cpp_fn(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
@@ -1949,7 +1980,21 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall)
 
     InterpretStatementList(procedureDefinition.body);
 
-    if (returnValueSetFlag) retval = returnValue;
+    if (returnValueSetFlag) 
+    {
+        retval = returnValue;
+
+        if (returnValue.type == TValue::ValueType::GCObject)
+        {
+            TRANSIENT_GCOBJECTS.PushBack(returnValue.GCReferenceObject);
+
+            ASSERT(lowestScopeDepthIndexOfTransientGCObjects < ActiveScopeDepthIndex());
+            if (lowestScopeDepthIndexOfTransientGCObjects < 0)
+            {
+                lowestScopeDepthIndexOfTransientGCObjects = ActiveScopeDepthIndex() - 1;
+            }
+        }
+    }
 
     returnRequestedFlag = false;
     returnValueSetFlag = false;
@@ -1978,7 +2023,7 @@ MesaScript_ScriptEnvironment CompileEntityBehaviourAsNewScriptEnvironment(const 
 void CallParameterlessFunctionInActiveScriptEnvironment(const char* functionIdentifier)
 {
     ASTProcedureCall parameterlessProcCallNode = ASTProcedureCall(functionIdentifier);
-    InterpretProcedureCall(&parameterlessProcCallNode);
+    InterpretStatement(&parameterlessProcCallNode);
 }
 
 void CallFunctionInActiveScriptEnvironmentWithOneParam(const char* functionIdentifier, TValue arg0)
@@ -1986,7 +2031,7 @@ void CallFunctionInActiveScriptEnvironmentWithOneParam(const char* functionIdent
     ASTProcedureCall procCallNode = ASTProcedureCall(functionIdentifier);
     ASTSimplyTValue arg0Node = ASTSimplyTValue(arg0);
     procCallNode.argsExpressions.push_back(&arg0Node);
-    InterpretProcedureCall(&procCallNode);
+    InterpretStatement(&procCallNode);
 }
 
 void InitializeLanguageCompilerAndRuntime()
@@ -2017,6 +2062,6 @@ void TemporaryRunMesaScriptInterpreterOnFile(const std::string& pathFromWorkingD
 
     for (auto& procCallNode : SCRIPT_PROCEDURE_EXECUTION_QUEUE)
     {
-        InterpretProcedureCall(procCallNode);
+        InterpretStatement(procCallNode);
     }
 }
