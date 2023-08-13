@@ -19,7 +19,8 @@ MESASCRIPT EPIC:
 
 ### Language features
 
-- STRINGS: should strings be reference counted objects? probably not? not sure
+- STRINGS: strings should not be reference counted objects
+- keep track of transient GC objects at each scope depth and clear corresponding list after each statement at that depth
 - fix cyclic references. maybe disallow them
 - FLOATS
   - flr, ceil, rnd

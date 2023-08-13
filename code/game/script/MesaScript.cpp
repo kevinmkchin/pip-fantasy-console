@@ -606,10 +606,9 @@ struct ProcedureDefinition
 };
 
 NiceArray<ProcedureDefinition, PID_MAX> PROCEDURES_DATABASE;
-std::vector<ASTProcedureCall*> SCRIPT_PROCEDURE_EXECUTION_QUEUE;
 
 
-u64 ticker = 1; // 0 is invalid
+u64 gcobjIdTicker = 1; // 0 is invalid
 std::unordered_map<u64, MesaGCObject*> GCOBJECTS_DATABASE;
 NiceArray<u64, 16> TRANSIENT_GCOBJECTS;
 int lowestScopeDepthIndexOfTransientGCObjects = -1;
@@ -691,7 +690,7 @@ u64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType)
             SendRuntimeException("Error requesting GCObject. Undefined GCObject type.");
         } break;
     }
-    gcobj->selfId = ticker++;
+    gcobj->selfId = gcobjIdTicker++;
     GCOBJECTS_DATABASE.insert({gcobj->selfId, gcobj});
     return gcobj->selfId;
 }
@@ -848,6 +847,9 @@ private:
     std::vector<Token> tokens;
     Token currentToken;
     size_t currentTokenIndex;
+
+public:
+    std::vector<ASTProcedureCall *> temporaryProcedureExecutionQueue;
 };
 
 Parser::Parser(std::vector<Token> _tokens)
@@ -866,7 +868,7 @@ void Parser::parse()
         }
         else if (currentToken.type == TokenType::Identifier)
         {
-            SCRIPT_PROCEDURE_EXECUTION_QUEUE.push_back(static_cast<ASTProcedureCall*>(procedure_call()));
+            temporaryProcedureExecutionQueue.push_back(static_cast<ASTProcedureCall*>(procedure_call()));
         }
     }
 }
@@ -2060,7 +2062,7 @@ void TemporaryRunMesaScriptInterpreterOnFile(const std::string& pathFromWorkingD
     auto parser = Parser(result);
     parser.parse();
 
-    for (auto& procCallNode : SCRIPT_PROCEDURE_EXECUTION_QUEUE)
+    for (auto& procCallNode : parser.temporaryProcedureExecutionQueue)
     {
         InterpretStatement(procCallNode);
     }
