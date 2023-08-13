@@ -1673,8 +1673,9 @@ InterpretExpression(ASTNode* ast)
             auto v = static_cast<ASTStringTerminal*>(ast);
             result.type = TValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::String);
-            MesaScript_String* createdString = AccessMesaScriptString(result.GCReferenceObject);
+            MesaScript_String *createdString = AccessMesaScriptString(result.GCReferenceObject);
             createdString->text = v->value;
+            __MSRuntime.activeEnv->InsertTransientObject(result.GCReferenceObject, 0);
             break;
         }
         case ASTNodeType::BOOLEAN:
@@ -1695,6 +1696,15 @@ InterpretExpression(ASTNode* ast)
     if (result.type == TValue::ValueType::Invalid)
     {
         SendRuntimeException("Invalid expression.");
+    }
+    else if (result.type == TValue::ValueType::GCObject
+        && GetTypeOfGCObject(result.GCReferenceObject) == MesaGCObject::GCObjectType::String
+        && !__MSRuntime.activeEnv->TransientObjectExists(result.GCReferenceObject))
+    {
+        i64 stringCopyId = RequestNewGCObject(MesaGCObject::GCObjectType::String);
+        AccessMesaScriptString(stringCopyId)->text = AccessMesaScriptString(result.GCReferenceObject)->text;
+        result.GCReferenceObject = stringCopyId;
+        __MSRuntime.activeEnv->InsertTransientObject(stringCopyId, 0);
     }
 
     return result;
