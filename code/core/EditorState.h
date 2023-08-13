@@ -42,7 +42,7 @@ Now all of a sudden I'm going to start wanting to share functionality between
 Enemy_A and Enemy_B. Then, Enemy_A's Update and Enemy_B's Update can call functions
 that are accessible to both Update functions.
 
-Currently, Parser::procedure_decl writes function identifiers into MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE,
+Currently, Parser::procedure_decl writes function identifiers into __MSRuntime.globalEnv,
 but I probably want to set the active script before Parser.parse (and maybe Lexer) runs. Then, I can set
 active the correct script and the correct function identifiers and variables for the entity I am updating.
 
