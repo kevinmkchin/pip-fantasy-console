@@ -19,6 +19,7 @@ MESASCRIPT EPIC:
 
 ### Language features
 
+- allow list construction like so [[1, 2, 3], [4, 5], [6, 7, 8, 9]] by being transient upon construction
 - fix cyclic references. maybe disallow them
 - FLOATS
   - flr, ceil, rnd

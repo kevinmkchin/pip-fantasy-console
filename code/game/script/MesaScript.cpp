@@ -1918,6 +1918,17 @@ TValue CPPBOUND_MESASCRIPT_RaiseTo(TValue base, TValue exponent)
     return result;
 }
 
+TValue CPPBOUND_MESASCRIPT_RefCount(TValue gcobj)
+{
+    ASSERT(gcobj.type == TValue::ValueType::GCObject);
+
+    TValue result;
+    result.type = TValue::ValueType::Integer;
+    result.integerValue = (int)GCOBJECTS_DATABASE.at(gcobj.GCReferenceObject)->refCount;
+    return result;
+}
+
+
 static TValue
 InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PART OF INTERPRETER, USE INTERPRETSTATEMENT INSTEAD
 {
@@ -1933,7 +1944,7 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
     {
         procedureVariable = __MSRuntime.globalEnv.AccessMapEntry(procedureCall->id);
     }
-    else
+    else // only reach this case if valid CPPBOUND function or unknown function identifier error
     {
         if (procedureCall->id == "raise_to")
         {
@@ -1944,6 +1955,11 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
         {
             ASSERT(procedureCall->argsExpressions.size() == 1);
             return CPPBOUND_MESASCRIPT_Print(InterpretExpression(procedureCall->argsExpressions[0]));
+        }
+        else if (procedureCall->id == "refcount")
+        {
+            ASSERT(procedureCall->argsExpressions.size() == 1);
+            return CPPBOUND_MESASCRIPT_RefCount(InterpretExpression(procedureCall->argsExpressions[0]));
         }
         else
         {
