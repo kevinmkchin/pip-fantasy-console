@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../core/MesaCommon.h"
+#include "../../core/MesaUtility.h"
 
 #include <unordered_map>
 #include <vector>
@@ -267,6 +268,13 @@ struct MesaScript_Table
     void DecrementReferenceCountOfEveryMapEntry();
 };
 
+/// Simply returns the MesaScript_Table associated with the given GCObject id.
+MesaScript_Table* AccessMesaScriptTable(u64 gcObjectId);
+void IncrementReferenceGCObject(u64 gcObjectId);
+void ReleaseReferenceGCObject(u64 gcObjectId);
+u64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType);
+
+
 struct MesaScript_ScriptEnvironment
 {
     bool KeyExists(const std::string& key)
@@ -275,6 +283,19 @@ struct MesaScript_ScriptEnvironment
         {
             MesaScript_Table& scope = scopes.at(back);
             if (scope.Contains(key))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool TransientObjectExists(i64 gcObjectId)
+    {
+        for (int back = int(transients.size()) - 1; back >= 0; --back)
+        {
+            auto& transientsAtDepth = transients.at(back);
+            if (transientsAtDepth.Contains(gcObjectId))
             {
                 return true;
             }
@@ -318,6 +339,7 @@ struct MesaScript_ScriptEnvironment
     void PushScope(const MesaScript_Table scope)
     {
         scopes.push_back(scope);
+        transients.emplace_back();
     }
 
     /// Decrements ref counts here because we are removing a scope
@@ -325,6 +347,8 @@ struct MesaScript_ScriptEnvironment
     {
         scopes.back().DecrementReferenceCountOfEveryMapEntry();
         scopes.pop_back();
+        ASSERT(transients.back().count == 0);
+        transients.pop_back();
     }
 
     size_t ScopesSize()
@@ -332,15 +356,41 @@ struct MesaScript_ScriptEnvironment
         return scopes.size();
     }
 
+    void InsertTransientObject(i64 gcObjectId, i32 depth /*0 or negative index*/)
+    {
+        ASSERT(TransientObjectExists(gcObjectId) == false);
+        i32 transientsDepthIndex = (i32)transients.size() + depth - 1;
+        ASSERT(transientsDepthIndex >= 0);
+        transients.at(transientsDepthIndex).PushBack(gcObjectId);
+    }
+
+    void EraseTransientObject(i64 gcObjectId)
+    {
+        for (int back = int(transients.size()) - 1; back >= 0; --back)
+        {
+            auto& transientsAtDepth = transients.at(back);
+            if (transientsAtDepth.Contains(gcObjectId))
+            {
+                transientsAtDepth.EraseFirstOf(gcObjectId);
+            }
+        }
+    }
+
+    void ClearTransientsInTopLevelScope()
+    {
+        auto& topLevelTransients = transients.back();
+        for (int i = 0; i < topLevelTransients.count; ++i)
+        {
+            ReleaseReferenceGCObject(topLevelTransients.At(i));
+        }
+        topLevelTransients.ResetCount();
+    }
+
 private:
-    std::vector<MesaScript_Table> scopes;
+    std::vector<MesaScript_Table> scopes; // TODO(Kevin): use stack allocator
+    std::vector<NiceArray<i64, 16>> transients; // TODO(Kevin): use stack allocator, also "16" is a problem
 };
 
-/// Simply returns the MesaScript_Table associated with the given GCObject id.
-MesaScript_Table* AccessMesaScriptTable(u64 gcObjectId);
-void IncrementReferenceGCObject(u64 gcObjectId);
-void ReleaseReferenceGCObject(u64 gcObjectId);
-u64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType);
 
 MesaScript_Table* EmplaceMapInGlobalScope(const std::string& id);
 MesaScript_Table* AccessMapInGlobalScope(const std::string& id);

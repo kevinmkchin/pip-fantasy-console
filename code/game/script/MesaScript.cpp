@@ -1,11 +1,38 @@
 #include "MesaScript.h"
 
 #include "../../core/MesaCommon.h"
-#include "../../core/MesaUtility.h"
 #include "../../core/MemoryAllocator.h"
 #include "../../core/FileSystem.h"
 
 #include <cmath>
+
+#pragma region StaticVariables
+
+struct ProcedureDefinition
+{
+    std::vector<std::string> args; // todo(kevin): could just be a pointer to address in linear allocator with count
+    class ASTStatementList* body;
+};
+
+NiceArray<ProcedureDefinition, PID_MAX> PROCEDURES_DATABASE;
+
+u64 gcobjIdTicker = 1; // 0 is invalid
+std::unordered_map<u64, MesaGCObject*> GCOBJECTS_DATABASE;
+
+struct MesaScriptRuntimeObject
+{
+    MesaScript_Table              globalEnv;
+    MesaScript_ScriptEnvironment *activeEnv = NULL;
+};
+static MesaScriptRuntimeObject __MSRuntime;
+static MemoryLinearBuffer      __ASTBuffer;
+
+static TValue returnValue;
+static bool returnValueSetFlag = false;
+static bool returnRequestedFlag = false;
+
+#pragma endregion StaticVariables
+
 
 enum class TokenType
 {
@@ -74,7 +101,204 @@ void SendRuntimeException(const char* msg) // TODO(Kevin): RuntimeAssert(predica
 }
 
 
-#pragma region LEXER
+MesaGCObject::GCObjectType GetTypeOfGCObject(u64 gcObjectId)
+{
+    MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
+    return gcobj->GetType();
+}
+
+MesaScript_Table* AccessMesaScriptTable(u64 gcObjectId)
+{
+    return (MesaScript_Table*)(GCOBJECTS_DATABASE.at(gcObjectId));
+}
+
+/// Simply returns the MesaScript_List associated with the given GCObject id.
+MesaScript_List* AccessMesaScriptList(u64 gcObjectId)
+{
+    return (MesaScript_List*)(GCOBJECTS_DATABASE.at(gcObjectId));
+}
+
+/// Simply returns the MesaScript_String associated with the given GCObject id.
+MesaScript_String* AccessMesaScriptString(u64 gcObjectId)
+{
+    return (MesaScript_String*)(GCOBJECTS_DATABASE.at(gcObjectId));
+}
+
+void IncrementReferenceGCObject(u64 gcObjectId)
+{
+    MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
+    gcobj->refCount++;
+
+    if (__MSRuntime.activeEnv->TransientObjectExists(gcObjectId))
+    {
+        __MSRuntime.activeEnv->EraseTransientObject(gcObjectId);
+        if (gcobj->refCount <= 0) ReleaseReferenceGCObject(gcObjectId);
+    }
+}
+
+void ReleaseReferenceGCObject(u64 gcObjectId)
+{
+    MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
+    gcobj->refCount--;
+    if (gcobj->refCount <= 0)
+    {
+        if (__MSRuntime.activeEnv->TransientObjectExists(gcObjectId)) return;
+
+        if (gcobj->GetType() == MesaGCObject::GCObjectType::List)
+        {
+            MesaScript_List* list = AccessMesaScriptList(gcObjectId);
+            list->DecrementReferenceCountOfEveryListEntry();
+        }
+        else if (gcobj->GetType() == MesaGCObject::GCObjectType::Table)
+        {
+            MesaScript_Table* map = AccessMesaScriptTable(gcObjectId);
+            map->DecrementReferenceCountOfEveryMapEntry();
+        }
+
+        delete gcobj;
+        GCOBJECTS_DATABASE.erase(gcObjectId);
+    }
+}
+
+u64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType)
+{
+    MesaGCObject* gcobj = NULL;
+    switch(gcObjectType)
+    {
+        case MesaGCObject::GCObjectType::Table: {
+            gcobj = (MesaGCObject*) new MesaScript_Table();
+        } break;
+        case MesaGCObject::GCObjectType::String: {
+            gcobj = (MesaGCObject*) new MesaScript_String();
+        } break;
+        case MesaGCObject::GCObjectType::List: {
+            gcobj = (MesaGCObject*) new MesaScript_List();
+        } break;
+        default: {
+            SendRuntimeException("Error requesting GCObject. Undefined GCObject type.");
+        } break;
+    }
+    gcobj->selfId = gcobjIdTicker++;
+    GCOBJECTS_DATABASE.insert({gcobj->selfId, gcobj});
+    return gcobj->selfId;
+}
+
+void MesaScript_List::Append(const TValue value)
+{
+    if (value.type == TValue::ValueType::GCObject)
+    {
+        IncrementReferenceGCObject(value.GCReferenceObject);
+    }
+
+    list.push_back(value);
+}
+
+void MesaScript_List::ReplaceListEntryAtIndex(const i64 index, const TValue value)
+{
+    TValue existingValue = list.at(index);
+    if (existingValue.type == TValue::ValueType::GCObject)
+    {
+        if (value.type == TValue::ValueType::GCObject && existingValue.GCReferenceObject == value.GCReferenceObject)
+        {
+            return;
+        }
+        else
+        {
+            ReleaseReferenceGCObject(existingValue.GCReferenceObject);
+        }
+    }
+
+    if (value.type == TValue::ValueType::GCObject)
+    {
+        IncrementReferenceGCObject(value.GCReferenceObject);        
+    }
+
+    list.at(index) = value;
+}
+
+void MesaScript_List::DecrementReferenceCountOfEveryListEntry()
+{
+    for (int i = 0, size = (int)list.size(); i < size; ++i)
+    {
+        TValue v = list.at(i);
+        if (v.type == TValue::ValueType::GCObject)
+        {
+            ReleaseReferenceGCObject(v.GCReferenceObject);
+        }
+    }
+}
+
+void MesaScript_Table::CreateNewMapEntry(const std::string& key, const TValue value)
+{
+    if (value.type == TValue::ValueType::GCObject)
+    {
+        IncrementReferenceGCObject(value.GCReferenceObject);
+    }
+
+    table.emplace(key, value);
+}
+
+void MesaScript_Table::ReplaceMapEntryAtKey(const std::string& key, const TValue value)
+{
+    TValue existingValue = table.at(key);
+    if (existingValue.type == TValue::ValueType::GCObject)
+    {
+        if (value.type == TValue::ValueType::GCObject && existingValue.GCReferenceObject == value.GCReferenceObject)
+        {
+            return;
+        }
+        else
+        {
+            ReleaseReferenceGCObject(existingValue.GCReferenceObject);
+        }
+    }
+
+    if (value.type == TValue::ValueType::GCObject)
+    {
+        IncrementReferenceGCObject(value.GCReferenceObject);        
+    }
+
+    table.at(key) = value;
+}
+
+void MesaScript_Table::DecrementReferenceCountOfEveryMapEntry()
+{
+    for (const auto& pair : table)
+    {
+        TValue v = pair.second;
+        if (v.type == TValue::ValueType::GCObject)
+        {
+            ReleaseReferenceGCObject(v.GCReferenceObject);
+        }
+    }
+}
+
+void SetActiveScriptEnvironment(MesaScript_ScriptEnvironment* env)
+{
+    __MSRuntime.activeEnv = env;
+}
+
+int ActiveScopeDepthIndex()
+{
+    return (int) __MSRuntime.activeEnv->ScopesSize() - 1;
+}
+
+MesaScript_Table* EmplaceMapInGlobalScope(const std::string& id)
+{
+    TValue v;
+    v.type = TValue::ValueType::GCObject;
+    v.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
+    __MSRuntime.globalEnv.CreateNewMapEntry(id, v);
+    return (MesaScript_Table*) GCOBJECTS_DATABASE.at(v.GCReferenceObject);
+}
+
+MesaScript_Table* AccessMapInGlobalScope(const std::string& id)
+{
+    TValue v = __MSRuntime.globalEnv.AccessMapEntry(id);
+    return (MesaScript_Table*) GCOBJECTS_DATABASE.at(v.GCReferenceObject);
+}
+
+#pragma region Lexer
 
 bool IsValueType(TokenType type)
 {
@@ -299,8 +523,9 @@ std::vector<Token> Lexer(const std::string& code)
     return retval;
 }
 
-#pragma endregion
+#pragma endregion Lexer
 
+#pragma region ASTAndParser
 
 enum class ASTNodeType
 {
@@ -598,225 +823,6 @@ ASTSimplyTValue::ASTSimplyTValue(TValue v)
     , value(v)
 {}
 
-
-struct ProcedureDefinition
-{
-    std::vector<std::string> args; // todo(kevin): could just be a pointer to address in linear allocator with count
-    ASTStatementList* body;
-};
-
-NiceArray<ProcedureDefinition, PID_MAX> PROCEDURES_DATABASE;
-
-
-u64 gcobjIdTicker = 1; // 0 is invalid
-std::unordered_map<u64, MesaGCObject*> GCOBJECTS_DATABASE;
-NiceArray<u64, 16> TRANSIENT_GCOBJECTS;
-int lowestScopeDepthIndexOfTransientGCObjects = -1;
-
-MesaGCObject::GCObjectType GetTypeOfGCObject(u64 gcObjectId)
-{
-    MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
-    return gcobj->GetType();
-}
-
-MesaScript_Table* AccessMesaScriptTable(u64 gcObjectId)
-{
-    return (MesaScript_Table*)(GCOBJECTS_DATABASE.at(gcObjectId));
-}
-
-/// Simply returns the MesaScript_List associated with the given GCObject id.
-MesaScript_List* AccessMesaScriptList(u64 gcObjectId)
-{
-    return (MesaScript_List*)(GCOBJECTS_DATABASE.at(gcObjectId));
-}
-
-/// Simply returns the MesaScript_String associated with the given GCObject id.
-MesaScript_String* AccessMesaScriptString(u64 gcObjectId)
-{
-    return (MesaScript_String*)(GCOBJECTS_DATABASE.at(gcObjectId));
-}
-
-void IncrementReferenceGCObject(u64 gcObjectId)
-{
-    MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
-    gcobj->refCount++;
-
-    if (TRANSIENT_GCOBJECTS.Contains(gcObjectId))
-    {
-        TRANSIENT_GCOBJECTS.EraseFirstOf(gcObjectId);
-        if (gcobj->refCount <= 0) ReleaseReferenceGCObject(gcObjectId);
-    }
-}
-
-void ReleaseReferenceGCObject(u64 gcObjectId)
-{
-    MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
-    gcobj->refCount--;
-    if (gcobj->refCount <= 0)
-    {
-        if (TRANSIENT_GCOBJECTS.Contains(gcObjectId)) return;
-
-        if (gcobj->GetType() == MesaGCObject::GCObjectType::List)
-        {
-            MesaScript_List* list = AccessMesaScriptList(gcObjectId);
-            list->DecrementReferenceCountOfEveryListEntry();
-        }
-        else if (gcobj->GetType() == MesaGCObject::GCObjectType::Table)
-        {
-            MesaScript_Table* map = AccessMesaScriptTable(gcObjectId);
-            map->DecrementReferenceCountOfEveryMapEntry();
-        }
-
-        delete gcobj;
-        GCOBJECTS_DATABASE.erase(gcObjectId);
-    }
-}
-
-u64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType)
-{
-    MesaGCObject* gcobj = NULL;
-    switch(gcObjectType)
-    {
-        case MesaGCObject::GCObjectType::Table: {
-            gcobj = (MesaGCObject*) new MesaScript_Table();
-        } break;
-        case MesaGCObject::GCObjectType::String: {
-            gcobj = (MesaGCObject*) new MesaScript_String();
-        } break;
-        case MesaGCObject::GCObjectType::List: {
-            gcobj = (MesaGCObject*) new MesaScript_List();
-        } break;
-        default: {
-            SendRuntimeException("Error requesting GCObject. Undefined GCObject type.");
-        } break;
-    }
-    gcobj->selfId = gcobjIdTicker++;
-    GCOBJECTS_DATABASE.insert({gcobj->selfId, gcobj});
-    return gcobj->selfId;
-}
-
-void MesaScript_List::Append(const TValue value)
-{
-    if (value.type == TValue::ValueType::GCObject)
-    {
-        IncrementReferenceGCObject(value.GCReferenceObject);
-    }
-
-    list.push_back(value);
-}
-
-void MesaScript_List::ReplaceListEntryAtIndex(const i64 index, const TValue value)
-{
-    TValue existingValue = list.at(index);
-    if (existingValue.type == TValue::ValueType::GCObject)
-    {
-        if (value.type == TValue::ValueType::GCObject && existingValue.GCReferenceObject == value.GCReferenceObject)
-        {
-            return;
-        }
-        else
-        {
-            ReleaseReferenceGCObject(existingValue.GCReferenceObject);
-        }
-    }
-
-    if (value.type == TValue::ValueType::GCObject)
-    {
-        IncrementReferenceGCObject(value.GCReferenceObject);        
-    }
-
-    list.at(index) = value;
-}
-
-void MesaScript_List::DecrementReferenceCountOfEveryListEntry()
-{
-    for (int i = 0, size = (int)list.size(); i < size; ++i)
-    {
-        TValue v = list.at(i);
-        if (v.type == TValue::ValueType::GCObject)
-        {
-            ReleaseReferenceGCObject(v.GCReferenceObject);
-        }
-    }
-}
-
-void MesaScript_Table::CreateNewMapEntry(const std::string& key, const TValue value)
-{
-    if (value.type == TValue::ValueType::GCObject)
-    {
-        IncrementReferenceGCObject(value.GCReferenceObject);
-    }
-
-    table.emplace(key, value);
-}
-
-void MesaScript_Table::ReplaceMapEntryAtKey(const std::string& key, const TValue value)
-{
-    TValue existingValue = table.at(key);
-    if (existingValue.type == TValue::ValueType::GCObject)
-    {
-        if (value.type == TValue::ValueType::GCObject && existingValue.GCReferenceObject == value.GCReferenceObject)
-        {
-            return;
-        }
-        else
-        {
-            ReleaseReferenceGCObject(existingValue.GCReferenceObject);
-        }
-    }
-
-    if (value.type == TValue::ValueType::GCObject)
-    {
-        IncrementReferenceGCObject(value.GCReferenceObject);        
-    }
-
-    table.at(key) = value;
-}
-
-void MesaScript_Table::DecrementReferenceCountOfEveryMapEntry()
-{
-    for (const auto& pair : table)
-    {
-        TValue v = pair.second;
-        if (v.type == TValue::ValueType::GCObject)
-        {
-            ReleaseReferenceGCObject(v.GCReferenceObject);
-        }
-    }
-}
-
-
-struct MesaScript_All_Scope_Singleton
-{
-    MesaScript_Table GLOBAL_TABLE;
-    MesaScript_ScriptEnvironment* ACTIVE_SCRIPT_TABLE_PTR;
-};
-static MesaScript_All_Scope_Singleton MESASCRIPT_ALL_SCOPE;
-void SetActiveScriptEnvironment(MesaScript_ScriptEnvironment* env)
-{
-    MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR = env;
-}
-int ActiveScopeDepthIndex()
-{
-    return (int) MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->ScopesSize() - 1;
-}
-MesaScript_Table* EmplaceMapInGlobalScope(const std::string& id)
-{
-    TValue v;
-    v.type = TValue::ValueType::GCObject;
-    v.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
-    MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.CreateNewMapEntry(id, v);
-    return (MesaScript_Table*) GCOBJECTS_DATABASE.at(v.GCReferenceObject);
-}
-MesaScript_Table* AccessMapInGlobalScope(const std::string& id)
-{
-    TValue v = MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(id);
-    return (MesaScript_Table*) GCOBJECTS_DATABASE.at(v.GCReferenceObject);
-}
-
-
-static MemoryLinearBuffer astBuffer;
-
 class Parser
 {
 public:
@@ -899,13 +905,13 @@ PID Parser::procedure_decl()
     functionVariable.procedureId = createdProcedureId;
     functionVariable.type = TValue::ValueType::Function;
 
-    if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(procedureNameToken.text))
+    if (__MSRuntime.activeEnv->KeyExists(procedureNameToken.text))
     {
-        MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->ReplaceAtKey(procedureNameToken.text, functionVariable);
+        __MSRuntime.activeEnv->ReplaceAtKey(procedureNameToken.text, functionVariable);
     }
     else
     {
-        MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->EmplaceNewElement(procedureNameToken.text, functionVariable);
+        __MSRuntime.activeEnv->EmplaceNewElement(procedureNameToken.text, functionVariable);
     }
     return createdProcedureId;
 }
@@ -916,7 +922,7 @@ ASTNode* Parser::procedure_call()
     eat(TokenType::Identifier);
 
     auto node =
-            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTProcedureCall), alignof(ASTProcedureCall)))
+            new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTProcedureCall), alignof(ASTProcedureCall)))
                     ASTProcedureCall(procSymbol.text);
 
     eat(TokenType::LParen);
@@ -934,7 +940,7 @@ ASTNode* Parser::procedure_call()
 
 ASTStatementList* Parser::statement_list()
 {
-    auto statement_list = new (MemoryLinearAllocate(&astBuffer, sizeof(ASTStatementList), alignof(ASTStatementList)))
+    auto statement_list = new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTStatementList), alignof(ASTStatementList)))
             ASTStatementList();
     eat(TokenType::LBrace);
     while(currentToken.type != TokenType::RBrace)
@@ -954,12 +960,12 @@ ASTNode* Parser::table_or_cond_or()
         // TODO: initialize map with entries
         eat(TokenType::RBrace);
 
-        value = new (MemoryLinearAllocate(&astBuffer, sizeof(ASTCreateTable), alignof(ASTCreateTable)))
+        value = new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTCreateTable), alignof(ASTCreateTable)))
             ASTCreateTable();
     }
     else if (currentToken.type == TokenType::LSqBrack)
     {
-        value = new (MemoryLinearAllocate(&astBuffer, sizeof(ASTCreateList), alignof(ASTCreateList)))
+        value = new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTCreateList), alignof(ASTCreateList)))
                     ASTCreateList();
         ASTCreateList* valueCastedToCreateListPtr = static_cast<ASTCreateList*>(value);
 
@@ -1004,10 +1010,10 @@ ASTNode* Parser::statement()
             auto valueExpr = table_or_cond_or();
 
             auto varNode =
-                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                    new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
                             ASTVariable(t.text);
             auto node =
-                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignListOrMapElement), alignof(ASTAssignListOrMapElement)))
+                    new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTAssignListOrMapElement), alignof(ASTAssignListOrMapElement)))
                             ASTAssignListOrMapElement(varNode, indexExpr, valueExpr);
             return node;
         }
@@ -1018,11 +1024,11 @@ ASTNode* Parser::statement()
             eat(TokenType::AssignmentOperator);
 
             auto varNode =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
                 ASTVariable(t.text);
 
             auto node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAssignment), alignof(ASTAssignment)))
+                new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTAssignment), alignof(ASTAssignment)))
                 ASTAssignment(varNode, table_or_cond_or());
             return node;
         }
@@ -1031,7 +1037,7 @@ ASTNode* Parser::statement()
     {
         eat(TokenType::Return);
         auto node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTReturn), alignof(ASTReturn)))
+                new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTReturn), alignof(ASTReturn)))
                         ASTReturn(cond_or());
         return node;
     }
@@ -1048,7 +1054,7 @@ ASTNode* Parser::statement()
         }
 
         auto node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTBranch), alignof(ASTBranch)))
+                new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTBranch), alignof(ASTBranch)))
                         ASTBranch(condition, ifCase, elseCase);
         return node;
     }
@@ -1089,7 +1095,7 @@ ASTNode* Parser::cond_expr()
         }
 
         node =
-            new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
+            new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
                     ASTRelOp(op, node, expr());
     }
 
@@ -1114,14 +1120,14 @@ ASTNode* Parser::cond_equal()
         {
             eat(TokenType::LParen);
             node =
-                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTLogicalNot), alignof(ASTLogicalNot)))
+                    new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTLogicalNot), alignof(ASTLogicalNot)))
                             ASTLogicalNot(cond_or());
             eat(TokenType::RParen);
         }
         else
         {
             node =
-                    new (MemoryLinearAllocate(&astBuffer, sizeof(ASTLogicalNot), alignof(ASTLogicalNot)))
+                    new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTLogicalNot), alignof(ASTLogicalNot)))
                             ASTLogicalNot(factor());
         }
         return node;
@@ -1146,7 +1152,7 @@ ASTNode* Parser::cond_equal()
         }
 
         node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
+                new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
                         ASTRelOp(op, node, cond_expr());
     }
 
@@ -1162,7 +1168,7 @@ ASTNode* Parser::cond_and()
         eat(TokenType::LogicalAnd);
 
         node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
+                new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
                         ASTRelOp(RelOp::AND, node, cond_equal());
     }
 
@@ -1178,7 +1184,7 @@ ASTNode* Parser::cond_or()
         eat(TokenType::LogicalOr);
 
         node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
+                new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTRelOp), alignof(ASTRelOp)))
                         ASTRelOp(RelOp::OR, node, cond_and());
     }
 
@@ -1193,26 +1199,26 @@ ASTNode* Parser::factor()
     if (t.type == TokenType::NumberLiteral)
     {
         eat(TokenType::NumberLiteral);
-        node = new(MemoryLinearAllocate(&astBuffer, sizeof(ASTNumberTerminal), alignof(ASTNumberTerminal))) 
+        node = new(MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTNumberTerminal), alignof(ASTNumberTerminal)))
             ASTNumberTerminal(atoi(t.text.c_str()));
         return node;
     }
     else if (t.type == TokenType::StringLiteral)
     {
         eat(TokenType::StringLiteral);
-        node = new(MemoryLinearAllocate(&astBuffer, sizeof(ASTStringTerminal), alignof(ASTStringTerminal))) 
+        node = new(MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTStringTerminal), alignof(ASTStringTerminal)))
             ASTStringTerminal(t.text);
     }
     else if (t.type == TokenType::True)
     {
         eat(TokenType::True);
-        node = new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
+        node = new(MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
             ASTBooleanTerminal(true);
     }
     else if (t.type == TokenType::False)
     {
         eat(TokenType::False);
-        node = new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
+        node = new(MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
             ASTBooleanTerminal(false);
     }
     else if (t.type == TokenType::LParen)
@@ -1241,17 +1247,17 @@ ASTNode* Parser::factor()
             eat(TokenType::RSqBrack);
 
             auto varNode =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
                 ASTVariable(t.text);
             node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTAccessListOrMapElement), alignof(ASTAccessListOrMapElement)))
+                new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTAccessListOrMapElement), alignof(ASTAccessListOrMapElement)))
                 ASTAccessListOrMapElement(varNode, indexExpr);
         }
         else
         {
             eat(TokenType::Identifier);
             node =
-                new (MemoryLinearAllocate(&astBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
+                new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
                         ASTVariable(t.text);
         }
     }
@@ -1284,7 +1290,7 @@ ASTNode* Parser::term()
         }
 
         node =
-            new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBinOp), alignof(ASTBinOp)))
+            new(MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTBinOp), alignof(ASTBinOp)))
                     ASTBinOp(op, node, factor());
     }
 
@@ -1312,7 +1318,7 @@ ASTNode* Parser::expr()
         }
 
         node =
-            new(MemoryLinearAllocate(&astBuffer, sizeof(ASTBinOp), alignof(ASTBinOp)))
+            new(MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTBinOp), alignof(ASTBinOp)))
                     ASTBinOp(op, node, term());
     }
 
@@ -1336,9 +1342,9 @@ void Parser::eat(TokenType tpe)
     }
 }
 
-static TValue returnValue;
-static bool returnValueSetFlag = false;
-static bool returnRequestedFlag = false;
+#pragma endregion ASTAndParser
+
+#pragma region Interpreter
 
 static void
 InterpretStatementList(ASTNode* statements);
@@ -1567,13 +1573,13 @@ InterpretExpression(ASTNode* ast)
         case ASTNodeType::VARIABLE:
         {
             auto v = static_cast<ASTVariable*>(ast);
-            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(v->id))
+            if (__MSRuntime.activeEnv->KeyExists(v->id))
             {
-                return MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->AccessAtKey(v->id);
+                return __MSRuntime.activeEnv->AccessAtKey(v->id);
             }
-            else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(v->id))
+            else if (__MSRuntime.globalEnv.Contains(v->id))
             {
-                return MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(v->id);
+                return __MSRuntime.globalEnv.AccessMapEntry(v->id);
             }
             else
             {
@@ -1594,15 +1600,15 @@ InterpretExpression(ASTNode* ast)
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
             u64 gcObjectId = 0;
-            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(listOrMapVariableKey))
+            if (__MSRuntime.activeEnv->KeyExists(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->AccessAtKey(listOrMapVariableKey);
+                TValue listOrMapGCObj = __MSRuntime.activeEnv->AccessAtKey(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
-            else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(listOrMapVariableKey))
+            else if (__MSRuntime.globalEnv.Contains(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(listOrMapVariableKey);
+                TValue listOrMapGCObj = __MSRuntime.globalEnv.AccessMapEntry(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
@@ -1713,17 +1719,17 @@ InterpretStatement(ASTNode* statement)
 
             ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
             std::string key = static_cast<ASTVariable*>(v->id)->id;
-            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(key))
+            if (__MSRuntime.activeEnv->KeyExists(key))
             {
-                MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->ReplaceAtKey(key, result);
+                __MSRuntime.activeEnv->ReplaceAtKey(key, result);
             }
-            else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(key))
+            else if (__MSRuntime.globalEnv.Contains(key))
             {
-                MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.ReplaceMapEntryAtKey(key, result);
+                __MSRuntime.globalEnv.ReplaceMapEntryAtKey(key, result);
             }
             else
             {
-                MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->EmplaceNewElement(key, result);
+                __MSRuntime.activeEnv->EmplaceNewElement(key, result);
             }
         } break;
         case ASTNodeType::ASSIGN_LIST_OR_MAP_ELEMENT: {
@@ -1737,15 +1743,15 @@ InterpretStatement(ASTNode* statement)
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
             u64 gcObjectId = 0;
-            if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(listOrMapVariableKey))
+            if (__MSRuntime.activeEnv->KeyExists(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->AccessAtKey(listOrMapVariableKey);
+                TValue listOrMapGCObj = __MSRuntime.activeEnv->AccessAtKey(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
-            else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(listOrMapVariableKey))
+            else if (__MSRuntime.globalEnv.Contains(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(listOrMapVariableKey);
+                TValue listOrMapGCObj = __MSRuntime.globalEnv.AccessMapEntry(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
@@ -1804,17 +1810,8 @@ InterpretStatement(ASTNode* statement)
         } break;
     }
 
-    ASSERT(lowestScopeDepthIndexOfTransientGCObjects <= ActiveScopeDepthIndex())
-    if (lowestScopeDepthIndexOfTransientGCObjects == ActiveScopeDepthIndex())
-    {
-        for (int i = 0; i < TRANSIENT_GCOBJECTS.count;)
-        {
-            auto gcobjid = TRANSIENT_GCOBJECTS.At(i);
-            TRANSIENT_GCOBJECTS.EraseAt(i);
-            ReleaseReferenceGCObject(gcobjid);
-        }
-        lowestScopeDepthIndexOfTransientGCObjects = -1;
-    }
+    // ALL STATEMENTS MUST REACH THIS POINT
+    __MSRuntime.activeEnv->ClearTransientsInTopLevelScope();
 }
 
 static void
@@ -1918,13 +1915,13 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
     // TValue result = cpp_fn(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
 
     TValue procedureVariable;
-    if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(procedureCall->id))
+    if (__MSRuntime.activeEnv->KeyExists(procedureCall->id))
     {
-        procedureVariable = MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->AccessAtKey(procedureCall->id);
+        procedureVariable = __MSRuntime.activeEnv->AccessAtKey(procedureCall->id);
     }
-    else if (MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.Contains(procedureCall->id))
+    else if (__MSRuntime.globalEnv.Contains(procedureCall->id))
     {
-        procedureVariable = MESASCRIPT_ALL_SCOPE.GLOBAL_TABLE.AccessMapEntry(procedureCall->id);
+        procedureVariable = __MSRuntime.globalEnv.AccessMapEntry(procedureCall->id);
     }
     else
     {
@@ -1955,7 +1952,7 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
         TValue argv = InterpretExpression(argexpr);
         functionScope.CreateNewMapEntry(argname, argv);
     }
-    MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->PushScope(functionScope);
+    __MSRuntime.activeEnv->PushScope(functionScope);
 
     TValue retval;
     returnRequestedFlag = false;
@@ -1969,24 +1966,20 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
 
         if (returnValue.type == TValue::ValueType::GCObject)
         {
-            TRANSIENT_GCOBJECTS.PushBack(returnValue.GCReferenceObject);
-
-            ASSERT(lowestScopeDepthIndexOfTransientGCObjects < ActiveScopeDepthIndex());
-            if (lowestScopeDepthIndexOfTransientGCObjects < 0)
-            {
-                lowestScopeDepthIndexOfTransientGCObjects = ActiveScopeDepthIndex() - 1;
-            }
+            __MSRuntime.activeEnv->InsertTransientObject(returnValue.GCReferenceObject, -1);
         }
     }
 
     returnRequestedFlag = false;
     returnValueSetFlag = false;
 
-    // Intended: ACTIVE_SCRIPT_TABLE_PTR->PopScope should decrement ref count of every entry of the function scope being popped.
-    MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->PopScope();
+    // Intended: activeEnv->PopScope should decrement ref count of every entry of the function scope being popped.
+    __MSRuntime.activeEnv->PopScope();
 
     return retval;
 }
+
+#pragma endregion Interpreter
 
 MesaScript_ScriptEnvironment CompileEntityBehaviourAsNewScriptEnvironment(const std::string& entityBehaviourScript)
 {
@@ -2019,7 +2012,7 @@ void CallFunctionInActiveScriptEnvironmentWithOneParam(const char* functionIdent
 
 void InitializeLanguageCompilerAndRuntime()
 {
-    MemoryLinearInitialize(&astBuffer, 8000000);
+    MemoryLinearInitialize(&__ASTBuffer, 8000000);
 }
 
 // TODO(Kevin): move initialize and setup stuff somewhere else. make sure built-in methods like add get added to global scope not script scope.
