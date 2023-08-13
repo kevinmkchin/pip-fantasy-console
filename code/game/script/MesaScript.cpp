@@ -1362,7 +1362,7 @@ InterpretExpression(ASTNode* ast)
         case ASTNodeType::SIMPLYTVALUE: 
         {
             auto v = static_cast<ASTSimplyTValue*>(ast);
-            return v->value;
+            result = v->value;
             break;
         }
         case ASTNodeType::BINOP:
@@ -1575,11 +1575,11 @@ InterpretExpression(ASTNode* ast)
             auto v = static_cast<ASTVariable*>(ast);
             if (__MSRuntime.activeEnv->KeyExists(v->id))
             {
-                return __MSRuntime.activeEnv->AccessAtKey(v->id);
+                result = __MSRuntime.activeEnv->AccessAtKey(v->id);
             }
             else if (__MSRuntime.globalEnv.Contains(v->id))
             {
-                return __MSRuntime.globalEnv.AccessMapEntry(v->id);
+                result = __MSRuntime.globalEnv.AccessMapEntry(v->id);
             }
             else
             {

@@ -19,8 +19,6 @@ MESASCRIPT EPIC:
 
 ### Language features
 
-- STRINGS: strings should not be reference counted objects
-- keep track of transient GC objects at each scope depth and clear corresponding list after each statement at that depth
 - fix cyclic references. maybe disallow them
 - FLOATS
   - flr, ceil, rnd
@@ -35,7 +33,7 @@ MESASCRIPT EPIC:
 - +=, -=, /=, *=*
 
 
-
+- Better string support: concat strings and values, less friction like JavaScript
 - reference counting TESTS
 - use custom assert for mesascript runtime
 - add relops for GCObject type TValues. for other ops, just crash? 
@@ -78,6 +76,11 @@ MESASCRIPT EPIC:
 
 # Done
 
+- STRINGS: strings should not be reference counted objects
+  - strings upon construction are transient objects: if they aren't captured by a variable they will be deleted
+  - strings are never referenced, always copied: if an expression evaluates to a string, InterpretExpression will always create and return a transient copy of it. thus it is impossible for a string's refCount to be more than 1. If it is 0, then it is transient and will be collected at the end of the statement.
+- Better Transient objects tracking (one tracker per scope; cleared at the end of each statement at that scope)
+  - keep track of transient GC objects at each scope depth and clear corresponding list after each statement at that depth
 - fix return values being reference counted objects created locally (function scope about to be destroyed). function scope gets destroyed before return value is captured and assigned to a variable.
   - the following should work in the future: newstring = GetString() + " world"; newlist = GetList() + [1, b, 3];
 - bugfix: GUI incorrect zones when window resize prob cuz mouse x y will be incorrect.
