@@ -111,15 +111,8 @@ fn test()
 `
 ~test()
 
-print('hello');
-fn Afej(str)
-{
-    print(str)
-}
-Afej("world")
 
 
-`
 ~Find the n-th Fibonacci number
 fn fib (n) 
 {
@@ -143,7 +136,7 @@ checkeq(1, fact(0))
 checkeq(1, fact(1))
 checkeq(24, fact(4))
 checkeq(362880, fact(9))
-`
+
 
 ` BRAINSTORMING INTEGRATION:
 ~ the user could create levels in sprites (one sprite per layer) where color determines tile
