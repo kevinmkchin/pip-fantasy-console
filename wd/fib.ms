@@ -39,6 +39,23 @@ fn dosmth(table)
 }
 
 
+`
+fn passByRef(loi)
+{
+    loi[0] = loi[0] * 11 
+}
+
+fn caller()
+{
+    l = [ 7 ]
+    passByRef(l)
+    print(l)
+}
+
+caller()
+`
+
+
 fn GetPlayer()
 {
     player = {}
@@ -52,7 +69,7 @@ fn PrintPlayer()
     print(_player["x"])
 }
 
-PrintPlayer()
+~PrintPlayer()
 
 
 `
