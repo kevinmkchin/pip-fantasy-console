@@ -379,11 +379,12 @@ struct MesaScript_ScriptEnvironment
     void ClearTransientsInTopLevelScope()
     {
         auto& topLevelTransients = transients.back();
-        for (int i = 0; i < topLevelTransients.count; ++i)
+        for (int i = 0; i < topLevelTransients.count;)
         {
-            ReleaseReferenceGCObject(topLevelTransients.At(i));
+            i64 gcobjid = topLevelTransients.At(i);
+            topLevelTransients.EraseAt(i);
+            ReleaseReferenceGCObject(gcobjid);
         }
-        topLevelTransients.ResetCount();
     }
 
 private:
