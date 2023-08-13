@@ -1349,13 +1349,18 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall);
 static TValue
 InterpretExpression(ASTNode* ast)
 {
+    TValue result;
+
     switch(ast->GetType())
     {
-        case ASTNodeType::SIMPLYTVALUE: {
+        case ASTNodeType::SIMPLYTVALUE: 
+        {
             auto v = static_cast<ASTSimplyTValue*>(ast);
             return v->value;
-        } break;
-        case ASTNodeType::BINOP: {
+            break;
+        }
+        case ASTNodeType::BINOP:
+        {
             auto v = static_cast<ASTBinOp*>(ast);
             TValue l = InterpretExpression(v->left);
             TValue r = InterpretExpression(v->right);
@@ -1365,148 +1370,129 @@ InterpretExpression(ASTNode* ast)
             TValue::ValueType retValType = TValue::ValueType::Integer;
             switch (v->op)
             {
-                case BinOp::Add: {
+                case BinOp::Add:
+                {
                     if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
                     {
-                        TValue result;
                         result.integerValue = l.integerValue + r.integerValue;
                         result.type = TValue::ValueType::Integer;
-                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
                     {
-                        TValue result;
                         result.realValue = l.realValue + r.integerValue;
                         result.type = TValue::ValueType::Real;
-                        return result;
                     }
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
                     {
-                        TValue result;
                         result.realValue = l.integerValue + r.realValue;
                         result.type = TValue::ValueType::Real;
-                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
-                        TValue result;
                         result.realValue = l.realValue + r.realValue;
                         result.type = TValue::ValueType::Real;
-                        return result;
                     }
                     else
                     {
                         // todo error
                     }
-                } break;
-                case BinOp::Sub: {
+                    break;
+                }
+                case BinOp::Sub:
+                {
                     if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
                     {
-                        TValue result;
                         result.integerValue = l.integerValue - r.integerValue;
                         result.type = TValue::ValueType::Integer;
-                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
                     {
-                        TValue result;
                         result.realValue = l.realValue - r.integerValue;
                         result.type = TValue::ValueType::Real;
-                        return result;
                     }
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
                     {
-                        TValue result;
                         result.realValue = l.integerValue - r.realValue;
                         result.type = TValue::ValueType::Real;
-                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
-                        TValue result;
                         result.realValue = l.realValue - r.realValue;
                         result.type = TValue::ValueType::Real;
-                        return result;
                     }
                     else
                     {
                         // todo error
                     }
-                } break;
-                case BinOp::Mul: {
+                    break;
+                }
+                case BinOp::Mul:
+                {
                     if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
                     {
-                        TValue result;
                         result.integerValue = l.integerValue * r.integerValue;
                         result.type = TValue::ValueType::Integer;
-                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
                     {
-                        TValue result;
                         result.realValue = l.realValue * r.integerValue;
                         result.type = TValue::ValueType::Real;
-                        return result;
                     }
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
                     {
-                        TValue result;
                         result.realValue = l.integerValue * r.realValue;
                         result.type = TValue::ValueType::Real;
-                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
-                        TValue result;
                         result.realValue = l.realValue * r.realValue;
                         result.type = TValue::ValueType::Real;
-                        return result;
                     }
                     else
                     {
                         // todo error
                     }
-                } break;
-                case BinOp::Div: {
+                    break;
+                }
+                case BinOp::Div:
+                {
                     if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
                     {
-                        TValue result;
                         result.integerValue = l.integerValue / r.integerValue;
                         result.type = TValue::ValueType::Integer;
-                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
                     {
-                        TValue result;
                         result.realValue = l.realValue / r.integerValue;
                         result.type = TValue::ValueType::Real;
-                        return result;
                     }
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
                     {
-                        TValue result;
                         result.realValue = l.integerValue / r.realValue;
                         result.type = TValue::ValueType::Real;
-                        return result;
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
-                        TValue result;
                         result.realValue = l.realValue / r.realValue;
                         result.type = TValue::ValueType::Real;
-                        return result;
                     }
                     else
                     {
                         // todo error
                     }
-                } break;
-                default: {
+                    break;
+                }
+                default:
+                {
                     SendRuntimeException("Unknown BINOP expression.");
-                } break;
+                    break;
+                }
             }
-        } break;
-        case ASTNodeType::RELOP: {
+            break;
+        }
+        
+        case ASTNodeType::RELOP:
+        {
             auto v = static_cast<ASTRelOp*>(ast);
             TValue l = InterpretExpression(v->left);
             TValue r = InterpretExpression(v->right);
@@ -1532,67 +1518,54 @@ InterpretExpression(ASTNode* ast)
             }
             switch (v->op)
             {
-                case RelOp::LT: {
-                    TValue result;
+                case RelOp::LT:
                     result.boolValue = l.realValue < r.realValue;
                     result.type = TValue::ValueType::Boolean;
-                    return result;
-                } break; 
-                case RelOp::LE: {
-                    TValue result;
+                    break; 
+                case RelOp::LE:
                     result.boolValue = l.realValue <= r.realValue;
                     result.type = TValue::ValueType::Boolean;
-                    return result;
-                } break;
-                case RelOp::GT: {
-                    TValue result;
+                    break;
+                case RelOp::GT:
                     result.boolValue = l.realValue > r.realValue;
                     result.type = TValue::ValueType::Boolean;
-                    return result;
-                } break;
-                case RelOp::GE: {
-                    TValue result;
+                    break;
+                case RelOp::GE:
                     result.boolValue = l.realValue >= r.realValue;
                     result.type = TValue::ValueType::Boolean;
-                    return result;
-                } break;
-                case RelOp::EQ: {
-                    TValue result;
+                    break;
+                case RelOp::EQ:
                     result.boolValue = l.realValue == r.realValue;
                     result.type = TValue::ValueType::Boolean;
-                    return result;
-                } break;
-                case RelOp::NEQ: {
-                    TValue result;
+                    break;
+                case RelOp::NEQ:
                     result.boolValue = l.realValue != r.realValue;
                     result.type = TValue::ValueType::Boolean;
-                    return result;
-                } break;
-                case RelOp::AND: {
-                    TValue result;
+                    break;
+                case RelOp::AND:
                     result.boolValue = (l.realValue == 1.f && r.realValue == 1.f);
                     result.type = TValue::ValueType::Boolean;
-                    return result;
-                } break;
-                case RelOp::OR: {
-                    TValue result;
+                    break;
+                case RelOp::OR:
                     result.boolValue = (l.realValue == 1.f || r.realValue == 1.f);
                     result.type = TValue::ValueType::Boolean;
-                    return result;
-                } break;
-                default: {
+                    break;
+                default:
                     SendRuntimeException("Unknown RELOP expression.");
-                } break;
+                    break;
             }
-        } break;
-        case ASTNodeType::LOGICALNOT: {
+            break;
+        }
+        case ASTNodeType::LOGICALNOT:
+        {
             auto v = static_cast<ASTLogicalNot*>(ast);
-            auto result = InterpretExpression(v->boolExpr);
+            result = InterpretExpression(v->boolExpr);
             result.boolValue = !result.boolValue;
-            return result;
-        } break;
+            break;
+        }
 
-        case ASTNodeType::VARIABLE: {
+        case ASTNodeType::VARIABLE:
+        {
             auto v = static_cast<ASTVariable*>(ast);
             if (MESASCRIPT_ALL_SCOPE.ACTIVE_SCRIPT_TABLE_PTR->KeyExists(v->id))
             {
@@ -1606,8 +1579,11 @@ InterpretExpression(ASTNode* ast)
             {
                 SendRuntimeException("Unknown identifier in expression.");
             }
-        } break;
-        case ASTNodeType::ACCESS_LIST_OR_MAP_ELEMENT: {
+            break;
+        }
+
+        case ASTNodeType::ACCESS_LIST_OR_MAP_ELEMENT:
+        {
             auto v = static_cast<ASTAccessListOrMapElement*>(ast);
 
             auto indexTValue = InterpretExpression(v->indexExpression);
@@ -1641,7 +1617,7 @@ InterpretExpression(ASTNode* ast)
                 const i64 listIndex = indexTValue.integerValue;
                 // todo assert integer is non negative, valid, etc.
                 MesaScript_List* list = AccessMesaScriptList(gcObjectId);
-                return list->AccessListEntry(listIndex);
+                result = list->AccessListEntry(listIndex);
             }
             else
             {
@@ -1650,67 +1626,72 @@ InterpretExpression(ASTNode* ast)
                 const std::string& tableKey = AccessMesaScriptString(indexTValue.GCReferenceObject)->text;
 
                 MesaScript_Table* table = AccessMesaScriptTable(gcObjectId);
-                return table->AccessMapEntry(tableKey);
+                result = table->AccessMapEntry(tableKey);
             }
-        } break;
+            break;
+        }
 
-        case ASTNodeType::CREATETABLE: {
+        case ASTNodeType::CREATETABLE:
+        {
             //auto v = static_cast<CreateNewMapEntry*>(ast);
-            TValue result;
             result.type = TValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
-            return result;
-        } break;
+            break;
+        }
 
-        case ASTNodeType::CREATELIST: {
+        case ASTNodeType::CREATELIST:
+        {
             auto v = static_cast<ASTCreateList*>(ast);
-            TValue result;
             result.type = TValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::List);
             MesaScript_List* mesaList = AccessMesaScriptList(result.GCReferenceObject);
-
             for (int i = 0; i < v->listInitializingElements.size(); ++i)
             {
                 ASTNode* elementExpr = v->listInitializingElements[i];
                 TValue elementValue = InterpretExpression(elementExpr);
                 // Return value gets captured here too
                 mesaList->Append(elementValue);
-            }
-
-            return result;            
+            }         
+            break;
         }
 
-        case ASTNodeType::NUMBER: {
+        case ASTNodeType::NUMBER:
+        {
             auto v = static_cast<ASTNumberTerminal*>(ast);
-            TValue result;
             result.integerValue = v->value;
             result.type = TValue::ValueType::Integer;
-            return result;
-        } break;
-        case ASTNodeType::STRING: {
+            break;
+        }
+        case ASTNodeType::STRING:
+        {
             auto v = static_cast<ASTStringTerminal*>(ast);
-            TValue result;
             result.type = TValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::String);
             MesaScript_String* createdString = AccessMesaScriptString(result.GCReferenceObject);
             createdString->text = v->value;
-            return result;
-        } break;
-        case ASTNodeType::BOOLEAN: {
+            break;
+        }
+        case ASTNodeType::BOOLEAN:
+        {
             auto v = static_cast<ASTBooleanTerminal*>(ast);
-            TValue result;
             result.boolValue = v->value;
             result.type = TValue::ValueType::Boolean;
-            return result;
-        } break;
-        case ASTNodeType::PROCEDURECALL: {
+            break;
+        }
+        case ASTNodeType::PROCEDURECALL:
+        {
             auto v = static_cast<ASTProcedureCall*>(ast);
-            return InterpretProcedureCall(v);
-        } break;
+            result = InterpretProcedureCall(v);
+            break;
+        }
     }
 
-    SendRuntimeException("Invalid expression.");
-    return TValue();
+    if (result.type == TValue::ValueType::Invalid)
+    {
+        SendRuntimeException("Invalid expression.");
+    }
+
+    return result;
 }
 
 static void
