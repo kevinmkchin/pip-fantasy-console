@@ -33,9 +33,6 @@ add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 add_compile_definitions(INTERNAL_BUILD=1)
 
-
-string(TIMESTAMP RIGHTNOW "%Y%m%d%H%M%S")
-set(PROJECT_BUILD_TIMESTAMP "${RIGHTNOW}")
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/code/core/cmake_MesaProjectDefines.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/code/core/cmake_MesaProjectDefines.h")
 
 # Build options, additional include directories, library linking, copying DLLs to executable directory
