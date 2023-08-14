@@ -1594,7 +1594,6 @@ InterpretExpression(ASTNode* ast)
 
             auto indexTValue = InterpretExpression(v->indexExpression);
             ASSERT(indexTValue.type == TValue::ValueType::Integer || indexTValue.type == TValue::ValueType::GCObject);
-            bool accessingList = indexTValue.type == TValue::ValueType::Integer;
 
             ASSERT(v->listOrMapVariableName->GetType() == ASTNodeType::VARIABLE);
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
@@ -1618,8 +1617,11 @@ InterpretExpression(ASTNode* ast)
                 ASSERT(0);
             }
 
-            if(accessingList)
+            MesaGCObject::GCObjectType dataStructureType = GetTypeOfGCObject(gcObjectId);
+            ASSERT(dataStructureType == MesaGCObject::GCObjectType::List || dataStructureType == MesaGCObject::GCObjectType::Table);
+            if (dataStructureType == MesaGCObject::GCObjectType::List)
             {
+                ASSERT(indexTValue.type == TValue::ValueType::Integer);
                 const i64 listIndex = indexTValue.integerValue;
                 // todo assert integer is non negative, valid, etc.
                 MesaScript_List* list = AccessMesaScriptList(gcObjectId);
@@ -1748,7 +1750,6 @@ InterpretStatement(ASTNode* statement)
 
             auto indexTValue = InterpretExpression(v->indexExpression);
             ASSERT(indexTValue.type == TValue::ValueType::Integer || indexTValue.type == TValue::ValueType::GCObject);
-            bool assigningToList = indexTValue.type == TValue::ValueType::Integer;
 
             ASSERT(v->listOrMapVariableName->GetType() == ASTNodeType::VARIABLE);
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
@@ -1774,8 +1775,11 @@ InterpretStatement(ASTNode* statement)
             // Return value gets captured here too
             auto valueTValue = InterpretExpression(v->valueExpression);
 
-            if(assigningToList)
+            MesaGCObject::GCObjectType dataStructureType = GetTypeOfGCObject(gcObjectId);
+            ASSERT(dataStructureType == MesaGCObject::GCObjectType::List || dataStructureType == MesaGCObject::GCObjectType::Table);
+            if(dataStructureType == MesaGCObject::GCObjectType::List)
             {
+                ASSERT(indexTValue.type == TValue::ValueType::Integer);
                 const i64 listIndex = indexTValue.integerValue;
                 // todo assert integer is non negative, valid, etc.
                 

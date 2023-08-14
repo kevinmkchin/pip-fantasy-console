@@ -31,13 +31,6 @@ print(d)
 
 `
 
-fn dosmth(table)
-{
-    table[69] = v
-    ~ should this fn be able to access v? probably not unless it's global?
-    ~ if this fn tries to declare a new local variable v, it'll overwrite v from test
-}
-
 
 `
 fn passByRef(loi)
@@ -72,16 +65,25 @@ fn PrintPlayer()
 ~PrintPlayer()
 
 
-`
+
+fn dosmth(table)
+{
+    ~v = 99994444
+    table["69"] = 99994444 ~v
+    ~ should this fn be able to access v? probably not unless it's global?
+    ~ if this fn tries to declare a new local variable v, it'll overwrite v from test
+}
+
 fn test()
 {
+
+  v = 37373737
+
   str = "bruh"
 
   a = {}
+`
   b = a
-
-  v = 32
-
   li = [ 0, 49, "50", 12390291, raise_to(2,3) ]
 
   a[str] = 77
@@ -94,8 +96,6 @@ fn test()
   ~ b = a[1]
   ~ b[1] = 4
 
-  ~ dosmth(a)
-
   print("printing string and table here:")
   print(str)
   print(a[str])
@@ -105,11 +105,15 @@ fn test()
   print("printing list here:")
   print(li)
 
-  ~printv(b == a)
-  ~printv(b.x == a.x)
-}
+  ~print(b == a)
+  ~print(b.x == a.x)
 `
-~test()
+  dosmth(a)
+
+  print(a["69"])
+}
+
+test()
 
 
 

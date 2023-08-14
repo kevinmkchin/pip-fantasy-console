@@ -20,14 +20,15 @@ MESASCRIPT EPIC:
 ### Language features
 
 - allow chaining list or map access like: list[4]["x"][2]
+- access map elements via dot (e.g. map.x or map.f(param))
 - map initialization
+
+- answer question about accessing local variables from other scopes
 - fix cyclic references. maybe disallow them
 - FLOATS
   - flr, ceil, rnd
-- access map elements via dot (e.g. map.x or map.f(param))
 - need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
   - deleting an entry is different from deleting the object stored in that entry. if we can delete entire objects, then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).
-- answer question about accessing local variables from other scopes
 - rename tables to MAP or DICTIONARY
 - while loops & break
 - for loops
@@ -78,6 +79,7 @@ MESASCRIPT EPIC:
 
 # Done
 
+- disallow map access by index (int)
 - allow list construction like so [[1, 2, 3], [4, 5], [6, 7, 8, 9]] by being transient upon construction
 - STRINGS: strings should not be reference counted objects
   - strings upon construction are transient objects: if they aren't captured by a variable they will be deleted
