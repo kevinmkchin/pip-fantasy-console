@@ -131,7 +131,7 @@ IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 
 // cond_or : cond_and (OR cond_and)?
 
-// table_or_list_or_cond_or : (LBRACE (todo)* RBRACE | LSQBRACK (todo)* RSQBRACK | cond_or)
+// table_or_list_or_cond_or : (LBRACE (todo)* RBRACE | LSQBRACK (table_or_list_or_cond_or)* RSQBRACK | cond_or)
 
 // factor : NUMBER
 // factor : LPAREN expr RPAREN

@@ -19,7 +19,8 @@ MESASCRIPT EPIC:
 
 ### Language features
 
-- allow list construction like so [[1, 2, 3], [4, 5], [6, 7, 8, 9]] by being transient upon construction
+- allow chaining list or map access like: list[4]["x"][2]
+- map initialization
 - fix cyclic references. maybe disallow them
 - FLOATS
   - flr, ceil, rnd
@@ -77,6 +78,7 @@ MESASCRIPT EPIC:
 
 # Done
 
+- allow list construction like so [[1, 2, 3], [4, 5], [6, 7, 8, 9]] by being transient upon construction
 - STRINGS: strings should not be reference counted objects
   - strings upon construction are transient objects: if they aren't captured by a variable they will be deleted
   - strings are never referenced, always copied: if an expression evaluates to a string, InterpretExpression will always create and return a transient copy of it. thus it is impossible for a string's refCount to be more than 1. If it is 0, then it is transient and will be collected at the end of the statement.
