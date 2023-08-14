@@ -160,6 +160,10 @@ fn Helper_RefCountTests_DeeperScope(obj)
 
 fn RefCountTests()
 {
+    A = [ [1, 2, 3], 4, [5, 6] ]
+    B = A[2]
+    checkeq(refcount(B), 2)
+
     someList = [ 1, 2, "hello", 32]
     someListRef1 = someList
     someListRef2 = someList

@@ -842,7 +842,7 @@ private:
     ASTNode* cond_equal();
     ASTNode* cond_and();
     ASTNode* cond_or();
-    ASTNode* table_or_cond_or();
+    ASTNode* table_or_list_or_cond_or();
 
     ASTNode* statement();
     ASTStatementList* statement_list();
@@ -951,7 +951,7 @@ ASTStatementList* Parser::statement_list()
     return statement_list;
 }
 
-ASTNode* Parser::table_or_cond_or()
+ASTNode* Parser::table_or_list_or_cond_or()
 {
     ASTNode* value = nullptr;
     if (currentToken.type == TokenType::LBrace)
@@ -972,8 +972,8 @@ ASTNode* Parser::table_or_cond_or()
         eat(TokenType::LSqBrack);
         while(currentToken.type != TokenType::RSqBrack)
         {
-            ASTNode* cond_or_result = cond_or();
-            valueCastedToCreateListPtr->listInitializingElements.push_back(cond_or_result);
+            ASTNode* elementInitializerResult = table_or_list_or_cond_or();
+            valueCastedToCreateListPtr->listInitializingElements.push_back(elementInitializerResult);
             if (currentToken.type != TokenType::RSqBrack) eat(TokenType::Comma);
         }
         eat(TokenType::RSqBrack);
@@ -1007,7 +1007,7 @@ ASTNode* Parser::statement()
             eat(TokenType::RSqBrack);
             eat(TokenType::AssignmentOperator);
 
-            auto valueExpr = table_or_cond_or();
+            auto valueExpr = table_or_list_or_cond_or();
 
             auto varNode =
                     new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTVariable), alignof(ASTVariable)))
@@ -1029,7 +1029,7 @@ ASTNode* Parser::statement()
 
             auto node =
                 new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTAssignment), alignof(ASTAssignment)))
-                ASTAssignment(varNode, table_or_cond_or());
+                ASTAssignment(varNode, table_or_list_or_cond_or());
             return node;
         }
     }
@@ -1651,13 +1651,14 @@ InterpretExpression(ASTNode* ast)
             result.type = TValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::List);
             MesaScript_List* mesaList = AccessMesaScriptList(result.GCReferenceObject);
+            __MSRuntime.activeEnv->InsertTransientObject(result.GCReferenceObject, 0);
             for (int i = 0; i < v->listInitializingElements.size(); ++i)
             {
                 ASTNode* elementExpr = v->listInitializingElements[i];
                 TValue elementValue = InterpretExpression(elementExpr);
                 // Return value gets captured here too
                 mesaList->Append(elementValue);
-            }         
+            }
             break;
         }
 
