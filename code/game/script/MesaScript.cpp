@@ -1573,7 +1573,7 @@ InterpretExpression(ASTNode* ast)
         case ASTNodeType::VARIABLE:
         {
             auto v = static_cast<ASTVariable*>(ast);
-            if (__MSRuntime.activeEnv->KeyExists(v->id))
+            if (__MSRuntime.activeEnv->KeyExistsInCurrentScope(v->id))
             {
                 result = __MSRuntime.activeEnv->AccessAtKey(v->id);
             }
@@ -1599,7 +1599,7 @@ InterpretExpression(ASTNode* ast)
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
             u64 gcObjectId = 0;
-            if (__MSRuntime.activeEnv->KeyExists(listOrMapVariableKey))
+            if (__MSRuntime.activeEnv->KeyExistsInCurrentScope(listOrMapVariableKey))
             {
                 TValue listOrMapGCObj = __MSRuntime.activeEnv->AccessAtKey(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
@@ -1732,7 +1732,7 @@ InterpretStatement(ASTNode* statement)
 
             ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
             std::string key = static_cast<ASTVariable*>(v->id)->id;
-            if (__MSRuntime.activeEnv->KeyExists(key))
+            if (__MSRuntime.activeEnv->KeyExistsInCurrentScope(key))
             {
                 __MSRuntime.activeEnv->ReplaceAtKey(key, result);
             }
@@ -1755,7 +1755,7 @@ InterpretStatement(ASTNode* statement)
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
             u64 gcObjectId = 0;
-            if (__MSRuntime.activeEnv->KeyExists(listOrMapVariableKey))
+            if (__MSRuntime.activeEnv->KeyExistsInCurrentScope(listOrMapVariableKey))
             {
                 TValue listOrMapGCObj = __MSRuntime.activeEnv->AccessAtKey(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);

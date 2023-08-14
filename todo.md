@@ -23,8 +23,7 @@ MESASCRIPT EPIC:
 - access map elements via dot (e.g. map.x or map.f(param))
 - map initialization
 
-- answer question about accessing local variables from other scopes
-- fix cyclic references. maybe disallow them
+- Let current scope access every scope up until the last function scope (for loop scope can access fn scope)
 - FLOATS
   - flr, ceil, rnd
 - need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
@@ -35,7 +34,7 @@ MESASCRIPT EPIC:
 - elifs
 - +=, -=, /=, *=*
 
-
+- Do something about cyclic references (maybe a tracing garbage collector just for cyclic refs)
 - Better string support: concat strings and values, less friction like JavaScript
 - reference counting TESTS
 - use custom assert for mesascript runtime
@@ -79,6 +78,7 @@ MESASCRIPT EPIC:
 
 # Done
 
+- disallow accessing local function variables from other function scopes
 - disallow map access by index (int)
 - allow list construction like so [[1, 2, 3], [4, 5], [6, 7, 8, 9]] by being transient upon construction
 - STRINGS: strings should not be reference counted objects

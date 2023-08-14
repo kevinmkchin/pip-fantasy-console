@@ -68,10 +68,8 @@ fn PrintPlayer()
 
 fn dosmth(table)
 {
-    ~v = 99994444
-    table["69"] = 99994444 ~v
-    ~ should this fn be able to access v? probably not unless it's global?
-    ~ if this fn tries to declare a new local variable v, it'll overwrite v from test
+    v = 99994444
+    table["69"] = v
 }
 
 fn test()
@@ -82,7 +80,6 @@ fn test()
   str = "bruh"
 
   a = {}
-`
   b = a
   li = [ 0, 49, "50", 12390291, raise_to(2,3) ]
 
@@ -107,10 +104,10 @@ fn test()
 
   ~print(b == a)
   ~print(b.x == a.x)
-`
   dosmth(a)
 
   print(a["69"])
+  print(v)
 }
 
 test()

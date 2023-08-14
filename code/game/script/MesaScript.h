@@ -290,6 +290,11 @@ struct MesaScript_ScriptEnvironment
         return false;
     }
 
+    bool KeyExistsInCurrentScope(const std::string& key)
+    {
+        return scopes.back().Contains(key);
+    }
+
     bool TransientObjectExists(i64 gcObjectId)
     {
         for (int back = int(transients.size()) - 1; back >= 0; --back)
