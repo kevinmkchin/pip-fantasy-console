@@ -164,7 +164,7 @@ struct TValue
     union
     {
         i64 integerValue;
-        float realValue;
+        double realValue;
         bool boolValue;
         PID procedureId;
         i64 GCReferenceObject;

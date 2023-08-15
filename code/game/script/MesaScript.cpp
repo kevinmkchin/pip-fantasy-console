@@ -1504,22 +1504,22 @@ InterpretExpression(ASTNode* ast)
             TValue r = InterpretExpression(v->right);
             if (l.type == TValue::ValueType::Integer)
             {
-                l.realValue = float(l.integerValue);
+                l.realValue = double(l.integerValue);
                 l.type = TValue::ValueType::Real;
             }
             else if (l.type == TValue::ValueType::Boolean)
             {
-                l.realValue = l.boolValue ? 1.f : 0.f;
+                l.realValue = l.boolValue ? 1.0 : 0.0;
                 l.type = TValue::ValueType::Real;
             }
             if (r.type == TValue::ValueType::Integer)
             {
-                r.realValue = float(r.integerValue);
+                r.realValue = double(r.integerValue);
                 r.type = TValue::ValueType::Real;
             }
             else if (r.type == TValue::ValueType::Boolean)
             {
-                r.realValue = l.boolValue ? 1.f : 0.f;
+                r.realValue = l.boolValue ? 1.0 : 0.0;
                 r.type = TValue::ValueType::Real;
             }
             switch (v->op)
@@ -1549,11 +1549,11 @@ InterpretExpression(ASTNode* ast)
                     result.type = TValue::ValueType::Boolean;
                     break;
                 case RelOp::AND:
-                    result.boolValue = (l.realValue == 1.f && r.realValue == 1.f);
+                    result.boolValue = (l.realValue != 0.0 && r.realValue != 0.0);
                     result.type = TValue::ValueType::Boolean;
                     break;
                 case RelOp::OR:
-                    result.boolValue = (l.realValue == 1.f || r.realValue == 1.f);
+                    result.boolValue = (l.realValue != 0.0 || r.realValue != 0.0);
                     result.type = TValue::ValueType::Boolean;
                     break;
                 default:
@@ -1853,7 +1853,7 @@ TValue CPPBOUND_MESASCRIPT_Print(TValue value)
     }
     else if (value.type == TValue::ValueType::Real)
     {
-        printf("%f\n", value.realValue);
+        printf("%lf\n", value.realValue);
     }
     else if (value.type == TValue::ValueType::GCObject)
     {
@@ -1872,7 +1872,7 @@ TValue CPPBOUND_MESASCRIPT_Print(TValue value)
                 }
                 else if (pair.second.type == TValue::ValueType::Real)
                 {
-                    printf("    %s : %f\n", pair.first.c_str(), pair.second.realValue);
+                    printf("    %s : %lf\n", pair.first.c_str(), pair.second.realValue);
                 }
                 else if (pair.second.type == TValue::ValueType::GCObject)
                 {
@@ -1895,7 +1895,7 @@ TValue CPPBOUND_MESASCRIPT_Print(TValue value)
                 }
                 else if (element.type == TValue::ValueType::Real)
                 {
-                    printf("    %f\n", element.realValue);
+                    printf("    %lf\n", element.realValue);
                 }
                 else if (element.type == TValue::ValueType::GCObject)
                 {

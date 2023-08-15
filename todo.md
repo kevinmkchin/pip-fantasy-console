@@ -25,7 +25,7 @@ MESASCRIPT EPIC:
 
 - Let current scope access every scope up until the last function scope (for loop scope can access fn scope)
 - FLOATS
-  - flr, ceil, rnd
+  - flr, ceil, rnd -> all return integer
 - need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
   - deleting an entry is different from deleting the object stored in that entry. if we can delete entire objects, then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).
 - rename tables to MAP or DICTIONARY
