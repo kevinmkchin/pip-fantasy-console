@@ -8,6 +8,7 @@
 ### Bugs
 
 - GUI incorrect zones when window resize with black bars, window aspect ratio != game ratio
+- Try timed delay instead of vsync, and then if it still stutters profile what's stuttering when FPS is low like around 60.
 
 ### Engine
 
@@ -19,7 +20,7 @@ MESASCRIPT EPIC:
 
 ### Language features
 
-- allow chaining list or map access like: list[4]["x"][2]
+- allow chaining list or map access like: list[4]["x"][2] (an access of an access of an access)
 - access map elements via dot (e.g. map.x or map.f(param))
 - map initialization
 
@@ -80,6 +81,11 @@ MESASCRIPT EPIC:
 
 # Done
 
+- FLOATS
+- some major parser bugs:
+  - parser bug: checking parentheses in an expression should only happen at smallest factor level
+  - parser bug: logical negation should just recall cond_equal but it was calling cond_or or factor
+  - some mistakes in BINOP and RELOP interpreter that was using int value instead of real value
 - disallow accessing local function variables from other function scopes
 - disallow map access by index (int)
 - allow list construction like so [[1, 2, 3], [4, 5], [6, 7, 8, 9]] by being transient upon construction

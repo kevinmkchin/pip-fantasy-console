@@ -155,8 +155,8 @@ namespace Gfx
             MesaScript_Table* table = AccessMesaScriptTable(e.mesaGCObjMapRepresentationId);
             TValue xtv = table->AccessMapEntry("x");
             TValue ytv = table->AccessMapEntry("y");
-            modelMatrix[2][0] = float(xtv.integerValue);
-            modelMatrix[2][1] = float(ytv.integerValue);
+            modelMatrix[2][0] = float(xtv.type == TValue::ValueType::Integer ? xtv.integerValue : xtv.realValue);
+            modelMatrix[2][1] = float(ytv.type == TValue::ValueType::Integer ? ytv.integerValue : ytv.realValue);
         }
 
         GLBindMatrix3fv(spriteShader, "model", 1, modelMatrix.ptr());
