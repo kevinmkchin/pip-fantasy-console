@@ -23,14 +23,16 @@ MESASCRIPT EPIC:
 - access map elements via dot (e.g. map.x or map.f(param))
 - map initialization
 
+- math ops: flr, ceil, rnd -> all return integer
+
+- while loops & break
+- for loops
 - Let current scope access every scope up until the last function scope (for loop scope can access fn scope)
-- FLOATS
-  - flr, ceil, rnd -> all return integer
+
 - need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
   - deleting an entry is different from deleting the object stored in that entry. if we can delete entire objects, then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).
 - rename tables to MAP or DICTIONARY
-- while loops & break
-- for loops
+
 - elifs
 - +=, -=, /=, *=*
 
@@ -39,7 +41,7 @@ MESASCRIPT EPIC:
 - reference counting TESTS
 - use custom assert for mesascript runtime
 - add relops for GCObject type TValues. for other ops, just crash? 
-- initialize table elements
+- maybe we don't need an integer type (everything can be real?)
 
 
 - introducing "null" or "nil" means there are always going to have to be null checks. instead, provide a function to check if a variable name exists or is alive.
