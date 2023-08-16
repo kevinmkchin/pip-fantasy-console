@@ -5,6 +5,7 @@
 #include "../../core/FileSystem.h"
 
 #include <cmath>
+#include <string>
 
 #pragma region StaticVariables
 
@@ -87,6 +88,11 @@ struct Token
     u32 line = 0;
 };
 
+void SendLexerError(const char *msg)
+{
+    printf("Lexer Error: %s\n", msg);
+    ASSERT(0);
+}
 
 void SendCompilationError(const char* msg, Token token)
 {
@@ -434,13 +440,21 @@ std::vector<Token> Lexer(const std::string& code)
         }
         else if(IsDigit(lookAhead))
         {
+            bool bDecimalPointEncountered = false;
             if (flag_NegativeNumberAhead)
             {
                 tokenStartIndex -= 1;
                 flag_NegativeNumberAhead = false;
             }
-            while (currentIndex < code.length() && IsDigit(code.at(currentIndex)))
+            while (currentIndex < code.length() && 
+                   (IsDigit(code.at(currentIndex)) || (!bDecimalPointEncountered && code.at(currentIndex) == '.')))
             {
+                if (code.at(currentIndex) == '.') 
+                {
+                    ASSERT(currentIndex + 1 < code.length());
+                    ASSERT(IsDigit(code.at(currentIndex + 1)));
+                    bDecimalPointEncountered = true;
+                }
                 ++currentIndex;
             }
             retval.push_back({ TokenType::NumberLiteral, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
@@ -512,7 +526,7 @@ std::vector<Token> Lexer(const std::string& code)
                 case '\n': { ++currentLine; continue; /*tokenType = TokenType::EndOfLine;*/ } break;
                 case ';': { continue; } break;
                 default:{
-                    printf("error: unrecognized character in Lexer\n");
+                    SendLexerError("error: unrecognized character in Lexer\n");
                     continue;
                 }
             }
@@ -661,9 +675,10 @@ public:
 class ASTNumberTerminal : public ASTNode
 {
 public:
-    ASTNumberTerminal(i32 num);
+    ASTNumberTerminal(double num, bool integer);
 
-    i32 value;
+    double value;
+    bool isInteger = false;
 };
 
 class ASTStringTerminal : public ASTNode
@@ -777,9 +792,10 @@ ASTReturn::ASTReturn(ASTNode* expr)
     , expr(expr)
 {}
 
-ASTNumberTerminal::ASTNumberTerminal(i32 num)
+ASTNumberTerminal::ASTNumberTerminal(double num, bool integer)
     : ASTNode(ASTNodeType::NUMBER)
     , value(num)
+    , isInteger(integer)
 {}
 
 ASTStringTerminal::ASTStringTerminal(std::string str)
@@ -1106,30 +1122,11 @@ ASTNode* Parser::cond_equal()
 {
     ASTNode* node = nullptr;
 
-    if (currentToken.type == TokenType::LParen)
-    {
-        eat(TokenType::LParen);
-        node = cond_or();
-        eat(TokenType::RParen);
-        return node;
-    }
-    else if (currentToken.type == TokenType::LogicalNegation)
+    if (currentToken.type == TokenType::LogicalNegation)
     {
         eat(TokenType::LogicalNegation);
-        if(currentToken.type == TokenType::LParen)
-        {
-            eat(TokenType::LParen);
-            node =
-                    new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTLogicalNot), alignof(ASTLogicalNot)))
-                            ASTLogicalNot(cond_or());
-            eat(TokenType::RParen);
-        }
-        else
-        {
-            node =
-                    new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTLogicalNot), alignof(ASTLogicalNot)))
-                            ASTLogicalNot(factor());
-        }
+        node = new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTLogicalNot), alignof(ASTLogicalNot))) 
+            ASTLogicalNot(cond_equal());
         return node;
     }
 
@@ -1196,11 +1193,25 @@ ASTNode* Parser::factor()
     auto t = currentToken;
     ASTNode* node = nullptr;
 
-    if (t.type == TokenType::NumberLiteral)
+    if (t.type == TokenType::LParen)
+    {
+        eat(TokenType::LParen);
+        node = cond_or(); // at which point if the smallest factor starts with lparen then we go all the way back to cond_or()! That's right!
+        eat(TokenType::RParen);
+    }
+    else if (t.type == TokenType::NumberLiteral)
     {
         eat(TokenType::NumberLiteral);
-        node = new(MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTNumberTerminal), alignof(ASTNumberTerminal)))
-            ASTNumberTerminal(atoi(t.text.c_str()));
+        if (t.text.find('.') == std::string::npos)
+        {
+            node = new(MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTNumberTerminal), alignof(ASTNumberTerminal)))
+                ASTNumberTerminal(std::stod(t.text), true);
+        }
+        else
+        {
+            node = new(MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTNumberTerminal), alignof(ASTNumberTerminal)))
+                ASTNumberTerminal(std::stod(t.text), false);
+        }
         return node;
     }
     else if (t.type == TokenType::StringLiteral)
@@ -1220,12 +1231,6 @@ ASTNode* Parser::factor()
         eat(TokenType::False);
         node = new(MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTBooleanTerminal), alignof(ASTBooleanTerminal)))
             ASTBooleanTerminal(false);
-    }
-    else if (t.type == TokenType::LParen)
-    {
-        eat(TokenType::LParen);
-        node = expr();
-        eat(TokenType::RParen);
     }
     else if (t.type == TokenType::Identifier)
     {
@@ -1385,7 +1390,7 @@ InterpretExpression(ASTNode* ast)
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
                     {
-                        result.realValue = l.realValue + r.integerValue;
+                        result.realValue = l.realValue + r.realValue;
                         result.type = TValue::ValueType::Real;
                     }
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
@@ -1395,7 +1400,7 @@ InterpretExpression(ASTNode* ast)
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
-                        result.realValue = l.realValue + r.realValue;
+                        result.realValue = l.realValue + r.integerValue;
                         result.type = TValue::ValueType::Real;
                     }
                     else
@@ -1413,7 +1418,7 @@ InterpretExpression(ASTNode* ast)
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
                     {
-                        result.realValue = l.realValue - r.integerValue;
+                        result.realValue = l.realValue - r.realValue;
                         result.type = TValue::ValueType::Real;
                     }
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
@@ -1423,7 +1428,7 @@ InterpretExpression(ASTNode* ast)
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
-                        result.realValue = l.realValue - r.realValue;
+                        result.realValue = l.realValue - r.integerValue;
                         result.type = TValue::ValueType::Real;
                     }
                     else
@@ -1441,7 +1446,7 @@ InterpretExpression(ASTNode* ast)
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
                     {
-                        result.realValue = l.realValue * r.integerValue;
+                        result.realValue = l.realValue * r.realValue;
                         result.type = TValue::ValueType::Real;
                     }
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
@@ -1451,7 +1456,7 @@ InterpretExpression(ASTNode* ast)
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
-                        result.realValue = l.realValue * r.realValue;
+                        result.realValue = l.realValue * r.integerValue;
                         result.type = TValue::ValueType::Real;
                     }
                     else
@@ -1469,7 +1474,7 @@ InterpretExpression(ASTNode* ast)
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
                     {
-                        result.realValue = l.realValue / r.integerValue;
+                        result.realValue = l.realValue / r.realValue;
                         result.type = TValue::ValueType::Real;
                     }
                     else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
@@ -1479,7 +1484,7 @@ InterpretExpression(ASTNode* ast)
                     }
                     else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
                     {
-                        result.realValue = l.realValue / r.realValue;
+                        result.realValue = l.realValue / r.integerValue;
                         result.type = TValue::ValueType::Real;
                     }
                     else
@@ -1519,7 +1524,7 @@ InterpretExpression(ASTNode* ast)
             }
             else if (r.type == TValue::ValueType::Boolean)
             {
-                r.realValue = l.boolValue ? 1.0 : 0.0;
+                r.realValue = r.boolValue ? 1.0 : 0.0;
                 r.type = TValue::ValueType::Real;
             }
             switch (v->op)
@@ -1667,8 +1672,16 @@ InterpretExpression(ASTNode* ast)
         case ASTNodeType::NUMBER:
         {
             auto v = static_cast<ASTNumberTerminal*>(ast);
-            result.integerValue = v->value;
-            result.type = TValue::ValueType::Integer;
+            if (v->isInteger)
+            {
+                result.integerValue = i64(v->value);
+                result.type = TValue::ValueType::Integer;
+            }
+            else
+            {
+                result.realValue = v->value;
+                result.type = TValue::ValueType::Real;
+            }
             break;
         }
         case ASTNodeType::STRING:

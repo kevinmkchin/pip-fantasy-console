@@ -176,6 +176,16 @@ fn RefCountTests()
 }
 RefCountTests()
 
+checkeq(1.0, true)
+checkeq(7, 7.0)
+checkeq(add(3.14, 2.77), 5.91)
+checkeq(2.71 * 9.5, 25.745)
+checkeq(2.71 - 9.5, -6.79)
+checkeq(9 + 2.71, 11.71)
+checkeq(2.71/2.71, 1.0)
+checkeq(100000.0/100000, 1)
+checkeq((2.71/9.5) - 0.285263 < 0.0001 and (2.71/9.5) - 0.285263 > -0.0001, true)
+
 
 ` BRAINSTORMING INTEGRATION:
 ~ the user could create levels in sprites (one sprite per layer) where color determines tile
