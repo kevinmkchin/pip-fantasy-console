@@ -90,17 +90,18 @@ void DoEditorGUI()
         std::vector<EntityAsset> *entityAssets = GetAll_Entity();
 
         entityAssets->at(0).code = "fn Update(self) { \n"
+                   "    print(time['dt'])\n"
                    "    if (input['left']) {\n"
-                   "        self['x'] = self['x'] - 3\n" 
+                   "        self['x'] = self['x'] - 180 * time['dt']\n" 
                    "    }\n" 
                    "    if (input['right']) {\n"
-                   "        self['x'] = self['x'] + 3\n" 
+                   "        self['x'] = self['x'] + 180 * time['dt']\n" 
                    "    }\n" 
                    "    if (input['up']) {\n"
-                   "        self['y'] = self['y'] + 3\n" 
+                   "        self['y'] = self['y'] + 180 * time['dt']\n" 
                    "    }\n" 
                    "    if (input['down']) {\n"
-                   "        self['y'] = self['y'] - 3\n" 
+                   "        self['y'] = self['y'] - 180 * time['dt']\n" 
                    "    }\n" 
                    "}";
         // entityAssets->at(1).code = "                       .,,uod8B8bou,,.\n"

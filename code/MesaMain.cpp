@@ -53,7 +53,7 @@ static bool InitializeEverything()
 
     if (g_SDLWindow == nullptr || g_SDLGLContext == nullptr) return false;
 
-    SDL_GL_SetSwapInterval(1);
+    SDL_GL_SetSwapInterval(0);
 
     PrintLog.Message("Mesa Computer System " + std::string(PROJECT_BUILD_VERSION));
     PrintLog.Message("--Screen size " + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_W) + 

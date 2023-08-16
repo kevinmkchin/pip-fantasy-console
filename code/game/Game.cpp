@@ -3,7 +3,7 @@
 #include "script/MesaScript.h"
 #include "../core/InputSystem.h"
 #include "AssetManager.h"
-
+#include "../core/Timer.h"
 
 Space activeSpace;
 MesaScript_ScriptEnvironment scriptEnvironments[3];
@@ -57,10 +57,16 @@ void TemporaryGameInit() // should be init space or start space, there should be
     e2.mesaGCObjMapRepresentationId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
     e3.mesaGCObjMapRepresentationId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
     e4.mesaGCObjMapRepresentationId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
+
+    SetActiveScriptEnvironment(e0.behaviourScriptEnv);
     IncrementReferenceGCObject(e0.mesaGCObjMapRepresentationId); // TODO(Kevin): decrement when destroy EntityInstance
+    SetActiveScriptEnvironment(e1.behaviourScriptEnv);
     IncrementReferenceGCObject(e1.mesaGCObjMapRepresentationId);
+    SetActiveScriptEnvironment(e2.behaviourScriptEnv);
     IncrementReferenceGCObject(e2.mesaGCObjMapRepresentationId);
+    SetActiveScriptEnvironment(e3.behaviourScriptEnv);
     IncrementReferenceGCObject(e3.mesaGCObjMapRepresentationId);
+    SetActiveScriptEnvironment(e4.behaviourScriptEnv);
     IncrementReferenceGCObject(e4.mesaGCObjMapRepresentationId);
 
     TValue tvalueDefaultInteger;
@@ -75,8 +81,7 @@ void TemporaryGameInit() // should be init space or start space, there should be
     //activeSpace.aliveUpdateAndDraw.push_back(e3);
     //activeSpace.aliveUpdateAndDraw.push_back(e4);
 
-    MesaScript_Table* input = EmplaceMapInGlobalScope("input");
-    MesaScript_Table* time = EmplaceMapInGlobalScope("time");
+    MesaScript_Table *input = EmplaceMapInGlobalScope("input");
     TValue left;
     left.type = TValue::ValueType::Boolean;
     left.boolValue = false;
@@ -94,6 +99,11 @@ void TemporaryGameInit() // should be init space or start space, there should be
     input->CreateNewMapEntry("up", up);
     input->CreateNewMapEntry("down", down);
 
+    MesaScript_Table *time = EmplaceMapInGlobalScope("time");
+    TValue deltaTime;
+    deltaTime.type = TValue::ValueType::Real;
+    deltaTime.realValue = Time.deltaTime;
+    time->CreateNewMapEntry("dt", deltaTime);
 }
 
 void TemporaryGameLoop()
@@ -108,12 +118,13 @@ void TemporaryGameLoop()
 
     */
 
-    MesaScript_Table* input = AccessMapInGlobalScope("input");
-    MesaScript_Table* time = AccessMapInGlobalScope("time");
+    MesaScript_Table *input = AccessMapInGlobalScope("input");
     input->table.at("left").boolValue = Input.currentKeyState[SDL_SCANCODE_LEFT];
     input->table.at("right").boolValue = Input.currentKeyState[SDL_SCANCODE_RIGHT];
     input->table.at("up").boolValue = Input.currentKeyState[SDL_SCANCODE_UP];
     input->table.at("down").boolValue = Input.currentKeyState[SDL_SCANCODE_DOWN];
+    MesaScript_Table *time = AccessMapInGlobalScope("time");
+    time->table.at("dt").realValue = Time.deltaTime;
 
     for (size_t i = 0, max = activeSpace.aliveUpdateAndDraw.size(); i < max; ++i)
     {
