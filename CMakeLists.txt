@@ -5,6 +5,15 @@ project(mesa)
 set(PROJECT_BUILD_VERSION "v0.0.a1")
 set(PROJECT_WORKING_DIR "${CMAKE_CURRENT_SOURCE_DIR}/wd/")
 
+if (WIN32)
+    set(MESA_WINDOWS 1)
+    set(MESA_MACOSX 0)
+else(APPLE)
+    set(MESA_WINDOWS 0)
+    set(MESA_MACOSX 1)
+endif()
+
+
 
 set(SOURCE_FILES
         code/MesaMain.cpp
@@ -69,7 +78,7 @@ if(WIN32)
         "$<TARGET_FILE_DIR:${PROJECT_NAME}>/SDL2.dll")
 
     target_include_directories(${PROJECT_NAME} PUBLIC ${SDL2_INCLUDE_DIRS} ext/gl3w)
-    target_link_libraries(${PROJECT_NAME} PUBLIC ${SDL2_LIBRARIES})
+    target_link_libraries(${PROJECT_NAME} PUBLIC ${SDL2_LIBRARIES} dwmapi.lib)
 
 ## MacOS
 else(APPLE)

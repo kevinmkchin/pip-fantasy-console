@@ -1,7 +1,8 @@
 #pragma once
 
-// This header is the program state.
+#include "core/MesaCommon.h"
 
+// This header is the program state.
 
 enum class MesaProgramMode
 {

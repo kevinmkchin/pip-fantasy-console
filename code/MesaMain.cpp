@@ -1,6 +1,10 @@
 #include "MesaMain.h"
 
-#include "core/MesaCommon.h"
+#if MESA_WINDOWS
+#include <windows.h>
+#include <dwmapi.h>
+#endif
+
 #include "core/MesaUtility.h"
 #include "core/Timer.h"
 #include "core/GfxRenderer.h"
@@ -53,7 +57,8 @@ static bool InitializeEverything()
 
     if (g_SDLWindow == nullptr || g_SDLGLContext == nullptr) return false;
 
-    SDL_GL_SetSwapInterval(0);
+    SDL_GL_SetSwapInterval(1);
+    //SDL_SetWindowFullscreen(g_SDLWindow, SDL_WINDOW_FULLSCREEN);
 
     PrintLog.Message("Mesa Computer System " + std::string(PROJECT_BUILD_VERSION));
     PrintLog.Message("--Screen size " + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_W) + 
@@ -203,6 +208,12 @@ int main(int argc, char* argv[])
         // DrawProfilerGUI();
         g_gfx.Render();
         SDL_GL_SwapWindow(g_SDLWindow);
+#if MESA_WINDOWS
+        if (SDL_GL_GetSwapInterval() == 1) 
+        {
+            DwmFlush(); // https://github.com/love2d/love/blob/5175b0d1b599ea4c7b929f6b4282dd379fa116b8/src/modules/window/sdl/Window.cpp#L1024
+        }
+#endif
         Input.ResetInputStatesAtEndOfFrame();
     }
 
