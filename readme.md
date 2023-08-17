@@ -1,4 +1,7 @@
-# Mesa Fantasy Console
+# Mesa Game Creation System
+
+Mesa is a nice name.
+
 ### By Kevin Myungkeon Chin
 
 - Easy to learn
@@ -9,18 +12,9 @@
 
 ## What is it?
 
-The **Mesa Computer** is a game development environment.
+The **Mesa GCS** is a game creation system.
 Build Diablo 2 / Skyrim like Roguelike along the way.
 https://store.steampowered.com/app/2218750/Halls_of_Torment/
-
-## MVP
-- Sprites and import pngs (objects?)
-- Game logic scripting engine
-
-## Add after MVP
-- Screen system and screen switching
-- Collision and dispatch system
-- Sound effects and music system
 
 
 ## Build on Windows
@@ -28,7 +22,6 @@ https://store.steampowered.com/app/2218750/Halls_of_Torment/
 ### Visual Studio
 Open repo directory with Visual Studio (requires Cmake tools for VS to be installed).
 Right click on CMakeLists.txt from the solution explorerer and "Set as Startup Item".
-
 
 ## Build on Mac
 

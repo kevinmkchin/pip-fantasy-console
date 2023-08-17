@@ -1,28 +1,34 @@
 #pragma once
 
+#include <vector>
+
 #include "MesaCommon.h"
 #include "MesaMath.h"
 
+#include "Space.h"
+
+/*
+Keeps track of all assets in project.
+Saves all project/assets/game data to disk.
+Loads all project/assets/game data from disk.
+*/
+
+struct EditorState
+{
+
+};
+
+void CreateBlankAsset_Entity(const char* name);
+std::vector<EntityAsset>* GetAll_Entity();
+
+
+// void CreateNewAsset_Space();
+// void CreateNewAsset_Sprite();
+
 /*
 
-# Let's think about entities / actors
-
-## What is an entity?
-
-Entities := something that executes logic
-    - world/game manager
-    - enemy spawner
-
-Entities can have or not have sprites
-Entities have a position. they can move around
-
-Animations -> Sprites
-
-## The Bridge Problem 
-How do we bridge the gap between C++ side and MesaScript side? How is MS integrated?
-
 The template (bad wording) is designed in the editor. The sprite and behaviour
-of the entity is designed. Then, intances of that entity can be placed into the
+of the entity is designed. Then, instances of that entity can be placed into the
 game world via the world/level/space editor or via code during runtime. 
 Each instance of this entity would have its own GCObject Map, own position, own
 animation/sprite, own collider(?). These instances are tracked in a C++ list of
@@ -30,21 +36,31 @@ Objs to update and draw. To Kill an instance (e.g. destroy a bullet) would be to
 remove the instance from this array - the corresponding GCObject Map can still
 exist should there still be references to it. 
 
-set the "self" global variable before Update is run?
-A template has code that defines the Init and Update functions.
-I think this is the right approach. It decouples the Update function from
-the object instance itself. I am very clearly and loudly saying that this
-Update function should be able to operate on any entity instance of this type.
-"self" can be any "Enemy_A" and the Enemy_A's Update function should work. It's
-simply a function that operates on data. 
 
+What is an entity?
+Entities := something that executes logic
+    - world/game manager
+    - enemy spawner
+Entities can have or not have sprites
+Entities have a position. they can move around
+Animations -> Sprites
+
+How do entities refer to themselves?
+Should functions be "object-oriented" or be agnostic?
+Currently, the entity to operate on must be passed into the function.
+This decouples the Update function from the object instance itself. I am very 
+clearly and loudly saying that this Update function should be able to operate 
+on any entity instance of this type. "self" can be any "Enemy_A" and the Enemy_A's
+Update function should work. 
 Now all of a sudden I'm going to start wanting to share functionality between
 Enemy_A and Enemy_B. Then, Enemy_A's Update and Enemy_B's Update can call functions
 that are accessible to both Update functions.
+2023-08-17: I thought this was the right approach, but maybe it's not the best in 
+terms of user experience. Reevaluate later.
 
-Currently, Parser::procedure_decl writes function identifiers into __MSRuntime.globalEnv,
-but I probably want to set the active script before Parser.parse (and maybe Lexer) runs. Then, I can set
-active the correct script and the correct function identifiers and variables for the entity I am updating.
+A template has code that defines the Init and Update functions.
+
+
 
 The game starts:
     1. For every entity template:
@@ -67,13 +83,6 @@ At every tick:
         - Set self global variable to this instance's GCObject Map.
         - CallParameterlessFunction("Update")
 
-
-Updating entity A
-entity A needs to invoke entity B's methods or set entity B's map entries.
-yeah, entity B is alive and its entries and methods are valid because they're
-stored in GCOBJECT_DATABASE. 
-
-
 ## The Reference Problem
 How do we let the code of one entity destroy another entity?
 
@@ -90,23 +99,11 @@ EnemyUpdate ()
 
     ~if you are going to reference other entities, then it should be
     ~a common practice to check if that entity has been destroyed or
-    ~is dead. The "dead" field of 
+    ~is dead. The "dead" field can be set when entity is destroyed. 
 }
 
 bottom line is that: it's ok for the Map representation of an entity to remain 
 in the global database as long as the C++ representation has been removed from 
 the update/draw list.
 
-collision_data.other -> E
-enemy -> E
-as well as other places in the code that reference E
-
-
-
 */
-
-struct EditorState
-{
-
-};
-

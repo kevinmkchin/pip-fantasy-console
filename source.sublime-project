@@ -2,7 +2,21 @@
 	"folders":
 	[
 		{
-			"path": "."
+			"path": ".",
+			"file_exclude_patterns":
+            [
+            	"*.bat",
+            	".gitignore"
+            ],
+            "folder_exclude_patterns":
+            [
+                "build",
+                "cmake-build-*",
+                ".vs",
+                ".idea",
+                "out",
+                "ext"
+            ]
 		}
 	]
 }

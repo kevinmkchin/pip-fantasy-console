@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../core/MesaCommon.h"
-#include "../../core/MesaUtility.h"
+#include "MesaCommon.h"
+#include "MesaUtility.h"
 
 #include <unordered_map>
 #include <vector>

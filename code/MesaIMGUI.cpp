@@ -5,10 +5,10 @@
 
 #include "MesaMath.h"
 #define STB_TRUETYPE_IMPLEMENTATION
-#include "../singleheaders/stb_truetype.h"
+#include "singleheaders/stb_truetype.h"
 #define VERTEXT_IMPLEMENTATION
-#include "../singleheaders/vertext.h"
-#include "../singleheaders/stb_sprintf.h"
+#include "singleheaders/vertext.h"
+#include "singleheaders/stb_sprintf.h"
 
 #include "MemoryAllocator.h"
 #include "GfxRenderer.h"

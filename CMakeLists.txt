@@ -17,24 +17,23 @@ endif()
 
 set(SOURCE_FILES
         code/MesaMain.cpp
-        code/core/MesaUtility.cpp
-        code/core/Timer.cpp
-        code/core/Console.cpp
-        code/core/GfxRenderer.cpp
-        code/core/GfxDataTypesAndUtility.cpp
-        code/core/GfxShader.cpp
-        code/core/FileSystem.cpp
-        code/core/PrintLog.cpp
-        code/core/InputSystem.cpp
-        code/core/MesaIMGUI.cpp
-        code/core/MemoryAllocator.cpp
-        code/core/EditorState.cpp
-        code/core/EditorGUI.cpp
-        code/core/EditorCodeEditor.cpp
-        code/game/script/MesaScript.cpp
-        code/game/Game.cpp
-        code/game/Space.cpp
-        code/game/AssetManager.cpp
+        code/MesaUtility.cpp
+        code/Timer.cpp
+        code/Console.cpp
+        code/GfxRenderer.cpp
+        code/GfxDataTypesAndUtility.cpp
+        code/GfxShader.cpp
+        code/FileSystem.cpp
+        code/PrintLog.cpp
+        code/InputSystem.cpp
+        code/MesaIMGUI.cpp
+        code/MemoryAllocator.cpp
+        code/EditorState.cpp
+        code/EditorGUI.cpp
+        code/EditorCodeEditor.cpp
+        code/MesaScript.cpp
+        code/Game.cpp
+        code/Space.cpp
         )
 
 
@@ -42,7 +41,7 @@ add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 add_compile_definitions(INTERNAL_BUILD=1)
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/code/core/cmake_MesaProjectDefines.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/code/core/cmake_MesaProjectDefines.h")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/code/cmake_MesaProjectDefines.h.in" "${CMAKE_CURRENT_SOURCE_DIR}/code/cmake_MesaProjectDefines.h")
 
 # Build options, additional include directories, library linking, copying DLLs to executable directory
 

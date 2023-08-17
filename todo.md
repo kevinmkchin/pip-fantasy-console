@@ -8,9 +8,11 @@
 ### Bugs
 
 - GUI incorrect zones when window resize with black bars, window aspect ratio != game ratio
-- Try timed delay instead of vsync, and then if it still stutters profile what's stuttering when FPS is low like around 60.
 
 ### Engine
+
+- Project Panel GUI and management through IDs.
+- Manual in markdown, toggled with F1
 
 MESASCRIPT EPIC:
 - Complete MesaScript a0.1 -> MesaGUI code editor -> select entity type to edit their code -> entity type can choose sprite
@@ -54,8 +56,9 @@ MESASCRIPT EPIC:
 
 - Game GUI atomics
 - Editor camera & game camera
-- Pixel perfect AABB Collision checks -> GJK&EPA
+- Collision and dispatch system: Pixel perfect AABB Collision checks -> GJK&EPA
   - Select collider type from AABB, Sphere, and Convex point cloud
+- Sound effects and music system
 - Sprite sheet & animations
 - Sprite batch rendering
 - Game file management
@@ -83,6 +86,7 @@ MESASCRIPT EPIC:
 
 # Done
 
+- DesktopWindowsManager Flush to improve opengl vsync stutter on Windows devices while program is windowed
 - FLOATS
 - some major parser bugs:
   - parser bug: checking parentheses in an expression should only happen at smallest factor level

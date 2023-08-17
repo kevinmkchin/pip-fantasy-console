@@ -1,9 +1,9 @@
 #include "Game.h"
 #include "Space.h"
-#include "script/MesaScript.h"
-#include "../core/InputSystem.h"
-#include "AssetManager.h"
-#include "../core/Timer.h"
+#include "MesaScript.h"
+#include "InputSystem.h"
+#include "Timer.h"
+#include "EditorState.h"
 
 Space activeSpace;
 MesaScript_ScriptEnvironment scriptEnvironments[3];

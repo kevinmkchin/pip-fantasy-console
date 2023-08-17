@@ -5,10 +5,6 @@
 #include <dwmapi.h>
 #endif
 
-#include "core/MesaUtility.h"
-#include "core/Timer.h"
-#include "core/GfxRenderer.h"
-
 #include <SDL.h>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -16,14 +12,16 @@
 #define STB_SPRINTF_IMPLEMENTATION
 #include "singleheaders/stb_sprintf.h"
 
-#include "core/InputSystem.h"
-#include "core/Console.h"
-#include "core/PrintLog.h"
-#include "core/MesaIMGUI.h"
-#include "core/EditorGUI.h"
-
-#include "game/Game.h"
-#include "game/script/MesaScript.h"
+#include "MesaUtility.h"
+#include "Timer.h"
+#include "GfxRenderer.h"
+#include "InputSystem.h"
+#include "Console.h"
+#include "PrintLog.h"
+#include "MesaIMGUI.h"
+#include "EditorGUI.h"
+#include "Game.h"
+#include "MesaScript.h"
 
 static SDL_Window* g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;

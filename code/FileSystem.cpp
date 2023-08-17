@@ -3,7 +3,7 @@
 #include <fstream>
 #include <SDL.h>
 
-#include "../singleheaders/stb_image.h"
+#include "singleheaders/stb_image.h"
 
 /**
     FILE operations to disk
