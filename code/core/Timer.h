@@ -7,6 +7,9 @@ public:
 
     float UpdateDeltaTime();
 
+    /** Returns the time elapsed in seconds since the last timestamp call. */
+    float TimeStamp();
+
 public:
     // Global accessor for delta time. Could be in whatever unit you want, but I like seconds.
     float deltaTime;
