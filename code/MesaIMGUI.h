@@ -2,9 +2,6 @@
 
 #pragma once
 
-#define null_ui_id (-1)
-typedef int ui_id;
-
 #include <SDL.h>
 
 #include <string>
@@ -13,6 +10,9 @@ typedef int ui_id;
 #include "MesaCommon.h"
 #include "MesaUtility.h"
 struct vtxt_font;
+
+#define null_ui_id (-1)
+typedef i64 ui_id;
 
 namespace MesaGUI
 {
@@ -65,7 +65,6 @@ namespace MesaGUI
         int topLeftYOffset;
     };
 
-    ui_id FreshID();
     void Init();
     void NewFrame();
     void SDLProcessEvent(const SDL_Event* evt);

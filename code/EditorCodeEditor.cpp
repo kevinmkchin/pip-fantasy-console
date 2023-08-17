@@ -185,7 +185,7 @@ void EditorCodeEditor(code_editor_state_t *state, u32 width, u32 height, bool en
     MesaGUI::GetXYInZone(&x, &y);
     MesaGUI::UIRect codeEditorRect = MesaGUI::UIRect(x, y, width, height);
 
-    ui_id id = MesaGUI::FreshID();
+    ui_id id = 0xbc9526f97dff3dec;
 
     if (MesaGUI::IsActive(id))
     {
