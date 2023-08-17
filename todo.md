@@ -1,7 +1,5 @@
 # TODO
 
-- PROFILING!!!! I NEED A PROFILER NOW!
-
 - boot sound (SDL_mixer)
 - vertext rewrite for better usability better API
 - move fib.ms test code into the editor itself.
@@ -19,6 +17,7 @@ MESASCRIPT EPIC:
 - MesaScript integration
 - MesaGUI code editor
   - better inputs (ctrl and shift modifier checks)
+- profiler
 
 ### Language features
 
@@ -29,7 +28,7 @@ MESASCRIPT EPIC:
 - math ops: flr, ceil, rnd -> all return integer
 - stuff like string + number operations
 
-- while loops & break
+- while loops & break 
 - for loops
 - Let current scope access every scope up until the last function scope (for loop scope can access fn scope)
 
