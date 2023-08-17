@@ -28,3 +28,14 @@ float Timer::UpdateDeltaTime()
 
     return deltaTime;
 }
+
+float Timer::TimeStamp()
+{
+    static Clock::time_point timeAtLastTimeStamp = Clock::now();
+    auto now = Clock::now();
+    float elapsedMs = (float)(std::chrono::duration_cast<std::chrono::microseconds>(now - timeAtLastTimeStamp)).count() * 0.001f;
+    timeAtLastTimeStamp = now;
+    float difference = elapsedMs * 0.001f;
+    return difference;
+}
+
