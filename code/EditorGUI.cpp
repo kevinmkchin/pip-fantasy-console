@@ -31,12 +31,12 @@ void DoCodeEditor(code_editor_state_t *codeEditorState)
     MesaGUI::EndZone();
 }
 
-void DoAssetsWindow()
+void DoProjectPanel()
 {
     const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
 
-    MesaGUI::BeginZone(MesaGUI::UIRect(6, 20, assetsViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26));
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, assetsViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H), vec4(RGB255TO1(126, 145, 159), 1.f));
+    MesaGUI::BeginZone(MesaGUI::UIRect(0, 20, assetsViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26));
 
     // MesaGUI::DoTextUnformatted(8, 32, 9, MesaGUI::TextAlignment::Left, "Search");
     // MesaGUI::DoTextUnformatted(8, 42, 9, MesaGUI::TextAlignment::Left, "v entities");
@@ -57,17 +57,21 @@ void DoAssetsWindow()
     }
     MesaGUI::EditorText(text_aefa.c_str());
 
+    MesaGUI::EditorBeginListBox();
     std::vector<EntityAsset>* entityAssetList = GetAll_Entity();
     for (size_t i = 0; i < entityAssetList->size(); ++i)
     {
         EntityAsset& e = entityAssetList->at(i);
-        if (MesaGUI::EditorLabelledButton(e.name.c_str()))
+        bool selected = s_SelectedEntityAsset == &e;
+        if (MesaGUI::EditorSelectable(e.name.c_str(), &selected))
         {
             s_SelectedEntityAsset = &e;
 
             InitializeCodeEditorState(&s_ActiveCodeEditorState, false, s_SelectedEntityAsset->code.c_str(), (u32)s_SelectedEntityAsset->code.size());
         }
     }
+    MesaGUI::EditorEndListBox();
+
     MesaGUI::MoveXYInZone(0, 10);
     if (s_SelectedEntityAsset && MesaGUI::EditorLabelledButton("Save Code Changes"))
     {
@@ -144,7 +148,7 @@ void DoEditorGUI()
     const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
     const int entityViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
 
-    DoAssetsWindow();
+    DoProjectPanel();
 
     MesaGUI::PrimitivePanel(
         MesaGUI::UIRect(assetsViewW, 0, entityViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H),
