@@ -1,5 +1,7 @@
 # TODO
 
+- PROFILING!!!! I NEED A PROFILER NOW!
+
 - boot sound (SDL_mixer)
 - vertext rewrite for better usability better API
 - move fib.ms test code into the editor itself.
@@ -25,6 +27,7 @@ MESASCRIPT EPIC:
 - map initialization
 
 - math ops: flr, ceil, rnd -> all return integer
+- stuff like string + number operations
 
 - while loops & break
 - for loops
