@@ -17,6 +17,12 @@
 #include "PrintLog.h"
 #include "FileSystem.h"
 
+static ui_id freshIdCounter = 0;
+static ui_id FreshID()
+{
+    return freshIdCounter++;
+}
+
 namespace MesaGUI
 {
     static NiceArray<vtxt_font, 10> __vtxtLoadedFonts;
@@ -191,7 +197,6 @@ namespace MesaGUI
     static std::stack<UIStyle> ui_ss; // UI Style Stack
     static UIZone activeZone;
 
-    static ui_id freshIdCounter = 0;
     static ui_id hoveredUI = null_ui_id;
     static ui_id activeUI = null_ui_id;
     static bool anyElementHoveredThisFrame = false;
@@ -933,10 +938,7 @@ namespace MesaGUI
 
 
 
-    ui_id FreshID()
-    {
-        return freshIdCounter++;
-    }
+
 
     void Init()
     {

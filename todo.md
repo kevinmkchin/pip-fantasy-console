@@ -8,6 +8,8 @@
 ### Bugs
 
 - GUI incorrect zones when window resize with black bars, window aspect ratio != game ratio
+- GUI fresh ID is not great...will be buggy when number of elements change dynamically
+  - should change to be managed by the window (elements in same window will persist the same ids).
 
 ### Engine
 
