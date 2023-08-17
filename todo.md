@@ -75,6 +75,7 @@ MESASCRIPT EPIC:
 ### Way the fuck down the line
 ##### Uncategorized
 - lots of potential optimizations in MesaIMGUI
+- MesaIMGUI abstract out behaviour code so reusable (e.g. button behaviour)
 - MesaIMGUI should probably eat keyboard inputs
 - MesaIMGUI overlapping elements or buttons
 - SDL_SCANCODE independent input key enums

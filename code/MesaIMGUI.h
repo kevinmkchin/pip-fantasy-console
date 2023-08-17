@@ -88,14 +88,13 @@ namespace MesaGUI
     void PrimitivePanel(UIRect rect, vec4 colorRGBA);
     void PrimitivePanel(UIRect rect, int cornerRadius, vec4 colorRGBA);
     void PrimitivePanel(UIRect rect, int cornerRadius, u32 glTextureId = 0, float normalizedCornerSizeInUV = 0.3f);
-    bool PrimitiveButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor);
+    bool PrimitiveButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor, bool activeColorOnClickReleaseFrame = false);
     void PrimitiveText(int x, int y, int size, TextAlignment alignment, const char* text);
     void PrimitiveTextFmt(int x, int y, int size, TextAlignment alignment, const char* textFmt, ...);
     void PrimtiveImage(UIRect rect, u32 glTextureId = 0);
     void PrimitiveIntegerInputField(ui_id id, UIRect rect, int* v);
     void PrimitiveFloatInputField(ui_id id, UIRect rect, float* v);
     //void PrimtiveCheckbox(const char* label, );
-
 
     bool LabelledButton(UIRect rect, const char* label, TextAlignment textAlignment);
 
@@ -110,10 +109,16 @@ namespace MesaGUI
     void MoveXYInZone(int x, int y);
     void EndZone();
 
-    void EditorText(const char* text);
-    bool EditorLabelledButton(const char* label);
-    void EditorIncrementableIntegerField(const char* label, int* v, int increment = 1);
-    void EditorIncrementableFloatField(const char* label, float* v, float increment = 0.1f);
+    void EditorText(const char *text);
+    bool EditorLabelledButton(const char *label);
+    void EditorIncrementableIntegerField(const char *label, int *v, int increment = 1);
+    void EditorIncrementableFloatField(const char *label, float *v, float increment = 0.1f);
+
+    // EditorSelectable returns true once when it gets selected
+    bool EditorSelectable(const char *label, bool *selected);
+
+    void EditorBeginListBox();
+    void EditorEndListBox();
     
 }
 

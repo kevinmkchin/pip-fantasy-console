@@ -393,15 +393,25 @@ namespace MesaGUI
     static int mousePosY = 0;
     static bool mouseDown = false;
     static bool mouseUp = false;
+    static bool lastFrameMouseDown = false;
+    static bool lastFrameMouseUp = false;
     
     bool MouseWentUp()
     {
-        return mouseUp;
+        if (lastFrameMouseDown && mouseUp)
+        {
+            return true;
+        }
+        return false;
     }
     
     bool MouseWentDown()
     {
-        return mouseDown;
+        if (lastFrameMouseUp && mouseDown)
+        {
+            return true;
+        }
+        return false;
     }
     
     bool MouseInside(const UIRect& rect)
@@ -410,8 +420,8 @@ namespace MesaGUI
         int top = rect.y;
         int right = left + rect.w;
         int bottom = top + rect.h;
-        if (left <= mousePosX && mousePosX <= right
-            && top <= mousePosY && mousePosY <= bottom)
+        if (left <= mousePosX && mousePosX < right
+            && top <= mousePosY && mousePosY < bottom)
         {
             return true;
         }
@@ -422,7 +432,7 @@ namespace MesaGUI
     }
 
 
-    bool PrimitiveButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor)
+    bool PrimitiveButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor, bool activeColorOnClickReleaseFrame)
     {
         bool result = false;
 
@@ -454,6 +464,10 @@ namespace MesaGUI
         drawRequest->rect = rect;
         drawRequest->color = IsHovered(id) ? hoveredColor : normalColor;
         if (IsActive(id)) drawRequest->color = activeColor;
+        if (result && activeColorOnClickReleaseFrame)
+        {
+            drawRequest->color = activeColor;
+        }
 
         drawQueue.push_back(drawRequest);
 
@@ -934,7 +948,39 @@ namespace MesaGUI
         MoveXYInZone(0, paddingAbove + h + paddingBelow);
     }
 
+    bool EditorSelectable(const char *label, bool *selected)
+    {
+        int x, y;
+        GetXYInZone(&x, &y);
 
+        UIRect selectableRegion = UIRect(x, y, 100, 11);
+        if (*selected)
+        {
+            PrimitivePanel(selectableRegion, vec4(0,0,0,0.4f));
+            PrimitiveText(x + 1, y + 10, 9, TextAlignment::Left, label);
+            MoveXYInZone(0, 11);
+        }
+        else
+        {
+            *selected = PrimitiveButton(FreshID(), selectableRegion, vec4(), vec4(0,0,0,0.2f), vec4(0,0,0,0.4f), true);
+            PrimitiveText(x + 1, y + 10, 9, TextAlignment::Left, label);
+            MoveXYInZone(0, 11);
+            if (*selected)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void EditorBeginListBox()
+    {
+
+    }
+    void EditorEndListBox()
+    {
+
+    }
 
 
 
@@ -1022,6 +1068,8 @@ namespace MesaGUI
 
     void SDLProcessEvent(const SDL_Event* evt)
     {
+        lastFrameMouseDown = mouseDown;
+        lastFrameMouseUp = mouseUp;
         Gfx::CoreRenderer *renderer = Gfx::GetCoreRenderer();
         SDL_Event event = *evt;
         switch (event.type)

@@ -1,5 +1,3 @@
-# Mesa Game Creation System
-
 Mesa is a nice name.
 
 ### By Kevin Myungkeon Chin
