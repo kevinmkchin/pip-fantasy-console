@@ -2,7 +2,7 @@
 
 #include "ConsoleBackendNoclip.h"
 
-#include "../MesaMain.h"
+#include "MesaMain.h"
 #include "MesaIMGUI.h"
 #include "Timer.h"
 #include "InputSystem.h"
@@ -130,8 +130,8 @@ void DoSingleCommandLine()
     sConsoleCommandInputBuffer.PopBack();
 }
 
-#include "../MesaMain.h"
-#include "../game/script/MesaScript.h"
+#include "MesaMain.h"
+#include "MesaScript.h"
 
 void ElephantJPG()
 {

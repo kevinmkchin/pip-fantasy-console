@@ -1,8 +1,8 @@
 #include "MesaScript.h"
 
-#include "../../core/MesaCommon.h"
-#include "../../core/MemoryAllocator.h"
-#include "../../core/FileSystem.h"
+#include "MesaCommon.h"
+#include "MemoryAllocator.h"
+#include "FileSystem.h"
 
 #include <cmath>
 #include <string>

@@ -10,12 +10,12 @@
 #include "MesaUtility.h"
 #include "PrintLog.h"
 #include "MesaIMGUI.h"
-#include "../MesaMain.h"
+#include "MesaMain.h"
 
 // TODO(Kevin): maybe renderer shouldn't need to know about this shit:
-#include "../game/Game.h"
-#include "../game/Space.h"
-#include "../game/script/MesaScript.h"
+#include "Game.h"
+#include "Space.h"
+#include "MesaScript.h"
 
 namespace Gfx
 {

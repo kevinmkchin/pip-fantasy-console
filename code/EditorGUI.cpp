@@ -3,7 +3,7 @@
 #include "PrintLog.h"
 #include "MesaIMGUI.h"
 #include "EditorCodeEditor.h"
-#include "../game/AssetManager.h"
+#include "EditorState.h"
 
 EntityAsset *s_SelectedEntityAsset = NULL;
 

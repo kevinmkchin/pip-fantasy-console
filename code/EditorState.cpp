@@ -1,7 +1,4 @@
-#include "AssetManager.h"
-
-
-
+#include "EditorState.h"
 
 std::vector<EntityAsset> g_EntityAssets;
 
@@ -15,3 +12,4 @@ std::vector<EntityAsset>* GetAll_Entity()
 {
     return &g_EntityAssets;
 }
+

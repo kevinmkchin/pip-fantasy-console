@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/MesaCommon.h"
+#include "MesaCommon.h"
 
 // This header is the program state.
 
