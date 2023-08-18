@@ -11,7 +11,7 @@
 
 #define MESSAGES_CHAR_CAPACITY 4000
 static noclip::console sNoclipConsole;
-static char sConsoleMessagesBuffer[MESSAGES_CHAR_CAPACITY] = { 0 };
+static char sConsoleMessagesBuffer[MESSAGES_CHAR_CAPACITY + 1] = { 0 };
 static NiceArray<char, 128> sConsoleCommandInputBuffer;
 
 

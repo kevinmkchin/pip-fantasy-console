@@ -14,6 +14,15 @@ Saves all project/assets/game data to disk.
 Loads all project/assets/game data from disk.
 */
 
+struct EntityAsset
+{
+    // what sprite / animation to start with, what animations are available?
+    // what is the code / behaviour of all instances of this entity?
+
+    std::string name = "";
+    std::string code = "";
+};
+
 struct SpaceAsset
 {
     // list of entities to instantiate in this space
@@ -22,6 +31,7 @@ struct SpaceAsset
 
 struct EditorState
 {
+
 public:
     static EditorState *ActiveEditorState();
 

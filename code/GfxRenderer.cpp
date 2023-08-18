@@ -152,7 +152,7 @@ namespace Gfx
         if (space->aliveUpdateAndDraw.size() > 0)
         {
             EntityInstance e = space->aliveUpdateAndDraw[0];
-            MesaScript_Table* table = AccessMesaScriptTable(e.mesaGCObjMapRepresentationId);
+            MesaScript_Table* table = AccessMesaScriptTable(e.selfMapId);
             TValue xtv = table->AccessMapEntry("x");
             TValue ytv = table->AccessMapEntry("y");
             modelMatrix[2][0] = float(xtv.type == TValue::ValueType::Integer ? xtv.integerValue : xtv.realValue);
@@ -358,6 +358,11 @@ namespace Gfx
 
     void CoreRenderer::UpdateScreenSizeQuad()
     {
+        // 2023-08-08 (Kevin): This is basically what Celeste does in windowed mode. It
+        // adds black borders horizontally or vertically to maintain the fixed aspect ratio
+        // of the game. It is inevitable that some pixels are going to be rendered across 
+        // more screen pixels than others (e.g. 5 screen pixels for pixel A vs 4 for B).
+
         u32 refQuadIndices[6] = {
                 0, 1, 3,
                 0, 3, 2

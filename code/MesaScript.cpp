@@ -17,13 +17,135 @@ struct ProcedureDefinition
 
 NiceArray<ProcedureDefinition, PID_MAX> PROCEDURES_DATABASE;
 
-u64 gcobjIdTicker = 1; // 0 is invalid
-std::unordered_map<u64, MesaGCObject*> GCOBJECTS_DATABASE;
+i64 gcobjIdTicker = 1; // <= 0 is invalid
+std::unordered_map<i64, MesaGCObject*> GCOBJECTS_DATABASE;
+
+struct MesaScript_ScriptEnvironment
+{
+    bool KeyExists(const std::string &key)
+    {
+        for (int back = int(scopes.size()) - 1; back >= 0; --back)
+        {
+            MesaScript_Table &scope = *scopes.at(back);
+            if (scope.Contains(key))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool KeyExistsInCurrentScope(const std::string &key)
+    {
+        return scopes.back()->Contains(key);
+    }
+
+    bool TransientObjectExists(i64 gcObjectId)
+    {
+        for (int back = int(transients.size()) - 1; back >= 0; --back)
+        {
+            auto &transientsAtDepth = transients.at(back);
+            if (transientsAtDepth.Contains(gcObjectId))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    TValue AccessAtKey(const std::string &key)
+    {
+        for (int back = int(scopes.size()) - 1; back >= 0; --back)
+        {
+            MesaScript_Table &scope = *scopes.at(back);
+            if (scope.Contains(key))
+            {
+                return scope.AccessMapEntry(key);
+            }
+        }
+
+        //SendRuntimeException("Provided identifier does not exist in MesaScript_ScriptEnvironment");
+        return TValue();
+    }
+
+    void ReplaceAtKey(const std::string &key, const TValue value)
+    {
+        for (int back = int(scopes.size()) - 1; back >= 0; --back)
+        {
+            MesaScript_Table &scope = *scopes.at(back);
+            if (scope.Contains(key))
+            {
+                scope.ReplaceMapEntryAtKey(key, value);
+            }
+        }
+    }
+
+    void EmplaceNewElement(std::string key, TValue value)
+    {
+        scopes.back()->CreateNewMapEntry(key, value);
+    }
+
+    /// Provided scope must have proper reference counts already (this will be done when adding map entries)
+    void PushScope(MesaScript_Table *scope)
+    {
+        scopes.push_back(scope);
+        transients.emplace_back();
+    }
+
+    /// Decrements ref counts here because we are removing a scope
+    void PopScope()
+    {
+        scopes.back()->DecrementReferenceCountOfEveryMapEntry();
+        scopes.pop_back();
+        ASSERT(transients.back().count == 0);
+        transients.pop_back();
+    }
+
+    size_t ScopesSize()
+    {
+        return scopes.size();
+    }
+
+    void InsertTransientObject(i64 gcObjectId, i32 depth /*0 or negative index*/)
+    {
+        ASSERT(TransientObjectExists(gcObjectId) == false);
+        i32 transientsDepthIndex = (i32)transients.size() + depth - 1;
+        ASSERT(transientsDepthIndex >= 0);
+        transients.at(transientsDepthIndex).PushBack(gcObjectId);
+    }
+
+    void EraseTransientObject(i64 gcObjectId)
+    {
+        for (int back = int(transients.size()) - 1; back >= 0; --back)
+        {
+            auto &transientsAtDepth = transients.at(back);
+            if (transientsAtDepth.Contains(gcObjectId))
+            {
+                transientsAtDepth.EraseFirstOf(gcObjectId);
+            }
+        }
+    }
+
+    void ClearTransientsInTopLevelScope()
+    {
+        auto &topLevelTransients = transients.back();
+        for (int i = 0; i < topLevelTransients.count;)
+        {
+            i64 gcobjid = topLevelTransients.At(i);
+            topLevelTransients.EraseAt(i);
+            ReleaseReferenceGCObject(gcobjid);
+        }
+    }
+
+private:
+    std::vector<MesaScript_Table *> scopes; // TODO(Kevin): use stack allocator
+    std::vector<NiceArray<i64, 16>> transients; // TODO(Kevin): use stack allocator, also "16" is a problem
+};
 
 struct MesaScriptRuntimeObject
 {
-    MesaScript_Table              globalEnv;
-    MesaScript_ScriptEnvironment *activeEnv = NULL;
+    MesaScript_Table             globalEnv;
+    MesaScript_ScriptEnvironment activeEnv;
 };
 static MesaScriptRuntimeObject __MSRuntime;
 static MemoryLinearBuffer      __ASTBuffer;
@@ -107,48 +229,48 @@ void SendRuntimeException(const char* msg) // TODO(Kevin): RuntimeAssert(predica
 }
 
 
-MesaGCObject::GCObjectType GetTypeOfGCObject(u64 gcObjectId)
+MesaGCObject::GCObjectType GetTypeOfGCObject(i64 gcObjectId)
 {
     MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
     return gcobj->GetType();
 }
 
-MesaScript_Table* AccessMesaScriptTable(u64 gcObjectId)
+MesaScript_Table* AccessMesaScriptTable(i64 gcObjectId)
 {
     return (MesaScript_Table*)(GCOBJECTS_DATABASE.at(gcObjectId));
 }
 
 /// Simply returns the MesaScript_List associated with the given GCObject id.
-MesaScript_List* AccessMesaScriptList(u64 gcObjectId)
+MesaScript_List* AccessMesaScriptList(i64 gcObjectId)
 {
     return (MesaScript_List*)(GCOBJECTS_DATABASE.at(gcObjectId));
 }
 
 /// Simply returns the MesaScript_String associated with the given GCObject id.
-MesaScript_String* AccessMesaScriptString(u64 gcObjectId)
+MesaScript_String* AccessMesaScriptString(i64 gcObjectId)
 {
     return (MesaScript_String*)(GCOBJECTS_DATABASE.at(gcObjectId));
 }
 
-void IncrementReferenceGCObject(u64 gcObjectId)
+void IncrementReferenceGCObject(i64 gcObjectId)
 {
     MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
     gcobj->refCount++;
 
-    if (__MSRuntime.activeEnv->TransientObjectExists(gcObjectId))
+    if (__MSRuntime.activeEnv.TransientObjectExists(gcObjectId))
     {
-        __MSRuntime.activeEnv->EraseTransientObject(gcObjectId);
+        __MSRuntime.activeEnv.EraseTransientObject(gcObjectId);
         if (gcobj->refCount <= 0) ReleaseReferenceGCObject(gcObjectId);
     }
 }
 
-void ReleaseReferenceGCObject(u64 gcObjectId)
+void ReleaseReferenceGCObject(i64 gcObjectId)
 {
     MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
     gcobj->refCount--;
     if (gcobj->refCount <= 0)
     {
-        if (__MSRuntime.activeEnv->TransientObjectExists(gcObjectId)) return;
+        if (__MSRuntime.activeEnv.TransientObjectExists(gcObjectId)) return;
 
         if (gcobj->GetType() == MesaGCObject::GCObjectType::List)
         {
@@ -166,7 +288,7 @@ void ReleaseReferenceGCObject(u64 gcObjectId)
     }
 }
 
-u64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType)
+i64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType)
 {
     MesaGCObject* gcobj = NULL;
     switch(gcObjectType)
@@ -279,14 +401,9 @@ void MesaScript_Table::DecrementReferenceCountOfEveryMapEntry()
     }
 }
 
-void SetActiveScriptEnvironment(MesaScript_ScriptEnvironment* env)
-{
-    __MSRuntime.activeEnv = env;
-}
-
 int ActiveScopeDepthIndex()
 {
-    return (int) __MSRuntime.activeEnv->ScopesSize() - 1;
+    return (int) __MSRuntime.activeEnv.ScopesSize() - 1;
 }
 
 MesaScript_Table* EmplaceMapInGlobalScope(const std::string& id)
@@ -921,13 +1038,13 @@ PID Parser::procedure_decl()
     functionVariable.procedureId = createdProcedureId;
     functionVariable.type = TValue::ValueType::Function;
 
-    if (__MSRuntime.activeEnv->KeyExists(procedureNameToken.text))
+    if (__MSRuntime.activeEnv.KeyExists(procedureNameToken.text))
     {
-        __MSRuntime.activeEnv->ReplaceAtKey(procedureNameToken.text, functionVariable);
+        __MSRuntime.activeEnv.ReplaceAtKey(procedureNameToken.text, functionVariable);
     }
     else
     {
-        __MSRuntime.activeEnv->EmplaceNewElement(procedureNameToken.text, functionVariable);
+        __MSRuntime.activeEnv.EmplaceNewElement(procedureNameToken.text, functionVariable);
     }
     return createdProcedureId;
 }
@@ -1578,9 +1695,9 @@ InterpretExpression(ASTNode* ast)
         case ASTNodeType::VARIABLE:
         {
             auto v = static_cast<ASTVariable*>(ast);
-            if (__MSRuntime.activeEnv->KeyExistsInCurrentScope(v->id))
+            if (__MSRuntime.activeEnv.KeyExistsInCurrentScope(v->id))
             {
-                result = __MSRuntime.activeEnv->AccessAtKey(v->id);
+                result = __MSRuntime.activeEnv.AccessAtKey(v->id);
             }
             else if (__MSRuntime.globalEnv.Contains(v->id))
             {
@@ -1603,10 +1720,10 @@ InterpretExpression(ASTNode* ast)
             ASSERT(v->listOrMapVariableName->GetType() == ASTNodeType::VARIABLE);
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
-            u64 gcObjectId = 0;
-            if (__MSRuntime.activeEnv->KeyExistsInCurrentScope(listOrMapVariableKey))
+            i64 gcObjectId = 0;
+            if (__MSRuntime.activeEnv.KeyExistsInCurrentScope(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = __MSRuntime.activeEnv->AccessAtKey(listOrMapVariableKey);
+                TValue listOrMapGCObj = __MSRuntime.activeEnv.AccessAtKey(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
@@ -1658,7 +1775,7 @@ InterpretExpression(ASTNode* ast)
             result.type = TValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::List);
             MesaScript_List* mesaList = AccessMesaScriptList(result.GCReferenceObject);
-            __MSRuntime.activeEnv->InsertTransientObject(result.GCReferenceObject, 0);
+            __MSRuntime.activeEnv.InsertTransientObject(result.GCReferenceObject, 0);
             for (int i = 0; i < v->listInitializingElements.size(); ++i)
             {
                 ASTNode* elementExpr = v->listInitializingElements[i];
@@ -1691,7 +1808,7 @@ InterpretExpression(ASTNode* ast)
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::String);
             MesaScript_String *createdString = AccessMesaScriptString(result.GCReferenceObject);
             createdString->text = v->value;
-            __MSRuntime.activeEnv->InsertTransientObject(result.GCReferenceObject, 0);
+            __MSRuntime.activeEnv.InsertTransientObject(result.GCReferenceObject, 0);
             break;
         }
         case ASTNodeType::BOOLEAN:
@@ -1715,12 +1832,12 @@ InterpretExpression(ASTNode* ast)
     }
     else if (result.type == TValue::ValueType::GCObject
         && GetTypeOfGCObject(result.GCReferenceObject) == MesaGCObject::GCObjectType::String
-        && !__MSRuntime.activeEnv->TransientObjectExists(result.GCReferenceObject))
+        && !__MSRuntime.activeEnv.TransientObjectExists(result.GCReferenceObject))
     {
         i64 stringCopyId = RequestNewGCObject(MesaGCObject::GCObjectType::String);
         AccessMesaScriptString(stringCopyId)->text = AccessMesaScriptString(result.GCReferenceObject)->text;
         result.GCReferenceObject = stringCopyId;
-        __MSRuntime.activeEnv->InsertTransientObject(stringCopyId, 0);
+        __MSRuntime.activeEnv.InsertTransientObject(stringCopyId, 0);
     }
 
     return result;
@@ -1745,9 +1862,9 @@ InterpretStatement(ASTNode* statement)
 
             ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
             std::string key = static_cast<ASTVariable*>(v->id)->id;
-            if (__MSRuntime.activeEnv->KeyExistsInCurrentScope(key))
+            if (__MSRuntime.activeEnv.KeyExistsInCurrentScope(key))
             {
-                __MSRuntime.activeEnv->ReplaceAtKey(key, result);
+                __MSRuntime.activeEnv.ReplaceAtKey(key, result);
             }
             else if (__MSRuntime.globalEnv.Contains(key))
             {
@@ -1755,7 +1872,7 @@ InterpretStatement(ASTNode* statement)
             }
             else
             {
-                __MSRuntime.activeEnv->EmplaceNewElement(key, result);
+                __MSRuntime.activeEnv.EmplaceNewElement(key, result);
             }
         } break;
         case ASTNodeType::ASSIGN_LIST_OR_MAP_ELEMENT: {
@@ -1767,10 +1884,10 @@ InterpretStatement(ASTNode* statement)
             ASSERT(v->listOrMapVariableName->GetType() == ASTNodeType::VARIABLE);
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
-            u64 gcObjectId = 0;
-            if (__MSRuntime.activeEnv->KeyExistsInCurrentScope(listOrMapVariableKey))
+            i64 gcObjectId = 0;
+            if (__MSRuntime.activeEnv.KeyExistsInCurrentScope(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = __MSRuntime.activeEnv->AccessAtKey(listOrMapVariableKey);
+                TValue listOrMapGCObj = __MSRuntime.activeEnv.AccessAtKey(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
@@ -1839,7 +1956,7 @@ InterpretStatement(ASTNode* statement)
     }
 
     // ALL STATEMENTS MUST REACH THIS POINT
-    __MSRuntime.activeEnv->ClearTransientsInTopLevelScope();
+    __MSRuntime.activeEnv.ClearTransientsInTopLevelScope();
 }
 
 static void
@@ -1954,9 +2071,9 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
     // TValue result = cpp_fn(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
 
     TValue procedureVariable;
-    if (__MSRuntime.activeEnv->KeyExists(procedureCall->id))
+    if (__MSRuntime.activeEnv.KeyExists(procedureCall->id))
     {
-        procedureVariable = __MSRuntime.activeEnv->AccessAtKey(procedureCall->id);
+        procedureVariable = __MSRuntime.activeEnv.AccessAtKey(procedureCall->id);
     }
     else if (__MSRuntime.globalEnv.Contains(procedureCall->id))
     {
@@ -1996,7 +2113,7 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
         TValue argv = InterpretExpression(argexpr);
         functionScope.CreateNewMapEntry(argname, argv);
     }
-    __MSRuntime.activeEnv->PushScope(functionScope);
+    __MSRuntime.activeEnv.PushScope(&functionScope);
 
     TValue retval;
     returnRequestedFlag = false;
@@ -2010,43 +2127,53 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
 
         if (returnValue.type == TValue::ValueType::GCObject)
         {
-            __MSRuntime.activeEnv->InsertTransientObject(returnValue.GCReferenceObject, -1);
+            __MSRuntime.activeEnv.InsertTransientObject(returnValue.GCReferenceObject, -1);
         }
     }
 
     returnRequestedFlag = false;
     returnValueSetFlag = false;
 
-    // Intended: activeEnv->PopScope should decrement ref count of every entry of the function scope being popped.
-    __MSRuntime.activeEnv->PopScope();
+    // Intended: activeEnv.PopScope should decrement ref count of every entry of the function scope being popped.
+    __MSRuntime.activeEnv.PopScope();
 
     return retval;
 }
 
 #pragma endregion Interpreter
 
-MesaScript_ScriptEnvironment CompileEntityBehaviourAsNewScriptEnvironment(const std::string& entityBehaviourScript)
+void CompileMesaScriptCode(const std::string& behaviourScript, MesaScript_Table *scriptScope)
 {
-    MesaScript_ScriptEnvironment scriptEnvironment;
-    scriptEnvironment.PushScope(MesaScript_Table());
-    SetActiveScriptEnvironment(&scriptEnvironment);
-
-    std::vector<Token> tokens = Lexer(entityBehaviourScript.c_str());
+    __MSRuntime.activeEnv.PushScope(scriptScope);
+    std::vector<Token> tokens = Lexer(behaviourScript.c_str());
     auto parser = Parser(tokens);
     parser.parse();
-    // TODO(Kevin): if not release mode, probably want to keep Parser paired with the ScriptEnvironment so we have debug data later
-
-    SetActiveScriptEnvironment(NULL);
-    return scriptEnvironment;
+    // TODO(Kevin): if not release mode, probably want to keep Parser paired with the scriptScope so we have debug data later
+    __MSRuntime.activeEnv.PopScope();
 }
 
-void CallParameterlessFunctionInActiveScriptEnvironment(const char* functionIdentifier)
+void SetEnvironmentScope(MesaScript_Table *scriptScope)
+{
+    ClearEnvironmentScope();
+    __MSRuntime.activeEnv.PushScope(scriptScope);
+}
+
+void ClearEnvironmentScope()
+{
+    if (__MSRuntime.activeEnv.ScopesSize() > 0)
+    {
+        ASSERT(__MSRuntime.activeEnv.ScopesSize() == 1);
+        __MSRuntime.activeEnv.PopScope();
+    }
+}
+
+void CallFunction_Parameterless(const char* functionIdentifier)
 {
     ASTProcedureCall parameterlessProcCallNode = ASTProcedureCall(functionIdentifier);
     InterpretStatement(&parameterlessProcCallNode);
 }
 
-void CallFunctionInActiveScriptEnvironmentWithOneParam(const char* functionIdentifier, TValue arg0)
+void CallFunction_OneParam(const char* functionIdentifier, TValue arg0)
 {
     ASTProcedureCall procCallNode = ASTProcedureCall(functionIdentifier);
     ASTSimplyTValue arg0Node = ASTSimplyTValue(arg0);
@@ -2066,15 +2193,15 @@ void TemporaryRunMesaScriptInterpreterOnFile(const std::string& pathFromWorkingD
 
     //printf("%ld", sizeof(MesaScript_Table));
 
-    MesaScript_ScriptEnvironment scriptEnvironment;
-    scriptEnvironment.PushScope(MesaScript_Table());
-    SetActiveScriptEnvironment(&scriptEnvironment);
+    MesaScript_Table scriptEnv;
 
-    static const char* mesaScriptSetupCode = "fn add(x, y) { return x + y } fn checkeq(expected, actual) { if (expected == actual) { print('test pass') } else { print('test fail') } }";
+    std::string mesaScriptSetupCode = "fn add(x, y) { return x + y } fn checkeq(expected, actual) { if (expected == actual) { print('test pass') } else { print('test fail') } }";
 
-    auto setupTokens = Lexer(std::string(mesaScriptSetupCode));
-    auto setupParser = Parser(setupTokens);
-    setupParser.parse();
+    CompileMesaScriptCode(mesaScriptSetupCode, &scriptEnv);
+
+    CompileMesaScriptCode(fileStr, &scriptEnv);
+
+    SetEnvironmentScope(&scriptEnv);
 
     auto result = Lexer(fileStr.c_str());
     auto parser = Parser(result);
@@ -2084,4 +2211,6 @@ void TemporaryRunMesaScriptInterpreterOnFile(const std::string& pathFromWorkingD
     {
         InterpretStatement(procCallNode);
     }
+
+    ClearEnvironmentScope();
 }

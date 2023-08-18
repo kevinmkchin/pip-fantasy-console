@@ -6,7 +6,8 @@
 #include "EditorState.h"
 
 Space activeSpace;
-MesaScript_ScriptEnvironment scriptEnvironments[3];
+
+std::vector<MesaScript_Table> entityAssetScriptScopes; // TODO(Kevin): remplace le par stack allocator
 
 Space* GetGameActiveSpace()
 {
@@ -38,10 +39,13 @@ void TemporaryGameInit() // should be init space or start space, there should be
     EntityAsset& et0 = *activeEditorState->RetrieveEntityAssetById(entityAssetIds.at(0));
     EntityAsset& et1 = *activeEditorState->RetrieveEntityAssetById(entityAssetIds.at(1));
     EntityAsset& et2 = *activeEditorState->RetrieveEntityAssetById(entityAssetIds.at(2));
-
-    scriptEnvironments[0] = CompileEntityBehaviourAsNewScriptEnvironment(et0.code);
-    scriptEnvironments[1] = CompileEntityBehaviourAsNewScriptEnvironment(et1.code);
-    scriptEnvironments[2] = CompileEntityBehaviourAsNewScriptEnvironment(et2.code);
+    
+    entityAssetScriptScopes.emplace_back();
+    entityAssetScriptScopes.emplace_back();
+    entityAssetScriptScopes.emplace_back();
+    CompileMesaScriptCode(et0.code, &entityAssetScriptScopes.at(0));
+    CompileMesaScriptCode(et1.code, &entityAssetScriptScopes.at(1));
+    CompileMesaScriptCode(et2.code, &entityAssetScriptScopes.at(2));
 
     EntityInstance e0;
     EntityInstance e1;
@@ -49,39 +53,28 @@ void TemporaryGameInit() // should be init space or start space, there should be
     EntityInstance e3;
     EntityInstance e4;
 
-    e0.behaviourScriptEnv = &scriptEnvironments[0];
-    e1.behaviourScriptEnv = &scriptEnvironments[1];
-    e2.behaviourScriptEnv = &scriptEnvironments[2];
-    e3.behaviourScriptEnv = &scriptEnvironments[0];
-    e4.behaviourScriptEnv = &scriptEnvironments[0];
-    e0.mesaGCObjMapRepresentationId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
-    e1.mesaGCObjMapRepresentationId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
-    e2.mesaGCObjMapRepresentationId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
-    e3.mesaGCObjMapRepresentationId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
-    e4.mesaGCObjMapRepresentationId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
-
-    SetActiveScriptEnvironment(e0.behaviourScriptEnv);
-    IncrementReferenceGCObject(e0.mesaGCObjMapRepresentationId); // TODO(Kevin): decrement when destroy EntityInstance
-    SetActiveScriptEnvironment(e1.behaviourScriptEnv);
-    IncrementReferenceGCObject(e1.mesaGCObjMapRepresentationId);
-    SetActiveScriptEnvironment(e2.behaviourScriptEnv);
-    IncrementReferenceGCObject(e2.mesaGCObjMapRepresentationId);
-    SetActiveScriptEnvironment(e3.behaviourScriptEnv);
-    IncrementReferenceGCObject(e3.mesaGCObjMapRepresentationId);
-    SetActiveScriptEnvironment(e4.behaviourScriptEnv);
-    IncrementReferenceGCObject(e4.mesaGCObjMapRepresentationId);
+    e0.assetScriptScope = &entityAssetScriptScopes.at(0);
+    e1.assetScriptScope = &entityAssetScriptScopes.at(1);
+    e2.assetScriptScope = &entityAssetScriptScopes.at(2);
+    e3.assetScriptScope = &entityAssetScriptScopes.at(0);
+    e4.assetScriptScope = &entityAssetScriptScopes.at(0);
+    e0.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
+    e1.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
+    e2.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
+    e3.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
+    e4.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
 
     TValue tvalueDefaultInteger;
     tvalueDefaultInteger.type = TValue::ValueType::Integer;
     tvalueDefaultInteger.integerValue = 0;
-    AccessMesaScriptTable(e0.mesaGCObjMapRepresentationId)->CreateNewMapEntry("x", tvalueDefaultInteger);
-    AccessMesaScriptTable(e0.mesaGCObjMapRepresentationId)->CreateNewMapEntry("y", tvalueDefaultInteger);
+    AccessMesaScriptTable(e0.selfMapId)->CreateNewMapEntry("x", tvalueDefaultInteger);
+    AccessMesaScriptTable(e0.selfMapId)->CreateNewMapEntry("y", tvalueDefaultInteger);
 
-    activeSpace.aliveUpdateAndDraw.push_back(e0);
-    //activeSpace.aliveUpdateAndDraw.push_back(e1);
-    //activeSpace.aliveUpdateAndDraw.push_back(e2);
-    //activeSpace.aliveUpdateAndDraw.push_back(e3);
-    //activeSpace.aliveUpdateAndDraw.push_back(e4);
+    {
+        activeSpace.aliveUpdateAndDraw.push_back(e0);
+        IncrementReferenceGCObject(e0.selfMapId); // TODO(Kevin): decrement when destroy EntityInstance
+    }
+
 
     MesaScript_Table *input = EmplaceMapInGlobalScope("input");
     TValue left;
@@ -131,13 +124,13 @@ void TemporaryGameLoop()
     for (size_t i = 0, max = activeSpace.aliveUpdateAndDraw.size(); i < max; ++i)
     {
         EntityInstance entity = activeSpace.aliveUpdateAndDraw.at(i);
-        SetActiveScriptEnvironment(entity.behaviourScriptEnv);
 
+        SetEnvironmentScope(entity.assetScriptScope);
         TValue self;
         self.type = TValue::ValueType::GCObject;
-        self.GCReferenceObject = entity.mesaGCObjMapRepresentationId;
-
-        CallFunctionInActiveScriptEnvironmentWithOneParam("Update", self);
+        self.GCReferenceObject = entity.selfMapId;
+        CallFunction_OneParam("Update", self);
+        ClearEnvironmentScope();
     }
 
 
