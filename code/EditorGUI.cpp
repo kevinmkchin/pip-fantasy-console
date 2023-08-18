@@ -5,7 +5,7 @@
 #include "EditorCodeEditor.h"
 #include "EditorState.h"
 
-EntityAsset *s_SelectedEntityAsset = NULL;
+int s_SelectedEntityAssetId = -1;
 
 // I select an entity template: it's code shows up in the code editor -> a code editor state is created
 // I can keep multiple code editor states open at once (multiple tabs, one tab for each entity code)
@@ -26,7 +26,7 @@ void DoCodeEditor(code_editor_state_t *codeEditorState)
     MesaGUI::BeginZone(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 12, 
                                        EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, EDITOR_FIXED_INTERNAL_RESOLUTION_H-14));
 
-    EditorCodeEditor(&s_ActiveCodeEditorState, EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-8, EDITOR_FIXED_INTERNAL_RESOLUTION_H-20, s_SelectedEntityAsset != NULL);
+    EditorCodeEditor(&s_ActiveCodeEditorState, EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-8, EDITOR_FIXED_INTERNAL_RESOLUTION_H-20, s_SelectedEntityAssetId > 0);
 
     MesaGUI::EndZone();
 }
@@ -46,36 +46,28 @@ void DoProjectPanel()
     // MesaGUI::DoTextUnformatted(8, 82, 9, MesaGUI::TextAlignment::Left, "v spaces");
     // MesaGUI::DoTextUnformatted(8, 92, 9, MesaGUI::TextAlignment::Left, "  - folders");
 
-    std::string text_aefa = "Active Entity Asset: ";
-    if (s_SelectedEntityAsset) 
-    {
-        text_aefa += s_SelectedEntityAsset->name;
-    }
-    else 
-    {
-        text_aefa += "NULL";
-    }
-    MesaGUI::EditorText(text_aefa.c_str());
+    EditorState *activeEditorState = EditorState::ActiveEditorState();
+
 
     MesaGUI::EditorBeginListBox();
-    std::vector<EntityAsset>* entityAssetList = GetAll_Entity();
-    for (size_t i = 0; i < entityAssetList->size(); ++i)
+    const std::vector<int> entityAssetIdsList = *activeEditorState->RetrieveAllEntityAssetIds();
+    for (size_t i = 0; i < entityAssetIdsList.size(); ++i)
     {
-        EntityAsset& e = entityAssetList->at(i);
-        bool selected = s_SelectedEntityAsset == &e;
-        if (MesaGUI::EditorSelectable(e.name.c_str(), &selected))
+        int entityAssetId = entityAssetIdsList.at(i);
+        EntityAsset *e = activeEditorState->RetrieveEntityAssetById(entityAssetId);
+        bool selected = entityAssetId == s_SelectedEntityAssetId;
+        if (MesaGUI::EditorSelectable(e->name.c_str(), &selected))
         {
-            s_SelectedEntityAsset = &e;
-
-            InitializeCodeEditorState(&s_ActiveCodeEditorState, false, s_SelectedEntityAsset->code.c_str(), (u32)s_SelectedEntityAsset->code.size());
+            s_SelectedEntityAssetId = entityAssetId;
+            InitializeCodeEditorState(&s_ActiveCodeEditorState, false, e->code.c_str(), (u32)e->code.size());
         }
     }
     MesaGUI::EditorEndListBox();
 
     MesaGUI::MoveXYInZone(0, 10);
-    if (s_SelectedEntityAsset && MesaGUI::EditorLabelledButton("Save Code Changes"))
+    if (s_SelectedEntityAssetId && MesaGUI::EditorLabelledButton("Save Code Changes"))
     {
-        s_SelectedEntityAsset->code = std::string(s_ActiveCodeEditorState.code_buf, s_ActiveCodeEditorState.code_len);
+        activeEditorState->RetrieveEntityAssetById(s_SelectedEntityAssetId)->code = std::string(s_ActiveCodeEditorState.code_buf, s_ActiveCodeEditorState.code_len);
         PrintLog.Message("Saving code changes...");
     }
 
@@ -88,12 +80,13 @@ void DoEditorGUI()
     if (!doOnce)
     {
         doOnce = true;
-        CreateBlankAsset_Entity("entity_0");
-        CreateBlankAsset_Entity("entity_1");
-        CreateBlankAsset_Entity("entity_2");
-        std::vector<EntityAsset> *entityAssets = GetAll_Entity();
+        EditorState *activeEditorState = EditorState::ActiveEditorState();
+        int aid = activeEditorState->CreateNewEntityAsset("entity_0");
+        int bid = activeEditorState->CreateNewEntityAsset("entity_1");
+        int cid = activeEditorState->CreateNewEntityAsset("entity_2");
 
-        entityAssets->at(0).code = "fn Update(self) { \n"
+        activeEditorState->RetrieveEntityAssetById(aid)->code = 
+                   "fn Update(self) { \n"
                    "    print(time['dt'])\n"
                    "    if (input['left']) {\n"
                    "        self['x'] = self['x'] - 180 * time['dt']\n" 
@@ -139,8 +132,8 @@ void DoEditorGUI()
         //                            "                    `!9899fT|!^\"'\n"
         //                            "                      `!^\"'\n"
         //                            "";
-        entityAssets->at(1).code = "fn Update() { print('et1 update') }";
-        entityAssets->at(2).code = "fn Update() { print('et2 update') }";
+        activeEditorState->RetrieveEntityAssetById(bid)->code = "fn Update() { print('et1 update') }";
+        activeEditorState->RetrieveEntityAssetById(cid)->code = "fn Update() { print('et2 update') }";
 
         AllocateMemoryCodeEditorState(&s_ActiveCodeEditorState);
     }

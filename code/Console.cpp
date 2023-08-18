@@ -93,10 +93,10 @@ void DoBootScreen()
     static float c = float(rand());
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H), 
                             vec4(0.05f, 0.05f, 0.05f, 1));
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(1, 1, 10, 10), 5, 
-                            vec4((sinf(Time.time * 4.f + a) + 1.f) * 0.5f, 
-                                 (sinf(Time.time * 4.f + b) + 1.f) * 0.5f, 
-                                 (sinf(Time.time * 4.f + c) + 1.f) * 0.5f, 1));
+    // MesaGUI::PrimitivePanel(MesaGUI::UIRect(1, 1, 10, 10), 5, 
+    //                         vec4((sinf(Time.time * 4.f + a) + 1.f) * 0.5f, 
+    //                              (sinf(Time.time * 4.f + b) + 1.f) * 0.5f, 
+    //                              (sinf(Time.time * 4.f + c) + 1.f) * 0.5f, 1));
 
     int zeros = 0;
     while (zeros < 4000 && *(sConsoleMessagesBuffer + zeros) == 0)

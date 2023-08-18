@@ -16,6 +16,7 @@
 #include "GfxShader.h"
 #include "PrintLog.h"
 #include "FileSystem.h"
+#include "InputSystem.h"
 
 static ui_id freshIdCounter = 0;
 static ui_id FreshID()
@@ -391,27 +392,15 @@ namespace MesaGUI
 
     static int mousePosX = 0;
     static int mousePosY = 0;
-    static bool mouseDown = false;
-    static bool mouseUp = false;
-    static bool lastFrameMouseDown = false;
-    static bool lastFrameMouseUp = false;
     
     bool MouseWentUp()
     {
-        if (lastFrameMouseDown && mouseUp)
-        {
-            return true;
-        }
-        return false;
+        return Input.mouseLeftHasBeenReleased;
     }
     
     bool MouseWentDown()
     {
-        if (lastFrameMouseUp && mouseDown)
-        {
-            return true;
-        }
-        return false;
+        return Input.mouseLeftHasBeenPressed;
     }
     
     bool MouseInside(const UIRect& rect)
@@ -1068,34 +1057,16 @@ namespace MesaGUI
 
     void SDLProcessEvent(const SDL_Event* evt)
     {
-        lastFrameMouseDown = mouseDown;
-        lastFrameMouseUp = mouseUp;
-        Gfx::CoreRenderer *renderer = Gfx::GetCoreRenderer();
         SDL_Event event = *evt;
         switch (event.type)
         {
             case SDL_MOUSEMOTION: 
             {
+                Gfx::CoreRenderer *renderer = Gfx::GetCoreRenderer();
                 i32 winW, winH = 0;
                 renderer->GetBackBufferSize(&winW, &winH);
                 mousePosX = int(float(event.motion.x) * (float(renderer->guiLayer.width) / float(winW)));
                 mousePosY = int(float(event.motion.y) * (float(renderer->guiLayer.height) / float(winH)));
-            }break;
-            case SDL_MOUSEBUTTONDOWN:
-            {
-                if (event.button.button == SDL_BUTTON_LEFT)
-                {
-                    mouseDown = true;
-                    mouseUp = false;
-                }
-            }break;
-            case SDL_MOUSEBUTTONUP:
-            {
-                if (event.button.button == SDL_BUTTON_LEFT)
-                {
-                    mouseUp = true;
-                    mouseDown = false;
-                }
             }break;
             case SDL_KEYDOWN:
             {
