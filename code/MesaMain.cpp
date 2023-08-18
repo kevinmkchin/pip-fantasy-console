@@ -47,8 +47,18 @@ static bool InitializeEverything()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
+#ifndef SDL_WINDOW_STARTING_SIZE_H
+    SDL_DisplayMode DM;
+    SDL_GetCurrentDisplayMode(0, &DM);
+    int winsmul = DM.h / EDITOR_FIXED_INTERNAL_RESOLUTION_H;
+#else
+    int winsmul = SDL_WINDOW_STARTING_SIZE_H / EDITOR_FIXED_INTERNAL_RESOLUTION_H;
+#endif    
+
     g_SDLWindow = SDL_CreateWindow("Mesa Fantasy Console",
-                                   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SDL_WINDOW_STARTING_SIZE_W, SDL_WINDOW_STARTING_SIZE_H,
+                                   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                   EDITOR_FIXED_INTERNAL_RESOLUTION_W * winsmul,
+                                   EDITOR_FIXED_INTERNAL_RESOLUTION_H * winsmul,
                                    SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
     g_SDLGLContext = SDL_GL_CreateContext(g_SDLWindow);
@@ -88,6 +98,7 @@ static void ProcessSDLEvents()
         switch (event.type)
         {
             case SDL_WINDOWEVENT:
+            {
                 switch (event.window.event) 
                 {
                     case SDL_WINDOWEVENT_RESIZED:
@@ -96,15 +107,28 @@ static void ProcessSDLEvents()
                         break;
                 }
                 break;
+            }
             case SDL_QUIT:
+            {
                 g_ProgramShouldShutdown = true;
                 break;
+            }
             case SDL_KEYDOWN:
+            {
+                if (event.key.keysym.sym == SDLK_RETURN && SDL_GetModState() & KMOD_LALT)
+                {
+                    if (SDL_GetWindowFlags(g_SDLWindow) & SDL_WINDOW_FULLSCREEN_DESKTOP)
+                        SDL_SetWindowFullscreen(g_SDLWindow, 0);
+                    else
+                        SDL_SetWindowFullscreen(g_SDLWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                }
+
                 if (CurrentProgramMode() == MesaProgramMode::BootScreen) 
                 {
                     SendInputToConsole(event.key);
                 }
                 break;
+            }
         }
     }
 }
@@ -194,11 +218,11 @@ int main(int argc, char* argv[])
         // }
         // MesaGUI::PrimitiveTextFmt(0, 18, 18, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
 
-        if (g_ProgramMode == MesaProgramMode::Editor && MesaGUI::LabelledButton(MesaGUI::UIRect(100, 2, 80, 16), "Start Space", MesaGUI::TextAlignment::Center))
+        if (g_ProgramMode == MesaProgramMode::Editor && MesaGUI::LabelledButton(MesaGUI::UIRect(2, 2, 80, 16), "Start Space", MesaGUI::TextAlignment::Center))
         {
             StartGameSpace();
         }
-        else if (g_ProgramMode == MesaProgramMode::Game && MesaGUI::LabelledButton(MesaGUI::UIRect(100, 2, 100, 16), "Back to Editor", MesaGUI::TextAlignment::Center))
+        else if (g_ProgramMode == MesaProgramMode::Game && MesaGUI::LabelledButton(MesaGUI::UIRect(2, 2, 100, 16), "Back to Editor", MesaGUI::TextAlignment::Center))
         {
             StartEditor();
         }

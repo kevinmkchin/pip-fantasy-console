@@ -1,15 +1,43 @@
 #include "EditorState.h"
 
-std::vector<EntityAsset> g_EntityAssets;
+static EditorState globalEditorState;
 
-void CreateBlankAsset_Entity(const char* name)
+EditorState *EditorState::ActiveEditorState()
 {
-    g_EntityAssets.emplace_back();
-    g_EntityAssets.back().name = name;
+    return &globalEditorState;
 }
 
-std::vector<EntityAsset>* GetAll_Entity()
+int EditorState::FreshAssetID()
 {
-    return &g_EntityAssets;
+    return assetIdTicker++;
+}
+
+int EditorState::CreateNewEntityAsset(const char *name)
+{
+    EntityAsset createdEntity;
+    createdEntity.name = name;
+    int assetId = FreshAssetID();
+    projectEntityAssets.insert(std::make_pair(assetId, createdEntity));
+    projectEntityAssetIds.push_back(assetId);
+    return assetId;
+}
+
+void EditorState::DeleteEntityAsset(int assetId)
+{
+    projectEntityAssets.erase(projectEntityAssets.find(assetId));
+    for (auto iter = projectEntityAssetIds.begin(); iter != projectEntityAssetIds.end(); ++iter)
+    {
+        projectEntityAssetIds.erase(iter);
+    }
+}
+
+EntityAsset *EditorState::RetrieveEntityAssetById(int assetId)
+{
+    return &projectEntityAssets.at(assetId);
+}
+
+const std::vector<int> *EditorState::RetrieveAllEntityAssetIds()
+{
+    return &projectEntityAssetIds;
 }
 

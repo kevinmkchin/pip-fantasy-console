@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 
 #include "MesaCommon.h"
 #include "MesaMath.h"
@@ -13,13 +14,30 @@ Saves all project/assets/game data to disk.
 Loads all project/assets/game data from disk.
 */
 
-struct EditorState
+struct SpaceAsset
 {
+    // list of entities to instantiate in this space
 
 };
 
-void CreateBlankAsset_Entity(const char* name);
-std::vector<EntityAsset>* GetAll_Entity();
+struct EditorState
+{
+public:
+    static EditorState *ActiveEditorState();
+
+    int CreateNewEntityAsset(const char *name);
+    void DeleteEntityAsset(int assetId);
+    EntityAsset *RetrieveEntityAssetById(int assetId);
+    const std::vector<int> *RetrieveAllEntityAssetIds();
+
+private:
+    int FreshAssetID();
+
+private:
+    std::vector<int> projectEntityAssetIds;
+    std::unordered_map<int, EntityAsset> projectEntityAssets;
+    int assetIdTicker = 100;
+};
 
 
 // void CreateNewAsset_Space();

@@ -32,10 +32,12 @@ void TemporaryGameInit() // should be init space or start space, there should be
         5. Space initialization script's PostGameObjectCreationInit should run? doesn't matter for now.
     */
 
-    std::vector<EntityAsset>* entityAssets = GetAll_Entity();
-    EntityAsset& et0 = entityAssets->at(0);
-    EntityAsset& et1 = entityAssets->at(1);
-    EntityAsset& et2 = entityAssets->at(2);
+    EditorState *activeEditorState = EditorState::ActiveEditorState();
+
+    const std::vector<int> entityAssetIds = *activeEditorState->RetrieveAllEntityAssetIds();
+    EntityAsset& et0 = *activeEditorState->RetrieveEntityAssetById(entityAssetIds.at(0));
+    EntityAsset& et1 = *activeEditorState->RetrieveEntityAssetById(entityAssetIds.at(1));
+    EntityAsset& et2 = *activeEditorState->RetrieveEntityAssetById(entityAssetIds.at(2));
 
     scriptEnvironments[0] = CompileEntityBehaviourAsNewScriptEnvironment(et0.code);
     scriptEnvironments[1] = CompileEntityBehaviourAsNewScriptEnvironment(et1.code);
