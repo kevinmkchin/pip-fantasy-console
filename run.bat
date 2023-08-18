@@ -6,7 +6,7 @@ goto run-bin
 
 :run-vs
 REM build\Debug\mesa.exe
-devenv .
+devenv build\mesa.sln
 goto common-exit
 
 :run-subl

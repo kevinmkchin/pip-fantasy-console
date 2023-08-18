@@ -5,21 +5,12 @@
 
 #include <vector>
 
-struct EntityAsset
-{
-    // what sprite / animation to start with, what animations are available?
-    // what is the code / behaviour of all instances of this entity?
-
-    std::string name = "";
-    std::string code = "";
-};
-
 struct EntityInstance
 {
     //vec2 position;
 
-    struct MesaScript_ScriptEnvironment* behaviourScriptEnv = NULL;
-    u64 mesaGCObjMapRepresentationId = 0;
+    struct MesaScript_Table* assetScriptScope = NULL;
+    i64                      selfMapId = 0;
 };
 
 struct Space
