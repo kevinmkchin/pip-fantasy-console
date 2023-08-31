@@ -23,7 +23,7 @@
 #include "Game.h"
 #include "MesaScript.h"
 
-static SDL_Window* g_SDLWindow;
+SDL_Window *g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
 static bool g_ProgramShouldShutdown = false;
 static Gfx::CoreRenderer g_gfx;
@@ -50,12 +50,12 @@ static bool InitializeEverything()
 #ifndef SDL_WINDOW_STARTING_SIZE_H
     SDL_DisplayMode DM;
     SDL_GetCurrentDisplayMode(0, &DM);
-    int winsmul = DM.h / EDITOR_FIXED_INTERNAL_RESOLUTION_H;
+    int winsmul = (DM.h - 100) / EDITOR_FIXED_INTERNAL_RESOLUTION_H;
 #else
     int winsmul = SDL_WINDOW_STARTING_SIZE_H / EDITOR_FIXED_INTERNAL_RESOLUTION_H;
-#endif    
+#endif
 
-    g_SDLWindow = SDL_CreateWindow("Mesa Fantasy Console",
+    g_SDLWindow = SDL_CreateWindow("Mesa GCS",
                                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                    EDITOR_FIXED_INTERNAL_RESOLUTION_W * winsmul,
                                    EDITOR_FIXED_INTERNAL_RESOLUTION_H * winsmul,
@@ -68,7 +68,7 @@ static bool InitializeEverything()
     SDL_GL_SetSwapInterval(1);
     //SDL_SetWindowFullscreen(g_SDLWindow, SDL_WINDOW_FULLSCREEN);
 
-    PrintLog.Message("Mesa Computer System " + std::string(PROJECT_BUILD_VERSION));
+    PrintLog.Message("Mesa Game Creation System " + std::string(PROJECT_BUILD_VERSION));
     PrintLog.Message("--Screen size " + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_W) + 
                      "x" + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_H));
 
@@ -91,9 +91,6 @@ static void ProcessSDLEvents()
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
-        Input.ProcessAllSDLInputEvents(event);
-        MesaGUI::SDLProcessEvent(&event);
-
         // Lower level engine related input
         switch (event.type)
         {
@@ -120,7 +117,8 @@ static void ProcessSDLEvents()
                     if (SDL_GetWindowFlags(g_SDLWindow) & SDL_WINDOW_FULLSCREEN_DESKTOP)
                         SDL_SetWindowFullscreen(g_SDLWindow, 0);
                     else
-                        SDL_SetWindowFullscreen(g_SDLWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+                        SDL_SetWindowFullscreen(g_SDLWindow, SDL_WINDOW_FULLSCREEN_DESKTOP); 
+                    event.type = 0;
                 }
 
                 if (CurrentProgramMode() == MesaProgramMode::BootScreen) 
@@ -130,6 +128,9 @@ static void ProcessSDLEvents()
                 break;
             }
         }
+
+        Input.ProcessAllSDLInputEvents(event);
+        MesaGUI::SDLProcessEvent(&event);
     }
 }
 
@@ -146,8 +147,9 @@ void StartGameSpace()
     g_ProgramMode = MesaProgramMode::Game;
     // get game w and game h from game file
     // g_gfx.SetGameResolution(w, h);
-    g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
-    SDL_SetWindowMinimumSize(g_SDLWindow, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
+    g_gfx.SetGameResolution(514, 384);
+    SDL_SetWindowMinimumSize(g_SDLWindow, 514, 384);
+    SDL_SetWindowSize(g_SDLWindow, 514*2, 384*2);
 
     TemporaryGameInit();
 }

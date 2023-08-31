@@ -145,10 +145,20 @@ void ElephantJPG()
     SendMessageToConsole(elephantASCII.c_str(), elephantASCII.size());
 }
 
+void SetWinSizeMult(int mult)
+{
+    SDL_DisplayMode DM;
+    SDL_GetCurrentDisplayMode(0, &DM);
+    int winsmul = (DM.h - 100) / EDITOR_FIXED_INTERNAL_RESOLUTION_H;
+    winsmul = GM_max(1, GM_min(winsmul, mult));
+    SDL_SetWindowSize(g_SDLWindow, EDITOR_FIXED_INTERNAL_RESOLUTION_W * winsmul, EDITOR_FIXED_INTERNAL_RESOLUTION_H * winsmul);
+}
+
 void SetupConsoleCommands()
 {
     sNoclipConsole.bind_cmd("editor", StartEditor);
     sNoclipConsole.bind_cmd("elephant", ElephantJPG);
+    sNoclipConsole.bind_cmd("wscale", SetWinSizeMult);
     sNoclipConsole.bind_cmd("exec", TemporaryRunMesaScriptInterpreterOnFile);
 
     PrintLog.Message("--Boot menu initialized.");

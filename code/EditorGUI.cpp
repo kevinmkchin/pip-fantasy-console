@@ -5,6 +5,8 @@
 #include "EditorCodeEditor.h"
 #include "EditorState.h"
 
+const static int s_ToolBarHeight = 26;
+
 int s_SelectedEntityAssetId = -1;
 
 // I select an entity template: it's code shows up in the code editor -> a code editor state is created
@@ -17,26 +19,27 @@ code_editor_state_t s_ActiveCodeEditorState;
 
 void DoCodeEditor(code_editor_state_t *codeEditorState)
 {
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 0, 
-                                            EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, EDITOR_FIXED_INTERNAL_RESOLUTION_H),
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/4, s_ToolBarHeight, 
+                                            EDITOR_FIXED_INTERNAL_RESOLUTION_W * 3 / 4, EDITOR_FIXED_INTERNAL_RESOLUTION_H),
                             vec4(RGB255TO1(103, 122, 137), 1.f));
                      //vec4(RGB255TO1(126, 145, 159), 1.f));
                      //vec4(RGB255TO1(101, 124, 140), 1.f));
 
-    MesaGUI::BeginZone(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, 12, 
-                                       EDITOR_FIXED_INTERNAL_RESOLUTION_W/2, EDITOR_FIXED_INTERNAL_RESOLUTION_H-14));
+    MesaGUI::BeginZone(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/4, s_ToolBarHeight,
+                                       EDITOR_FIXED_INTERNAL_RESOLUTION_W * 3 / 4, EDITOR_FIXED_INTERNAL_RESOLUTION_H));
 
-    EditorCodeEditor(&s_ActiveCodeEditorState, EDITOR_FIXED_INTERNAL_RESOLUTION_W/2-8, EDITOR_FIXED_INTERNAL_RESOLUTION_H-20, s_SelectedEntityAssetId > 0);
+    EditorCodeEditor(&s_ActiveCodeEditorState, EDITOR_FIXED_INTERNAL_RESOLUTION_W * 3 / 4 - 8, EDITOR_FIXED_INTERNAL_RESOLUTION_H - s_ToolBarHeight - 8, s_SelectedEntityAssetId > 0);
 
     MesaGUI::EndZone();
 }
 
-void DoProjectPanel()
+void DoEntitySelectionPanel()
 {
-    const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
+    const int selectionPanelW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
+    const int selectionPanelH = EDITOR_FIXED_INTERNAL_RESOLUTION_H/2;
 
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, assetsViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H), vec4(RGB255TO1(126, 145, 159), 1.f));
-    MesaGUI::BeginZone(MesaGUI::UIRect(0, 20, assetsViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 26));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, s_ToolBarHeight, selectionPanelW, selectionPanelH), vec4(RGB255TO1(126, 145, 159), 1.f));
+    MesaGUI::BeginZone(MesaGUI::UIRect(0, s_ToolBarHeight, selectionPanelW, selectionPanelH));
 
     // MesaGUI::DoTextUnformatted(8, 32, 9, MesaGUI::TextAlignment::Left, "Search");
     // MesaGUI::DoTextUnformatted(8, 42, 9, MesaGUI::TextAlignment::Left, "v entities");
@@ -68,10 +71,37 @@ void DoProjectPanel()
     if (s_SelectedEntityAssetId && MesaGUI::EditorLabelledButton("Save Code Changes"))
     {
         activeEditorState->RetrieveEntityAssetById(s_SelectedEntityAssetId)->code = std::string(s_ActiveCodeEditorState.code_buf, s_ActiveCodeEditorState.code_len);
-        PrintLog.Message("Saving code changes...");
+        PrintLog.Message("Saved code changes...");
+    }
+    if (s_SelectedEntityAssetId && MesaGUI::EditorLabelledButton("New Entity Asset"))
+    {
+        EditorState *activeEditorState = EditorState::ActiveEditorState();
+        int newId = activeEditorState->CreateNewEntityAsset("entity_x");
+        activeEditorState->RetrieveEntityAssetById(newId)->code = "fn Update() { print('fucky fucky') }";
+        PrintLog.Message("Created new entity asset...");
     }
 
     MesaGUI::EndZone();
+}
+
+void DoEntityConfigurationPanel()
+{
+    const int configurationPanelW = EDITOR_FIXED_INTERNAL_RESOLUTION_W / 4;
+    const int configurationPanelH = EDITOR_FIXED_INTERNAL_RESOLUTION_H - s_ToolBarHeight - (EDITOR_FIXED_INTERNAL_RESOLUTION_H/2);
+
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, s_ToolBarHeight + (EDITOR_FIXED_INTERNAL_RESOLUTION_H / 2) + 1, configurationPanelW, configurationPanelH), vec4(RGB255TO1(126, 145, 159), 1.f));
+}
+
+void EntityDesigner()
+{
+    DoEntitySelectionPanel();
+    DoEntityConfigurationPanel();
+    DoCodeEditor(&s_ActiveCodeEditorState);
+}
+
+void EditorMainBar()
+{
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, EDITOR_FIXED_INTERNAL_RESOLUTION_W, s_ToolBarHeight), vec4(1,1,1,1));
 }
 
 void DoEditorGUI()
@@ -138,14 +168,7 @@ void DoEditorGUI()
         AllocateMemoryCodeEditorState(&s_ActiveCodeEditorState);
     }
 
-    const int assetsViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
-    const int entityViewW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
+    EditorMainBar();
 
-    DoProjectPanel();
-
-    MesaGUI::PrimitivePanel(
-        MesaGUI::UIRect(assetsViewW, 0, entityViewW, EDITOR_FIXED_INTERNAL_RESOLUTION_H),
-        vec4(RGB255TO1(103, 122, 137), 1.f));
-
-    DoCodeEditor(&s_ActiveCodeEditorState);
+    EntityDesigner();
 }
