@@ -40,6 +40,7 @@ void TemporaryGameInit() // should be init space or start space, there should be
     EntityAsset& et1 = *activeEditorState->RetrieveEntityAssetById(entityAssetIds.at(1));
     EntityAsset& et2 = *activeEditorState->RetrieveEntityAssetById(entityAssetIds.at(2));
     
+    entityAssetScriptScopes.clear();
     entityAssetScriptScopes.emplace_back();
     entityAssetScriptScopes.emplace_back();
     entityAssetScriptScopes.emplace_back();

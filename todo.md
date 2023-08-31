@@ -7,14 +7,15 @@
 
 ### Bugs
 
-- Improve rendering layers to screenSizeQuad (some pixels are 3 screen pixels, others are 5)
 - GUI incorrect zones when window resize with black bars, window aspect ratio != game ratio
 - GUI fresh ID is not great...will be buggy when number of elements change dynamically
   - should change to be managed by the window (elements in same window will persist the same ids).
 
 ### Engine
 
-- Project Panel GUI and management through IDs.
+- Entity assets management through IDs
+- Place entities in space asset using space designer
+- Create new entity assets
 - Manual in markdown, toggled with F1
 
 MESASCRIPT EPIC:

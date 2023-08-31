@@ -16,28 +16,56 @@ endif()
 
 
 set(SOURCE_FILES
-        code/MesaMain.cpp
-        code/MesaUtility.cpp
-        code/Timer.cpp
-        code/Console.cpp
-        code/GfxRenderer.cpp
-        code/GfxDataTypesAndUtility.cpp
-        code/GfxShader.cpp
-        code/FileSystem.cpp
-        code/PrintLog.cpp
-        code/InputSystem.cpp
-        code/MesaIMGUI.cpp
-        code/MemoryAllocator.cpp
-        code/EditorState.cpp
-        code/EditorGUI.cpp
-        code/EditorCodeEditor.cpp
-        code/MesaScript.cpp
-        code/Game.cpp
-        code/Space.cpp
-        )
+    code/MesaCommon.h
+    code/MesaMath.h
+    code/MesaOpenGL.h
+    code/cmake_MesaProjectDefines.h.in
+    code/MesaMain.h
+    code/MesaMain.cpp
+    code/MesaUtility.h
+    code/MesaUtility.cpp
+    code/Timer.h
+    code/Timer.cpp
+    code/Console.h
+    code/Console.cpp
+    code/GfxRenderer.h
+    code/GfxRenderer.cpp
+    code/GfxDataTypesAndUtility.h
+    code/GfxDataTypesAndUtility.cpp
+    code/GfxShader.h
+    code/GfxShader.cpp
+    code/FileSystem.h
+    code/FileSystem.cpp
+    code/PrintLog.h
+    code/PrintLog.cpp
+    code/InputSystem.h
+    code/InputSystem.cpp
+    code/MesaIMGUI.h
+    code/MesaIMGUI.cpp
+    code/MemoryAllocator.h
+    code/MemoryAllocator.cpp
+    code/EditorState.h
+    code/EditorState.cpp
+    code/EditorGUI.h
+    code/EditorGUI.cpp
+    code/EditorCodeEditor.h
+    code/EditorCodeEditor.cpp
+    code/MesaScript.h
+    code/MesaScript.cpp
+    code/Game.h
+    code/Game.cpp
+    code/Space.h
+    code/Space.cpp
+)
+
+set(OTHER_FILES_FOR_IDE
+    todo.md
+)
+
+file(GLOB DOCUMENTATION_MARKDOWNS true code/manual/*.md)
 
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${OTHER_FILES_FOR_IDE} ${DOCUMENTATION_MARKDOWNS})
 
 add_compile_definitions(INTERNAL_BUILD=1)
 

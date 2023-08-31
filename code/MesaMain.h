@@ -16,4 +16,5 @@ MesaProgramMode CurrentProgramMode();
 void StartEditor();
 void StartGameSpace();
 
+extern struct SDL_Window *g_SDLWindow;
 
