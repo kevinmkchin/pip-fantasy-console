@@ -84,9 +84,15 @@ namespace MesaGUI
     UIStyle& GetActiveUIStyleReference();
 
 
+    bool Behaviour_Button(ui_id id, UIRect rect);
+
+    bool ImageButton(UIRect rect, u32 normalTexId, u32 hoveredTexId, u32 activeTexId);
+
+
     // Primitive "building block" GUI elements with the most parameters
     void PrimitivePanel(UIRect rect, vec4 colorRGBA);
     void PrimitivePanel(UIRect rect, int cornerRadius, vec4 colorRGBA);
+    void PrimitivePanel(UIRect rect, u32 glTextureId);
     void PrimitivePanel(UIRect rect, int cornerRadius, u32 glTextureId = 0, float normalizedCornerSizeInUV = 0.3f);
     bool PrimitiveButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor, bool activeColorOnClickReleaseFrame = false);
     void PrimitiveText(int x, int y, int size, TextAlignment alignment, const char* text);

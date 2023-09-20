@@ -21,6 +21,10 @@ inline std::string data_path(const std::string& name) { return wd_path() + "data
 #define ARRAY_COUNT(a) (sizeof(a) / (sizeof(a[0])))
 
 #define RGB255TO1(r,g,b) ((float)r)/255.f, ((float)g)/255.f, ((float)b)/255.f
+#define RGBHEXTO1(hex) \
+    float((hex & 0x00FF00000) >> 16)/255.f,\
+    float((hex & 0x0000FF00) >> 8)/255.f,\
+    float(hex & 0x000000FF)/255.f
 
 #define ISANYOF1(a, x) ((a) == (x))
 #define ISANYOF2(a, x, y) ((a) == (x) || (a) == (y))
@@ -54,5 +58,5 @@ typedef uint32_t EntityIndex;
 */
 #define EDITOR_FIXED_INTERNAL_RESOLUTION_W 854 //1280 //514 //512
 #define EDITOR_FIXED_INTERNAL_RESOLUTION_H 480 //914  //514 //384
-//#define SDL_WINDOW_STARTING_SIZE_W EDITOR_FIXED_INTERNAL_RESOLUTION_W*1
-//#define SDL_WINDOW_STARTING_SIZE_H EDITOR_FIXED_INTERNAL_RESOLUTION_H*1
+#define SDL_WINDOW_STARTING_SIZE_W EDITOR_FIXED_INTERNAL_RESOLUTION_W*2
+#define SDL_WINDOW_STARTING_SIZE_H EDITOR_FIXED_INTERNAL_RESOLUTION_H*2

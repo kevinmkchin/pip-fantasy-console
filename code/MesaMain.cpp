@@ -47,18 +47,18 @@ static bool InitializeEverything()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-#ifndef SDL_WINDOW_STARTING_SIZE_H
-    SDL_DisplayMode DM;
-    SDL_GetCurrentDisplayMode(0, &DM);
-    int winsmul = (DM.h - 100) / EDITOR_FIXED_INTERNAL_RESOLUTION_H;
-#else
-    int winsmul = SDL_WINDOW_STARTING_SIZE_H / EDITOR_FIXED_INTERNAL_RESOLUTION_H;
-#endif
+// #ifndef SDL_WINDOW_STARTING_SIZE_H
+//     SDL_DisplayMode DM;
+//     SDL_GetCurrentDisplayMode(0, &DM);
+//     int winsmul = (DM.h - 100) / EDITOR_FIXED_INTERNAL_RESOLUTION_H;
+// #else
+//     int winsmul = SDL_WINDOW_STARTING_SIZE_H / EDITOR_FIXED_INTERNAL_RESOLUTION_H;
+// #endif
 
     g_SDLWindow = SDL_CreateWindow("Mesa GCS",
                                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                   EDITOR_FIXED_INTERNAL_RESOLUTION_W * winsmul,
-                                   EDITOR_FIXED_INTERNAL_RESOLUTION_H * winsmul,
+                                   SDL_WINDOW_STARTING_SIZE_W,//EDITOR_FIXED_INTERNAL_RESOLUTION_W * winsmul,
+                                   SDL_WINDOW_STARTING_SIZE_H,//EDITOR_FIXED_INTERNAL_RESOLUTION_H * winsmul,
                                    SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
     g_SDLGLContext = SDL_GL_CreateContext(g_SDLWindow);
@@ -139,6 +139,7 @@ void StartEditor()
     g_ProgramMode = MesaProgramMode::Editor;
     g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
     SDL_SetWindowMinimumSize(g_SDLWindow, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
+    SDL_SetWindowMinimumSize(g_SDLWindow, SDL_WINDOW_STARTING_SIZE_W, SDL_WINDOW_STARTING_SIZE_H);
 }
 
 //static void StartGameFile()
@@ -220,11 +221,11 @@ int main(int argc, char* argv[])
         // }
         // MesaGUI::PrimitiveTextFmt(0, 18, 18, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
 
-        if (g_ProgramMode == MesaProgramMode::Editor && MesaGUI::LabelledButton(MesaGUI::UIRect(2, 2, 80, 16), "Start Space", MesaGUI::TextAlignment::Center))
+        if (g_ProgramMode == MesaProgramMode::Editor && Temp_StartGameOrEditorButton())
         {
             StartGameSpace();
         }
-        else if (g_ProgramMode == MesaProgramMode::Game && MesaGUI::LabelledButton(MesaGUI::UIRect(2, 2, 100, 16), "Back to Editor", MesaGUI::TextAlignment::Center))
+        else if (g_ProgramMode == MesaProgramMode::Game && Temp_StartGameOrEditorButton())
         {
             StartEditor();
         }
