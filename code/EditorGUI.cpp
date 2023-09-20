@@ -4,8 +4,27 @@
 #include "MesaIMGUI.h"
 #include "EditorCodeEditor.h"
 #include "EditorState.h"
+#include "GfxDataTypesAndUtility.h"
 
 const static int s_ToolBarHeight = 26;
+
+static Gfx::TextureHandle thBu00_generic_n;
+static Gfx::TextureHandle thBu00_generic_h;
+static Gfx::TextureHandle thBu00_generic_a;
+static Gfx::TextureHandle thBu01_normal;
+static Gfx::TextureHandle thBu01_hovered;
+static Gfx::TextureHandle thBu01_active;
+
+static void LoadResourcesForEditorGUI()
+{
+    thBu00_generic_n = Gfx::CreateGPUTextureFromDisk(data_path("bu00_generic.png").c_str());
+    thBu00_generic_h = Gfx::CreateGPUTextureFromDisk(data_path("bu00_generic_hovered.png").c_str());
+    thBu00_generic_a = Gfx::CreateGPUTextureFromDisk(data_path("bu00_generic_active.png").c_str());
+    thBu01_normal = Gfx::CreateGPUTextureFromDisk(data_path("bu01.png").c_str());
+    thBu01_hovered = Gfx::CreateGPUTextureFromDisk(data_path("bu01_hovered.png").c_str());
+    thBu01_active = Gfx::CreateGPUTextureFromDisk(data_path("bu01_active.png").c_str());
+}
+
 
 int s_SelectedEntityAssetId = -1;
 
@@ -99,9 +118,39 @@ void EntityDesigner()
     DoCodeEditor(&s_ActiveCodeEditorState);
 }
 
+bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
+{
+    bool result = MesaGUI::Behaviour_Button(id, MesaGUI::UIRect(x,y,w,h));
+
+    u32 texId = MesaGUI::IsHovered(id) ? thBu00_generic_h.textureId : thBu00_generic_n.textureId;
+    if (MesaGUI::IsActive(id) || result) texId = thBu00_generic_a.textureId;
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(x,y,w,h), 
+        5,
+        texId,
+        5.f/thBu00_generic_n.width);
+
+    MesaGUI::UIStyle style = MesaGUI::GetActiveUIStyleCopy();
+    style.textColor = vec4(0.f,0.f,0.f,1.f);
+    MesaGUI::PushUIStyle(style);
+    int sz = 9;
+    MesaGUI::PrimitiveText(x+4, y+5+sz+((MesaGUI::IsActive(id) || result) ? 1 : 0), sz, MesaGUI::TextAlignment::Left, text);
+    MesaGUI::PopUIStyle();
+
+    return result;
+}
+
 void EditorMainBar()
 {
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, EDITOR_FIXED_INTERNAL_RESOLUTION_W, s_ToolBarHeight), vec4(1,1,1,1));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, EDITOR_FIXED_INTERNAL_RESOLUTION_W, s_ToolBarHeight), vec4(RGBHEXTO1(0xd2cabd),1));
+    if(MesaGUI::ImageButton(MesaGUI::UIRect(100, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+    {
+        PrintLog.Message("quelquechose");
+    }
+}
+
+bool Temp_StartGameOrEditorButton()
+{
+    return EditorButton(38105130914, 2, 4, 50, 19, "> Start");
 }
 
 void DoEditorGUI()
@@ -110,6 +159,9 @@ void DoEditorGUI()
     if (!doOnce)
     {
         doOnce = true;
+
+        LoadResourcesForEditorGUI();
+
         EditorState *activeEditorState = EditorState::ActiveEditorState();
         int aid = activeEditorState->CreateNewEntityAsset("entity_0");
         int bid = activeEditorState->CreateNewEntityAsset("entity_1");

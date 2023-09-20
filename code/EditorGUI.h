@@ -12,4 +12,6 @@ below the line is the code editor
 
 */
 
+bool Temp_StartGameOrEditorButton();
+
 void DoEditorGUI();

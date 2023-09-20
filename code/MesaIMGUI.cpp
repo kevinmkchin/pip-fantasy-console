@@ -212,6 +212,7 @@ namespace MesaGUI
     struct RectDrawRequest : UIDrawRequest
     {
         UIRect rect;
+        GLuint textureId = 0;
 
         void Draw()
         {
@@ -226,8 +227,19 @@ namespace MesaGUI
             u32 ib[] = { 0, 1, 3, 1, 2, 3 };
 
             Gfx::UseShader(__main_ui_shader);
-            Gfx::GLBind1i(__main_ui_shader, "useColour", true);
-            Gfx::GLBind4f(__main_ui_shader, "uiColour", color.x, color.y, color.z, color.w);
+
+            if (textureId != 0)
+            {
+                Gfx::GLBind1i(__main_ui_shader, "useColour", false);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, textureId);
+                Gfx::GLBind1i(__main_ui_shader, "textureSampler0", 0);
+            }
+            else
+            {
+                Gfx::GLBind1i(__main_ui_shader, "useColour", true);
+                Gfx::GLBind4f(__main_ui_shader, "uiColour", color.x, color.y, color.z, color.w);
+            }
 
             RebindBufferObjects(__ui_mesh, vb, ib, ARRAY_COUNT(vb), ARRAY_COUNT(ib), GL_DYNAMIC_DRAW);
             RenderMesh(__ui_mesh);
@@ -421,7 +433,9 @@ namespace MesaGUI
     }
 
 
-    bool PrimitiveButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor, bool activeColorOnClickReleaseFrame)
+
+
+    bool Behaviour_Button(ui_id id, UIRect rect)
     {
         bool result = false;
 
@@ -448,6 +462,30 @@ namespace MesaGUI
         {
             SetHovered(id);
         }
+
+        return result;
+    }
+
+
+    bool ImageButton(UIRect rect, u32 normalTexId, u32 hoveredTexId, u32 activeTexId)
+    {
+        ui_id id = FreshID();
+        bool result = Behaviour_Button(id, rect);
+
+        RectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(RectDrawRequest);
+        drawRequest->rect = rect;
+        drawRequest->textureId = IsHovered(id) ? hoveredTexId : normalTexId;
+        if (IsActive(id) || result) drawRequest->textureId = activeTexId;
+
+        drawQueue.push_back(drawRequest);
+
+        return result;
+    }
+
+
+    bool PrimitiveButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor, bool activeColorOnClickReleaseFrame)
+    {
+        bool result = Behaviour_Button(id, rect);
 
         RectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(RectDrawRequest);
         drawRequest->rect = rect;
@@ -478,6 +516,15 @@ namespace MesaGUI
         drawRequest->rect = rect;
         drawRequest->color = colorRGBA;
         drawRequest->radius = cornerRadius;
+
+        drawQueue.push_back(drawRequest);
+    }
+
+    void PrimitivePanel(UIRect rect, u32 glTextureId)
+    {
+        RectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(RectDrawRequest);
+        drawRequest->rect = rect;
+        drawRequest->textureId = glTextureId;
 
         drawQueue.push_back(drawRequest);
     }
