@@ -1102,6 +1102,11 @@ namespace MesaGUI
 
     }
 
+    bool Temp_Escape()
+    {
+        return keyboardInputASCIIKeycodeThisFrame.Contains(SDLK_ESCAPE);
+    }
+
     void SDLProcessEvent(const SDL_Event* evt)
     {
         SDL_Event event = *evt;

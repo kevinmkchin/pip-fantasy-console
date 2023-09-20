@@ -70,6 +70,8 @@ namespace MesaGUI
     void SDLProcessEvent(const SDL_Event* evt);
     void Draw();
 
+    bool Temp_Escape();
+
     bool IsActive(ui_id id);
     bool IsHovered(ui_id id);
     void SetActive(ui_id id);
