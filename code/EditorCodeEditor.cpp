@@ -189,7 +189,7 @@ void EditorCodeEditor(code_editor_state_t *state, u32 width, u32 height, bool en
 
     if (MesaGUI::IsActive(id))
     {
-        if (!enabled)// || MouseWentUp() && !IsHovered(id))
+        if (!enabled || MesaGUI::Temp_Escape())// || MouseWentUp() && !IsHovered(id))
         {
             MesaGUI::SetActive(null_ui_id);
         }
