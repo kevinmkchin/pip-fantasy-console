@@ -7,6 +7,7 @@
 #include "GfxDataTypesAndUtility.h"
 
 const static int s_ToolBarHeight = 26;
+const static vec4 s_EditorColor1 = vec4(RGBHEXTO1(0x414141), 1.f);
 
 static Gfx::TextureHandle thBu00_generic_n;
 static Gfx::TextureHandle thBu00_generic_h;
@@ -26,6 +27,17 @@ static void LoadResourcesForEditorGUI()
 }
 
 
+enum class EditorMode
+{
+    ArtAndAnimation,
+    EntityDesigner,
+    WorldDesigner,
+    SoundAndMusic
+};
+
+static EditorMode s_ActiveMode = EditorMode::EntityDesigner;
+
+
 int s_SelectedEntityAssetId = -1;
 
 // I select an entity template: it's code shows up in the code editor -> a code editor state is created
@@ -38,9 +50,9 @@ code_editor_state_t s_ActiveCodeEditorState;
 
 void DoCodeEditor(code_editor_state_t *codeEditorState)
 {
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/4, s_ToolBarHeight, 
-                                            EDITOR_FIXED_INTERNAL_RESOLUTION_W * 3 / 4, EDITOR_FIXED_INTERNAL_RESOLUTION_H),
-                            vec4(RGB255TO1(103, 122, 137), 1.f));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 + 1, s_ToolBarHeight, 
+                                            EDITOR_FIXED_INTERNAL_RESOLUTION_W * 3 / 4, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 1),
+                            s_EditorColor1);
                      //vec4(RGB255TO1(126, 145, 159), 1.f));
                      //vec4(RGB255TO1(101, 124, 140), 1.f));
 
@@ -57,7 +69,7 @@ void DoEntitySelectionPanel()
     const int selectionPanelW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
     const int selectionPanelH = EDITOR_FIXED_INTERNAL_RESOLUTION_H/2;
 
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, s_ToolBarHeight, selectionPanelW, selectionPanelH), vec4(RGB255TO1(126, 145, 159), 1.f));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, s_ToolBarHeight, selectionPanelW, selectionPanelH), s_EditorColor1);
     MesaGUI::BeginZone(MesaGUI::UIRect(0, s_ToolBarHeight, selectionPanelW, selectionPanelH));
 
     // MesaGUI::DoTextUnformatted(8, 32, 9, MesaGUI::TextAlignment::Left, "Search");
@@ -108,7 +120,7 @@ void DoEntityConfigurationPanel()
     const int configurationPanelW = EDITOR_FIXED_INTERNAL_RESOLUTION_W / 4;
     const int configurationPanelH = EDITOR_FIXED_INTERNAL_RESOLUTION_H - s_ToolBarHeight - (EDITOR_FIXED_INTERNAL_RESOLUTION_H/2);
 
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, s_ToolBarHeight + (EDITOR_FIXED_INTERNAL_RESOLUTION_H / 2) + 1, configurationPanelW, configurationPanelH), vec4(RGB255TO1(126, 145, 159), 1.f));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, s_ToolBarHeight + (EDITOR_FIXED_INTERNAL_RESOLUTION_H / 2) + 1, configurationPanelW, configurationPanelH), s_EditorColor1);
 }
 
 void EntityDesigner()
@@ -116,6 +128,11 @@ void EntityDesigner()
     DoEntitySelectionPanel();
     DoEntityConfigurationPanel();
     DoCodeEditor(&s_ActiveCodeEditorState);
+}
+
+void WorldDesigner()
+{
+
 }
 
 bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
@@ -142,9 +159,53 @@ bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
 void EditorMainBar()
 {
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, EDITOR_FIXED_INTERNAL_RESOLUTION_W, s_ToolBarHeight), vec4(RGBHEXTO1(0xd2cabd),1));
-    if(MesaGUI::ImageButton(MesaGUI::UIRect(100, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+
+    if(s_ActiveMode == EditorMode::ArtAndAnimation)
     {
-        PrintLog.Message("quelquechose");
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(718, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+    }
+    else
+    {
+        if(MesaGUI::ImageButton(MesaGUI::UIRect(718, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+        {
+            s_ActiveMode = EditorMode::ArtAndAnimation;
+        } 
+    }
+
+    if(s_ActiveMode == EditorMode::EntityDesigner)
+    {
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(752, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+    }
+    else
+    {
+        if(MesaGUI::ImageButton(MesaGUI::UIRect(752, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+        {
+            s_ActiveMode = EditorMode::EntityDesigner;
+        } 
+    }
+
+    if(s_ActiveMode == EditorMode::WorldDesigner)
+    {
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(786, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+    }
+    else
+    {
+        if(MesaGUI::ImageButton(MesaGUI::UIRect(786, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+        {
+            s_ActiveMode = EditorMode::WorldDesigner;
+        } 
+    }
+
+    if(s_ActiveMode == EditorMode::SoundAndMusic)
+    {
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(820, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+    }
+    else
+    {
+        if(MesaGUI::ImageButton(MesaGUI::UIRect(820, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+        {
+            s_ActiveMode = EditorMode::SoundAndMusic;
+        } 
     }
 }
 
@@ -222,5 +283,27 @@ void DoEditorGUI()
 
     EditorMainBar();
 
-    EntityDesigner();
+    switch (s_ActiveMode)
+    {
+        case EditorMode::ArtAndAnimation:
+        {
+            MesaGUI::PrimitiveText(20, 100, 9, MesaGUI::TextAlignment::Left, "Art and animation creator coming soon");
+            break;
+        }
+        case EditorMode::EntityDesigner: 
+        {
+            EntityDesigner();
+            break;
+        }
+        case EditorMode::WorldDesigner:
+        {
+            WorldDesigner();
+            break;
+        }
+        case EditorMode::SoundAndMusic:
+        {
+            MesaGUI::PrimitiveText(20, 100, 9, MesaGUI::TextAlignment::Left, "Sound and music creator coming soon");
+            break;
+        }
+    }
 }
