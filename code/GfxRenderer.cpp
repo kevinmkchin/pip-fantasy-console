@@ -94,7 +94,7 @@ namespace Gfx
             fprintf(stderr, "Failed to initialize OpenGL\n");
             return false;
         }
-        PrintLog.Message("--OpenGL initialized.");
+        //PrintLog.Message("--OpenGL initialized.");
     #endif
         s_ActiveSDLWindow = SDL_GL_GetCurrentWindow();
 
@@ -104,12 +104,13 @@ namespace Gfx
         glBlendEquation(GL_FUNC_ADD);
 
         CreateFrameBuffers();
-        UpdateBackBufferSize();
 
         GLCreateShaderProgram(finalPassShader, __finalpass_shader_vs, __finalpass_shader_fs);
         GLCreateShaderProgram(spriteShader, __sprite_shader_vs, __sprite_shader_fs);
 
         CreateMiscellaneous();
+
+        UpdateBackBufferAndGameSize();
 
         s_TheGfxRenderer = this;
 
@@ -269,7 +270,7 @@ namespace Gfx
         UseShader(finalPassShader);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, backBufferWidth, backBufferHeight);
+        glViewport(0, windowDrawableHeight - backBufferHeight, backBufferWidth, backBufferHeight);
         glDepthRange(0, 10);
         glClearColor(RGB255TO1(0, 0, 0), 1.f);
         glClearDepth(1.f);
@@ -300,9 +301,17 @@ namespace Gfx
         GLHasErrors();
     }
 
-    void CoreRenderer::UpdateBackBufferSize()
+    void CoreRenderer::UpdateBackBufferAndGameSize()
     {
-        SDL_GL_GetDrawableSize(s_ActiveSDLWindow, &backBufferWidth, &backBufferHeight);
+        SDL_GL_GetDrawableSize(s_ActiveSDLWindow, &windowDrawableWidth, &windowDrawableHeight);
+
+        backBufferWidth = GM_max(windowDrawableWidth - (windowDrawableWidth % (int)screenScaling), 160);
+        backBufferHeight = GM_max(windowDrawableHeight - (windowDrawableHeight % (int)screenScaling), 160);
+
+        internalGameResolutionW = backBufferWidth / (int)screenScaling;
+        internalGameResolutionH = backBufferHeight / (int)screenScaling;
+
+        UpdateFrameBuffersSize();
         UpdateScreenSizeQuad();
     }
 
@@ -323,13 +332,6 @@ namespace Gfx
     //    debugUILayer.width = internalGameResolutionW;
     //    debugUILayer.height = internalGameResolutionH;
     //    CreateBasicFrameBuffer(&debugUILayer);
-    }
-
-    void CoreRenderer::SetGameResolution(i32 w, i32 h)
-    {
-        internalGameResolutionW = w;
-        internalGameResolutionH = h;
-        UpdateFrameBuffersSize();
     }
 
     void CoreRenderer::UpdateFrameBuffersSize()
@@ -358,44 +360,46 @@ namespace Gfx
 
     void CoreRenderer::UpdateScreenSizeQuad()
     {
-        // 2023-08-08 (Kevin): This is basically what Celeste does in windowed mode. It
-        // adds black borders horizontally or vertically to maintain the fixed aspect ratio
-        // of the game. It is inevitable that some pixels are going to be rendered across 
-        // more screen pixels than others (e.g. 5 screen pixels for pixel A vs 4 for B).
+        // 2023-10-03 (Kevin): No need anymore.
 
-        u32 refQuadIndices[6] = {
-                0, 1, 3,
-                0, 3, 2
-        };
-        float bw = (float)backBufferWidth;
-        float bh = (float)backBufferHeight;
-        float internal_ratio = (float)internalGameResolutionW / (float)internalGameResolutionH;
-        float screen_ratio = (float)bw / (float)bh;
-        float finalOutputQuadVertices[16] = {
-                -1.f, -1.f, 0.f, 0.f,
-                1.f, -1.f, 1.f, 0.f,
-                -1.f, 1.f, 0.f, 1.f,
-                1.f, 1.f, 1.f, 1.f
-        };
-        if(screen_ratio > internal_ratio)
-        {
-            float w = bh * internal_ratio;
-            float f = (bw - w) / bw;
-            finalOutputQuadVertices[0] = -1.f + f;
-            finalOutputQuadVertices[4] = 1.f - f;
-            finalOutputQuadVertices[8] = -1.f + f;
-            finalOutputQuadVertices[12] = 1.f - f;
-        }
-        else
-        {
-            float h = bw / internal_ratio;
-            float f = (bh - h) / bh;
-            finalOutputQuadVertices[1] = -1.f + f;
-            finalOutputQuadVertices[5] = -1.f + f;
-            finalOutputQuadVertices[9] = 1.f - f;
-            finalOutputQuadVertices[13] = 1.f - f;
-        }
-        RebindBufferObjects(screenSizeQuad, finalOutputQuadVertices, refQuadIndices, 16, 6);
+        //// 2023-08-08 (Kevin): This is basically what Celeste does in windowed mode. It
+        //// adds black borders horizontally or vertically to maintain the fixed aspect ratio
+        //// of the game. It is inevitable that some pixels are going to be rendered across 
+        //// more screen pixels than others (e.g. 5 screen pixels for pixel A vs 4 for B).
+
+        //u32 refQuadIndices[6] = {
+        //        0, 1, 3,
+        //        0, 3, 2
+        //};
+        //double bw = (double)backBufferWidth;
+        //double bh = (double)backBufferHeight;
+        //double internal_ratio = (double)internalGameResolutionW / (double)internalGameResolutionH;
+        //double screen_ratio = (double)bw / (double)bh;
+        //float finalOutputQuadVertices[16] = {
+        //        -1.f, -1.f, 0.f, 0.f,
+        //        1.f, -1.f, 1.f, 0.f,
+        //        -1.f, 1.f, 0.f, 1.f,
+        //        1.f, 1.f, 1.f, 1.f
+        //};
+        //if(screen_ratio > internal_ratio)
+        //{
+        //    double w = bh * internal_ratio;
+        //    float f = float((bw - w) / bw);
+        //    finalOutputQuadVertices[0] = -1.f + f;
+        //    finalOutputQuadVertices[4] = 1.f - f;
+        //    finalOutputQuadVertices[8] = -1.f + f;
+        //    finalOutputQuadVertices[12] = 1.f - f;
+        //}
+        //else
+        //{
+        //    double h = bw / internal_ratio;
+        //    float f = float((bh - h) / bh);
+        //    finalOutputQuadVertices[1] = -1.f + f;
+        //    finalOutputQuadVertices[5] = -1.f + f;
+        //    finalOutputQuadVertices[9] = 1.f - f;
+        //    finalOutputQuadVertices[13] = 1.f - f;
+        //}
+        //RebindBufferObjects(screenSizeQuad, finalOutputQuadVertices, refQuadIndices, 16, 6);
     }
    
 }

@@ -38,6 +38,9 @@ static bool InitializeEverything()
 {
     g_ProgramShouldShutdown = false;
 
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_AWARENESS, "system"); // https://github.com/MicrosoftDocs/win32/blob/docs/desktop-src/LearnWin32/dpi-and-device-independent-pixels.md#dwm-scaling
+    SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "0"); // https://github.com/libsdl-org/SDL/commit/ab81a559f43abc0858c96788f8e00bbb352287e8
+
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) return false;
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -47,30 +50,23 @@ static bool InitializeEverything()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-// #ifndef SDL_WINDOW_STARTING_SIZE_H
-//     SDL_DisplayMode DM;
-//     SDL_GetCurrentDisplayMode(0, &DM);
-//     int winsmul = (DM.h - 100) / EDITOR_FIXED_INTERNAL_RESOLUTION_H;
-// #else
-//     int winsmul = SDL_WINDOW_STARTING_SIZE_H / EDITOR_FIXED_INTERNAL_RESOLUTION_H;
-// #endif
-
     g_SDLWindow = SDL_CreateWindow("Mesa GCS",
                                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                   SDL_WINDOW_STARTING_SIZE_W,//EDITOR_FIXED_INTERNAL_RESOLUTION_W * winsmul,
-                                   SDL_WINDOW_STARTING_SIZE_H,//EDITOR_FIXED_INTERNAL_RESOLUTION_H * winsmul,
+                                   SDL_WINDOW_STARTING_SIZE_W,
+                                   SDL_WINDOW_STARTING_SIZE_H,
                                    SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 
     g_SDLGLContext = SDL_GL_CreateContext(g_SDLWindow);
 
     if (g_SDLWindow == nullptr || g_SDLGLContext == nullptr) return false;
 
+    SDL_SetWindowMinimumSize(g_SDLWindow, 100, 30);
     SDL_GL_SetSwapInterval(1);
     //SDL_SetWindowFullscreen(g_SDLWindow, SDL_WINDOW_FULLSCREEN);
 
     PrintLog.Message("Mesa Game Creation System " + std::string(PROJECT_BUILD_VERSION));
-    PrintLog.Message("--Screen size " + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_W) + 
-                     "x" + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_H));
+    // PrintLog.Message("--Screen size " + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_W) + 
+    //                  "x" + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_H));
 
     g_gfx.Init();
     MesaGUI::Init();
@@ -82,6 +78,7 @@ static bool InitializeEverything()
     PrintLog.Message("--Sound loaded.");
 
     PrintLog.Message("\n");
+
 
 	return true;
 }
@@ -100,8 +97,10 @@ static void ProcessSDLEvents()
                 {
                     case SDL_WINDOWEVENT_RESIZED:
                     case SDL_WINDOWEVENT_SIZE_CHANGED:
-                        g_gfx.UpdateBackBufferSize();
+                    {
+                        g_gfx.UpdateBackBufferAndGameSize();
                         break;
+                    }
                 }
                 break;
             }
@@ -121,6 +120,27 @@ static void ProcessSDLEvents()
                     event.type = 0;
                 }
 
+                if (event.key.keysym.sym == SDLK_1)
+                {
+                    g_gfx.screenScaling = Gfx::PixelPerfectRenderScale::OneHundredPercent;
+                    g_gfx.UpdateBackBufferAndGameSize();
+                }
+                if (event.key.keysym.sym == SDLK_2)
+                {
+                    g_gfx.screenScaling = Gfx::PixelPerfectRenderScale::TwoHundredPercent;
+                    g_gfx.UpdateBackBufferAndGameSize();
+                }
+                if (event.key.keysym.sym == SDLK_3)
+                {
+                    g_gfx.screenScaling = Gfx::PixelPerfectRenderScale::ThreeHundredPercent;
+                    g_gfx.UpdateBackBufferAndGameSize();
+                }
+                if (event.key.keysym.sym == SDLK_4)
+                {
+                    g_gfx.screenScaling = Gfx::PixelPerfectRenderScale::FourHundredPercent;
+                    g_gfx.UpdateBackBufferAndGameSize();
+                }
+
                 if (CurrentProgramMode() == MesaProgramMode::BootScreen) 
                 {
                     SendInputToConsole(event.key);
@@ -137,20 +157,28 @@ static void ProcessSDLEvents()
 void StartEditor()
 {
     g_ProgramMode = MesaProgramMode::Editor;
-    g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
-    SDL_SetWindowMinimumSize(g_SDLWindow, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
-    SDL_SetWindowSize(g_SDLWindow, SDL_WINDOW_STARTING_SIZE_W, SDL_WINDOW_STARTING_SIZE_H);
+
+    // TODO(Kevin): get editor w editor h editor s from cached editor data or .ini
+    int winw = SDL_WINDOW_STARTING_SIZE_W;
+    int winh = SDL_WINDOW_STARTING_SIZE_H;
+    int s = 3;
+    g_gfx.screenScaling = (Gfx::PixelPerfectRenderScale)s;
+    SDL_SetWindowSize(g_SDLWindow, winw, winh);
+    g_gfx.UpdateBackBufferAndGameSize();
 }
 
 //static void StartGameFile()
 void StartGameSpace()
 {
     g_ProgramMode = MesaProgramMode::Game;
-    // get game w and game h from game file
-    // g_gfx.SetGameResolution(w, h);
-    g_gfx.SetGameResolution(514, 384);
-    SDL_SetWindowMinimumSize(g_SDLWindow, 514, 384);
-    SDL_SetWindowSize(g_SDLWindow, 514*2, 384*2);
+
+    // get game w game h game s from game file
+    int w = 514;
+    int h = 384;
+    int s = 1;
+    g_gfx.screenScaling = (Gfx::PixelPerfectRenderScale)s;
+    SDL_SetWindowSize(g_SDLWindow, w*(int)g_gfx.screenScaling, h*(int)g_gfx.screenScaling);
+    g_gfx.UpdateBackBufferAndGameSize();
 
     TemporaryGameInit();
 }
@@ -162,8 +190,9 @@ static void LoadFantasyConsole()
                           std::string(" ==\n\ntype 'help'\n");
     SendMessageToConsole(welcome.c_str(), welcome.size());
 
-    g_gfx.SetGameResolution(EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
-    SDL_SetWindowMinimumSize(g_SDLWindow, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H);
+    g_gfx.screenScaling = (Gfx::PixelPerfectRenderScale)3; // TODO (Kevin): read from .ini
+    SDL_SetWindowSize(g_SDLWindow, SDL_WINDOW_STARTING_SIZE_W, SDL_WINDOW_STARTING_SIZE_H);
+    g_gfx.UpdateBackBufferAndGameSize();
 }
 
 int main(int argc, char* argv[])
