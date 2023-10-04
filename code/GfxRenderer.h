@@ -7,6 +7,14 @@
 namespace Gfx
 {
 
+    enum class PixelPerfectRenderScale
+    {
+        OneHundredPercent = 1,
+        TwoHundredPercent = 2,
+        ThreeHundredPercent = 3,
+        FourHundredPercent = 4
+    };
+
     class CoreRenderer
     {
     public:
@@ -14,11 +22,9 @@ namespace Gfx
 
         void Render();
 
-        void UpdateBackBufferSize();
+        void UpdateBackBufferAndGameSize();
 
         void GetBackBufferSize(i32* widthOutput, i32* heightOutput);
-
-        void SetGameResolution(i32 w, i32 h);
 
     private:
 
@@ -40,7 +46,12 @@ namespace Gfx
 
         void CreateMiscellaneous();
 
+    public:
+        PixelPerfectRenderScale screenScaling = PixelPerfectRenderScale::OneHundredPercent;
+
     private:
+        i32 windowDrawableWidth = -1;
+        i32 windowDrawableHeight = -1;
         i32 backBufferWidth = -1;
         i32 backBufferHeight = -1;
 

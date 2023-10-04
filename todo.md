@@ -1,22 +1,19 @@
-# TODO
+# Known Bugs
 
-- boot sound (SDL_mixer)
-- vertext rewrite for better usability better API
-- move fib.ms test code into the editor itself.
-
-
-### Bugs
-
-- GUI incorrect zones when window resize with black bars, window aspect ratio != game ratio
 - GUI fresh ID is not great...will be buggy when number of elements change dynamically
   - should change to be managed by the window (elements in same window will persist the same ids).
 
-### Engine
 
-- Entity assets management through IDs
-- Place entities in space asset using space designer
-- Create new entity assets
-- Manual in markdown, toggled with F1
+# Todo
+
+- place instances of entity assets in world
+- create new entity assets and set sprite and code
+- Markdown reader - manual in markdown, toggled with F1
+
+- boot sound (SDL_mixer)
+- move fib.ms test code into the editor itself.
+
+
 
 MESASCRIPT EPIC:
 - Complete MesaScript a0.1 -> MesaGUI code editor -> select entity type to edit their code -> entity type can choose sprite
@@ -81,6 +78,7 @@ MESASCRIPT EPIC:
 - MesaIMGUI should probably eat keyboard inputs
 - MesaIMGUI overlapping elements or buttons
 - SDL_SCANCODE independent input key enums
+- (fuck off until later) vertext rewrite for better usability better API
 
 ##### Language features
 - replace all std data structs with alternate optimized implementations in C?
@@ -91,6 +89,7 @@ MESASCRIPT EPIC:
 
 # Done
 
+- DesktopWindowsManager DPI Awareness to System, and SDL_HINT_WINDOWS_DPI_SCALING to 0. Stuff isn't blurry anymore thank fuck.
 - DesktopWindowsManager Flush to improve opengl vsync stutter on Windows devices while program is windowed
 - FLOATS
 - some major parser bugs:
