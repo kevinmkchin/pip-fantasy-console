@@ -22,9 +22,9 @@ void WorldDesigner()
 
     // DoEntitySelectionPanel();
 
-    worldViewInfo.pan = ivec2(-32, 64); // based on mouse panning
-    worldViewInfo.dimAfterZoom = ivec2(225, 225);
-    worldViewInfo.dimInUIScale = ivec2(450, 450);
+    worldViewInfo.pan = ivec2(45, 0); // based on mouse panning
+    worldViewInfo.dimAfterZoom = ivec2(worldEditorArea.absw / 45, worldEditorArea.absh / 45);
+    worldViewInfo.dimInUIScale = ivec2(worldEditorArea.absw, worldEditorArea.absh);
 
     const int selectionPanelW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
     const int selectionPanelH = EDITOR_FIXED_INTERNAL_RESOLUTION_H/2;
@@ -53,25 +53,40 @@ void WorldDesigner()
 
     MesaGUI::EndZone();
 
-    ivec2 clickedInternalCoord = Gfx::GetCoreRenderer()->TransformWindowCoordinateToInternalCoordinate(Input.mousePos);
-    // transform internal coordinate to world viewer coordinate accounting for view zoom pan etc.
+    if (Input.mouseLeftHasBeenPressed)
+    {
+        ivec2 clickedInternalCoord = Gfx::GetCoreRenderer()->TransformWindowCoordinateToInternalCoordinate(Input.mousePos);
+        // transform internal coordinate to world viewer coordinate accounting for view zoom pan etc.
+        ivec2 clickedViewCoord = ivec2(clickedInternalCoord.x - worldEditorArea.absx, clickedInternalCoord.y - worldEditorArea.absy);
+        if (0 <= clickedViewCoord.x && clickedViewCoord.x < worldEditorArea.absw && 0 <= clickedViewCoord.y && clickedViewCoord.y < worldEditorArea.absh)
+        {
+            //printf("hello %d %d \n", clickedViewCoord.x, clickedViewCoord.y);
 
-    if (Input.mouseLeftHasBeenPressed) printf("hello %d %d \n", clickedInternalCoord.x, clickedInternalCoord.y);
+            vec3 thingy225 = vec3(clickedViewCoord.x - (450.f / 2.f), -clickedViewCoord.y + (450.f / 2.f), 1.f) / 45.f;
+
+            printf("thingy225 %d %d \n", int(floor(thingy225.x)), int(floor(thingy225.y)));
+
+            // vec3 gameCoords = vec3(thingy225.x - worldViewInfo.pan.x, thingy225.y - worldViewInfo.pan.y, 1.f);
+
+            // printf("gameCoords %f %f \n", gameCoords.x, gameCoords.y);
+        }
+    }
 
 
 
-    // EntityAssetInstanceInSpace aardvark;
-    // aardvark.spaceX = 0;
-    // aardvark.spaceY = 0;
-    // EntityAssetInstanceInSpace barracuda;
-    // barracuda.spaceX = 0;
-    // barracuda.spaceY = -64;
+
+    EntityAssetInstanceInSpace aardvark;
+    aardvark.spaceX = 434;
+    aardvark.spaceY = 0;
+    EntityAssetInstanceInSpace barracuda;
+    barracuda.spaceX = 55;
+    barracuda.spaceY = 0;
     // EntityAssetInstanceInSpace caribou;
     // caribou.spaceX = 32;
     // caribou.spaceY = 0;
 
-    // spaceAssetTemp.placedEntities.push_back(aardvark);
-    // spaceAssetTemp.placedEntities.push_back(barracuda);
+    spaceAssetTemp.placedEntities.push_back(aardvark);
+    spaceAssetTemp.placedEntities.push_back(barracuda);
     // spaceAssetTemp.placedEntities.push_back(caribou);
     Gfx::BasicFrameBuffer worldViewRender = Gfx::GetCoreRenderer()->RenderTheFuckingWorldEditor(&spaceAssetTemp, activeEditorState, worldViewInfo);
 

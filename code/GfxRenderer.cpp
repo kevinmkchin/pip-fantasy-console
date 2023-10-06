@@ -129,8 +129,8 @@ namespace Gfx
 
         UseShader(spriteShader);
 
-        static mat3 orthographicMatrix = mat3(ProjectionMatrixOrthographic2D(0.f, float(worldViewInfo.dimAfterZoom.x), 0.f, float(worldViewInfo.dimAfterZoom.y)));
-        static mat3 viewMatrix = mat3();
+        mat3 orthographicMatrix = mat3(ProjectionMatrixOrthographic2D(0.f, float(worldViewInfo.dimAfterZoom.x), 0.f, float(worldViewInfo.dimAfterZoom.y)));
+        mat3 viewMatrix = mat3();
         viewMatrix[2][0] = (float)worldViewInfo.pan.x;
         viewMatrix[2][1] = (float)worldViewInfo.pan.y;
 
