@@ -5,9 +5,12 @@
 #include "EditorCodeEditor.h"
 #include "EditorState.h"
 #include "GfxDataTypesAndUtility.h"
+#include "GfxRenderer.h"
+#include "InputSystem.h"
 
 const static int s_ToolBarHeight = 26;
 const static vec4 s_EditorColor1 = vec4(RGBHEXTO1(0x414141), 1.f);
+const static vec4 s_EditorColor2 = vec4(RGBHEXTO1(0x6495ed), 1.f);
 
 static Gfx::TextureHandle thBu00_generic_n;
 static Gfx::TextureHandle thBu00_generic_h;
@@ -35,7 +38,7 @@ enum class EditorMode
     SoundAndMusic
 };
 
-static EditorMode s_ActiveMode = EditorMode::EntityDesigner;
+static EditorMode s_ActiveMode = EditorMode::WorldDesigner;
 
 
 int s_SelectedEntityAssetId = -1;
@@ -130,10 +133,18 @@ void EntityDesigner()
     DoCodeEditor(&s_ActiveCodeEditorState);
 }
 
-void WorldDesigner()
+struct Layout 
 {
+    // auto abs
 
-}
+    i32 absx = 0;
+    i32 absy = 0;
+    i32 absw = 0;
+    i32 absh = 0;
+
+};
+
+#include "Editor_WorldEditor.hpp"
 
 bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
 {

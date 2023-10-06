@@ -6,8 +6,11 @@
 
 # Todo
 
+- clicky into world viewer
+
 - place instances of entity assets in world
 - create new entity assets and set sprite and code
+- Depth for GUI? depth ranges and depth test and shit?
 - Markdown reader - manual in markdown, toggled with F1
 
 - boot sound (SDL_mixer)

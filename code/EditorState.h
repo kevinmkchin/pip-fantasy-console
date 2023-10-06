@@ -14,6 +14,16 @@ Saves all project/assets/game data to disk.
 Loads all project/assets/game data from disk.
 */
 
+struct EditorWorldViewInfo
+{
+    int zoomLevel = 1; // 1, 2, 3, 4
+    ivec2 pan;
+    ivec2 dimAfterZoom;
+    ivec2 dimInUIScale;
+
+    // dim = actual dim / zoom level
+};
+
 struct EntityAsset
 {
     // what sprite / animation to start with, what animations are available?
@@ -23,9 +33,19 @@ struct EntityAsset
     std::string code = "";
 };
 
+struct EntityAssetInstanceInSpace
+{
+    int spaceX;
+    int spaceY;
+    int entityAssetId;
+};
+
 struct SpaceAsset
 {
     // list of entities to instantiate in this space
+
+    std::vector<EntityAssetInstanceInSpace> placedEntities;
+
 
 };
 

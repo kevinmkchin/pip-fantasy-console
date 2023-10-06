@@ -117,6 +117,113 @@ namespace Gfx
         return true;
     }
 
+    BasicFrameBuffer CoreRenderer::RenderTheFuckingWorldEditor(SpaceAsset *worldToView, EditorState *state, EditorWorldViewInfo worldViewInfo)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, worldEditorView.FBO);
+        glViewport(0, 0, worldViewInfo.dimInUIScale.x, worldViewInfo.dimInUIScale.y);
+        glClearColor(RGBHEXTO1(0x6495ed), 1.f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_BLEND);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
+        glDisable(GL_DEPTH_TEST);
+
+        UseShader(spriteShader);
+
+        static mat3 orthographicMatrix = mat3(ProjectionMatrixOrthographic2D(0.f, float(worldViewInfo.dimAfterZoom.x), 0.f, float(worldViewInfo.dimAfterZoom.y)));
+        static mat3 viewMatrix = mat3();
+        viewMatrix[2][0] = (float)worldViewInfo.pan.x;
+        viewMatrix[2][1] = (float)worldViewInfo.pan.y;
+
+        GLBindMatrix3fv(spriteShader, "projection", 1, orthographicMatrix.ptr());
+        GLBindMatrix3fv(spriteShader, "view", 1, viewMatrix.ptr());
+
+        mat3 modelMatrix = mat3();
+
+        static TextureHandle mushroom = CreateGPUTextureFromDisk(data_path("mushroom.png").c_str());
+
+        const i32 numQuads = 1;
+        const u32 verticesCount = 16 * numQuads;
+        const u32 indicesCount = 6 * numQuads;
+        float vb[verticesCount];
+        u32 ib[indicesCount];
+
+        vb[0] = 0;
+        vb[1] = 0;
+        vb[2] = 0;
+        vb[3] = 1;
+        vb[4] = 16;
+        vb[5] = 0;
+        vb[6] = 1;
+        vb[7] = 1;
+        vb[8] = 0;
+        vb[9] = -16;
+        vb[10] = 0;
+        vb[11] = 0;
+        vb[12] = 16;
+        vb[13] = -16;
+        vb[14] = 1;
+        vb[15] = 0;
+
+        ib[0] = 0;
+        ib[1] = 2;
+        ib[2] = 1;
+        ib[3] = 2;
+        ib[4] = 3;
+        ib[5] = 1;
+
+        // pass VBO (x, y, u, v) and IBO to shader
+        static u32 spriteBatchVAO = 0;
+        static u32 spriteBatchVBO = 0;
+        static u32 spriteBatchIBO = 0;
+        if(!spriteBatchVAO)
+        {
+            glGenVertexArrays(1, &spriteBatchVAO);
+            glBindVertexArray(spriteBatchVAO);
+
+            glGenBuffers(1, &spriteBatchVBO);
+            glBindBuffer(GL_ARRAY_BUFFER, spriteBatchVBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 16, nullptr, GL_DYNAMIC_DRAW);
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, nullptr);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void*)(sizeof(float) * 2)); // i really feel like this can be nullptr
+            glEnableVertexAttribArray(1);
+
+            glGenBuffers(1, &spriteBatchIBO);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spriteBatchIBO);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * 6, nullptr, GL_DYNAMIC_DRAW);
+        }
+
+        for (size_t i = 0; i < worldToView->placedEntities.size(); ++i)
+        {
+            EntityAssetInstanceInSpace eai = worldToView->placedEntities[i];
+            
+            modelMatrix[2][0] = (float)eai.spaceX;
+            modelMatrix[2][1] = (float)eai.spaceY;
+            // int eaid = eai.entityAssetId;
+            // state->RetrieveEntityAssetById(eaid);
+
+            GLBindMatrix3fv(spriteShader, "model", 1, modelMatrix.ptr());
+
+            glBindVertexArray(spriteBatchVAO);
+            glBindBuffer(GL_ARRAY_BUFFER, spriteBatchVBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verticesCount, vb, GL_DYNAMIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, spriteBatchIBO);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * indicesCount, ib, GL_DYNAMIC_DRAW);
+
+            // set Sampler2D/int sampler0
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, mushroom.textureId);
+            GLBind1i(spriteShader, "sampler0", 0);
+            // set vec3 fragmentColor 
+            GLBind3f(spriteShader, "fragmentColor", 1.f, 1.f, 1.f);
+
+            // draw
+            glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
+        }
+
+        return worldEditorView;
+    }
+
     void CoreRenderer::Render()
     {
         if (CurrentProgramMode() == MesaProgramMode::Game)
@@ -133,7 +240,7 @@ namespace Gfx
     {
         glBindFramebuffer(GL_FRAMEBUFFER, gameLayer.FBO);
         glViewport(0, 0, gameLayer.width, gameLayer.height);
-        glClearColor(RGB255TO1(211, 203, 190), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
+        glClearColor(RGBHEXTO1(0x6495ed), 1.f);//(RGB255TO1(211, 203, 190), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_BLEND);
         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
@@ -356,6 +463,10 @@ namespace Gfx
         };
 
         MeshCreate(screenSizeQuad, refQuadVertices, refQuadIndices, 16, 6, 2, 2, 0, GL_STATIC_DRAW);
+
+        worldEditorView.width = 450;
+        worldEditorView.height = 450;
+        CreateBasicFrameBuffer(&worldEditorView);
     }
 
     void CoreRenderer::UpdateScreenSizeQuad()
@@ -401,6 +512,13 @@ namespace Gfx
         //}
         //RebindBufferObjects(screenSizeQuad, finalOutputQuadVertices, refQuadIndices, 16, 6);
     }
-   
+
+    ivec2 CoreRenderer::TransformWindowCoordinateToInternalCoordinate(ivec2 winCoord)
+    {
+        if (winCoord.x >= backBufferWidth || winCoord.y >= backBufferHeight)
+            return ivec2(-1, -1);
+
+        return ivec2(winCoord.x / (int)screenScaling, winCoord.y / (int)screenScaling);
+    }
 }
 
