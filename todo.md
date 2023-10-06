@@ -6,6 +6,17 @@
 
 # Todo
 
+- Layout system. I need my UI to resize dynamically based on window size.
+  - DeclareVerticalLayout(container/canvas, A auto auto abs abs, B auto auto auto auto, C auto auto abs abs)
+    - Gives back container handles A B C
+    - DeclareHorizontalLayout(B, D auto auto auto auto, E auto auto auto auto)
+      - Gives back container handles D E
+        - SetActiveContainer(D)
+        - Button(blah blah)
+        - Text(blah blah)
+        - SetActiveContainer()
+    - Maybe...the layout system needs to be RETAINED MODE, then i can populate those retained mode containers with imgui stuff.
+
 - place instances of entity assets in world
 - create new entity assets and set sprite and code
 - Markdown reader - manual in markdown, toggled with F1
@@ -68,7 +79,7 @@ MESASCRIPT EPIC:
 - Space system
 - Entity system
 - Console
-
+- Juice and game specific utilities stuff
 
 
 ### Way the fuck down the line
