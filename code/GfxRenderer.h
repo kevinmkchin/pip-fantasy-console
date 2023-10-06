@@ -3,6 +3,7 @@
 #include "MesaCommon.h"
 #include "GfxShader.h"
 #include "GfxDataTypesAndUtility.h"
+#include "EditorState.h"
 
 namespace Gfx
 {
@@ -25,6 +26,11 @@ namespace Gfx
         void UpdateBackBufferAndGameSize();
 
         void GetBackBufferSize(i32* widthOutput, i32* heightOutput);
+
+        BasicFrameBuffer RenderTheFuckingWorldEditor(SpaceAsset *worldToView, EditorState *state, EditorWorldViewInfo worldViewInfo);
+
+    public:
+        ivec2 TransformWindowCoordinateToInternalCoordinate(ivec2 winCoord);
 
     private:
 
@@ -63,6 +69,8 @@ namespace Gfx
         BasicFrameBuffer gameLayer;
         BasicFrameBuffer guiLayer;
         //BasicFrameBuffer debugUILayer;
+
+        BasicFrameBuffer worldEditorView;
 
     private:
         Shader finalPassShader;
