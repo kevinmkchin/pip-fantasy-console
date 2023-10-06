@@ -4,6 +4,10 @@
   - should change to be managed by the window (elements in same window will persist the same ids).
 
 
+# Easy
+- clicky into world viewer
+
+
 # Todo
 
 - Layout system. I need my UI to resize dynamically based on window size.
@@ -16,7 +20,6 @@
         - Text(blah blah)
         - SetActiveContainer()
     - Maybe...the layout system needs to be RETAINED MODE, then i can populate those retained mode containers with imgui stuff.
-- clicky into world viewer
 
 - place instances of entity assets in world
 - create new entity assets and set sprite and code
