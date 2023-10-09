@@ -254,21 +254,6 @@ namespace Gfx
         GLBindMatrix3fv(spriteShader, "projection", 1, orthographicMatrix.ptr());
         GLBindMatrix3fv(spriteShader, "view", 1, identityMatrix.ptr());
 
-        mat3 modelMatrix = identityMatrix;
-
-        Space* space = GetGameActiveSpace();
-        if (space->aliveUpdateAndDraw.size() > 0)
-        {
-            EntityInstance e = space->aliveUpdateAndDraw[0];
-            MesaScript_Table* table = AccessMesaScriptTable(e.selfMapId);
-            TValue xtv = table->AccessMapEntry("x");
-            TValue ytv = table->AccessMapEntry("y");
-            modelMatrix[2][0] = float(xtv.type == TValue::ValueType::Integer ? xtv.integerValue : xtv.realValue);
-            modelMatrix[2][1] = float(ytv.type == TValue::ValueType::Integer ? ytv.integerValue : ytv.realValue);
-        }
-
-        GLBindMatrix3fv(spriteShader, "model", 1, modelMatrix.ptr());
-
         static TextureHandle mushroom = CreateGPUTextureFromDisk(data_path("mushroom.png").c_str());
 
         const i32 numQuads = 1;
@@ -322,21 +307,36 @@ namespace Gfx
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spriteBatchIBO);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * 6, nullptr, GL_DYNAMIC_DRAW);
         }
-        glBindVertexArray(spriteBatchVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, spriteBatchVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verticesCount, vb, GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, spriteBatchIBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * indicesCount, ib, GL_DYNAMIC_DRAW);
 
-        // set Sampler2D/int sampler0
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, mushroom.textureId);
-        GLBind1i(spriteShader, "sampler0", 0);
-        // set vec3 fragmentColor 
-        GLBind3f(spriteShader, "fragmentColor", 1.f, 1.f, 1.f);
+        mat3 modelMatrix = identityMatrix;
 
-        // draw
-        glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
+        Space* space = GetGameActiveSpace();
+        for (EntityInstance e : space->aliveUpdateAndDraw)
+        {
+            MesaScript_Table* table = AccessMesaScriptTable(e.selfMapId);
+            TValue xtv = table->AccessMapEntry("x");
+            TValue ytv = table->AccessMapEntry("y");
+            modelMatrix[2][0] = float(xtv.type == TValue::ValueType::Integer ? xtv.integerValue : xtv.realValue);
+            modelMatrix[2][1] = float(ytv.type == TValue::ValueType::Integer ? ytv.integerValue : ytv.realValue);
+        
+            GLBindMatrix3fv(spriteShader, "model", 1, modelMatrix.ptr());
+
+            glBindVertexArray(spriteBatchVAO);
+            glBindBuffer(GL_ARRAY_BUFFER, spriteBatchVBO);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(float) * verticesCount, vb, GL_DYNAMIC_DRAW);
+            glBindBuffer(GL_ARRAY_BUFFER, spriteBatchIBO);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * indicesCount, ib, GL_DYNAMIC_DRAW);
+
+            // set Sampler2D/int sampler0
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, mushroom.textureId);
+            GLBind1i(spriteShader, "sampler0", 0);
+            // set vec3 fragmentColor 
+            GLBind3f(spriteShader, "fragmentColor", 1.f, 1.f, 1.f);
+
+            // draw
+            glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, nullptr);
+        }
     }
 
     void CoreRenderer::RenderGUILayer()

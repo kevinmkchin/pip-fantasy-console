@@ -4,8 +4,9 @@
   - should change to be managed by the window (elements in same window will persist the same ids).
 
 
-# Easy
+# Next
 - clicky into world viewer
+- higher resolution render? maybe? 
 
 
 # Todo

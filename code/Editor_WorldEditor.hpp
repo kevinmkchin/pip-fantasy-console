@@ -7,7 +7,6 @@
 
 
 EditorWorldViewInfo worldViewInfo;
-SpaceAsset spaceAssetTemp;
 
 void WorldDesigner()
 {
@@ -22,8 +21,8 @@ void WorldDesigner()
 
     // DoEntitySelectionPanel();
 
-    worldViewInfo.pan = ivec2(45, 0); // based on mouse panning
-    worldViewInfo.dimAfterZoom = ivec2(worldEditorArea.absw / 45, worldEditorArea.absh / 45);
+    worldViewInfo.pan = ivec2(0, 0); // based on mouse panning
+    worldViewInfo.dimAfterZoom = ivec2(worldEditorArea.absw / 1, worldEditorArea.absh / 1);
     worldViewInfo.dimInUIScale = ivec2(worldEditorArea.absw, worldEditorArea.absh);
 
     const int selectionPanelW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
@@ -35,7 +34,7 @@ void WorldDesigner()
     EditorState *activeEditorState = EditorState::ActiveEditorState();
 
     MesaGUI::EditorBeginListBox();
-    const std::vector<int> entityAssetIdsList = *activeEditorState->RetrieveAllEntityAssetIds();
+    const std::vector<int>& entityAssetIdsList = *activeEditorState->RetrieveAllEntityAssetIds();
     for (size_t i = 0; i < entityAssetIdsList.size(); ++i)
     {
         int entityAssetId = entityAssetIdsList.at(i);
@@ -53,6 +52,8 @@ void WorldDesigner()
 
     MesaGUI::EndZone();
 
+    SpaceAsset& spaceAssetTemp = *activeEditorState->RetrieveSpaceAssetById(activeEditorState->activeSpaceId);
+
     if (Input.mouseLeftHasBeenPressed)
     {
         ivec2 clickedInternalCoord = Gfx::GetCoreRenderer()->TransformWindowCoordinateToInternalCoordinate(Input.mousePos);
@@ -62,31 +63,35 @@ void WorldDesigner()
         {
             //printf("hello %d %d \n", clickedViewCoord.x, clickedViewCoord.y);
 
-            vec3 thingy225 = vec3(clickedViewCoord.x - (450.f / 2.f), -clickedViewCoord.y + (450.f / 2.f), 1.f) / 45.f;
+            vec3 thingy225 = vec3(clickedViewCoord.x - (450.f / 2.f), -clickedViewCoord.y + (450.f / 2.f), 1.f) / 1.f;
 
-            printf("thingy225 %d %d \n", int(floor(thingy225.x)), int(floor(thingy225.y)));
+            int bruhx = int(floor(thingy225.x)) - worldViewInfo.pan.x;
+            int bruhy = int(floor(thingy225.y)) - worldViewInfo.pan.y;
+            printf("thingy225 %d %d \n", bruhx, bruhy);
 
             // vec3 gameCoords = vec3(thingy225.x - worldViewInfo.pan.x, thingy225.y - worldViewInfo.pan.y, 1.f);
 
             // printf("gameCoords %f %f \n", gameCoords.x, gameCoords.y);
+
+            EntityAssetInstanceInSpace aardvark;
+            aardvark.spaceX = bruhx;
+            aardvark.spaceY = bruhy;
+            spaceAssetTemp.placedEntities.push_back(aardvark);
         }
     }
 
-
-
-
-    EntityAssetInstanceInSpace aardvark;
-    aardvark.spaceX = 434;
-    aardvark.spaceY = 0;
-    EntityAssetInstanceInSpace barracuda;
-    barracuda.spaceX = 55;
-    barracuda.spaceY = 0;
+    // EntityAssetInstanceInSpace aardvark;
+    // aardvark.spaceX = 434;
+    // aardvark.spaceY = 0;
+    // EntityAssetInstanceInSpace barracuda;
+    // barracuda.spaceX = -4;
+    // barracuda.spaceY = 4;
     // EntityAssetInstanceInSpace caribou;
     // caribou.spaceX = 32;
     // caribou.spaceY = 0;
 
-    spaceAssetTemp.placedEntities.push_back(aardvark);
-    spaceAssetTemp.placedEntities.push_back(barracuda);
+    // spaceAssetTemp.placedEntities.push_back(aardvark);
+    // spaceAssetTemp.placedEntities.push_back(barracuda);
     // spaceAssetTemp.placedEntities.push_back(caribou);
     Gfx::BasicFrameBuffer worldViewRender = Gfx::GetCoreRenderer()->RenderTheFuckingWorldEditor(&spaceAssetTemp, activeEditorState, worldViewInfo);
 

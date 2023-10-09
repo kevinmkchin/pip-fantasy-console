@@ -14,6 +14,18 @@ Space* GetGameActiveSpace()
     return &activeSpace;
 }
 
+void ClearActiveSpace()
+{
+    for (int i = int(activeSpace.aliveUpdateAndDraw.size()) - 1, min = 0; i >= min; --i)
+    {
+        EntityInstance e = activeSpace.aliveUpdateAndDraw.at(i);
+
+        ReleaseReferenceGCObject(e.selfMapId);
+
+        activeSpace.aliveUpdateAndDraw.pop_back();
+    }
+}
+
 void TemporaryGameInit() // should be init space or start space, there should be separate func for game wide init
 {
     /*
@@ -33,6 +45,8 @@ void TemporaryGameInit() // should be init space or start space, there should be
         5. Space initialization script's PostGameObjectCreationInit should run? doesn't matter for now.
     */
 
+    ClearActiveSpace();
+
     EditorState *activeEditorState = EditorState::ActiveEditorState();
 
     const std::vector<int> entityAssetIds = *activeEditorState->RetrieveAllEntityAssetIds();
@@ -48,58 +62,57 @@ void TemporaryGameInit() // should be init space or start space, there should be
     CompileMesaScriptCode(et1.code, &entityAssetScriptScopes.at(1));
     CompileMesaScriptCode(et2.code, &entityAssetScriptScopes.at(2));
 
-    EntityInstance e0;
-    EntityInstance e1;
-    EntityInstance e2;
-    EntityInstance e3;
-    EntityInstance e4;
 
-    e0.assetScriptScope = &entityAssetScriptScopes.at(0);
-    e1.assetScriptScope = &entityAssetScriptScopes.at(1);
-    e2.assetScriptScope = &entityAssetScriptScopes.at(2);
-    e3.assetScriptScope = &entityAssetScriptScopes.at(0);
-    e4.assetScriptScope = &entityAssetScriptScopes.at(0);
-    e0.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
-    e1.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
-    e2.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
-    e3.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
-    e4.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
+    SpaceAsset *spaceToInitialize = activeEditorState->RetrieveSpaceAssetById(activeEditorState->activeSpaceId);
 
-    TValue tvalueDefaultInteger;
-    tvalueDefaultInteger.type = TValue::ValueType::Integer;
-    tvalueDefaultInteger.integerValue = 0;
-    AccessMesaScriptTable(e0.selfMapId)->CreateNewMapEntry("x", tvalueDefaultInteger);
-    AccessMesaScriptTable(e0.selfMapId)->CreateNewMapEntry("y", tvalueDefaultInteger);
-
+    for (EntityAssetInstanceInSpace inst : spaceToInitialize->placedEntities)
     {
-        activeSpace.aliveUpdateAndDraw.push_back(e0);
-        IncrementReferenceGCObject(e0.selfMapId); // TODO(Kevin): decrement when destroy EntityInstance
+        EntityInstance e;
+
+        e.assetScriptScope = &entityAssetScriptScopes.at(1);
+
+        e.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
+
+        TValue tvalueInteger;
+        tvalueInteger.type = TValue::ValueType::Integer;
+        tvalueInteger.integerValue = inst.spaceX;
+        AccessMesaScriptTable(e.selfMapId)->CreateNewMapEntry("x", tvalueInteger);
+        tvalueInteger.integerValue = inst.spaceY;
+        AccessMesaScriptTable(e.selfMapId)->CreateNewMapEntry("y", tvalueInteger);
+
+        activeSpace.aliveUpdateAndDraw.push_back(e);
+        IncrementReferenceGCObject(e.selfMapId); // TODO(Kevin): decrement when destroy EntityInstance
     }
 
+    static bool doOnce = false;
+    if (!doOnce)
+    {
+        doOnce = true; // TODO(Kevin): do something more robust like what should actually happen to these singletons on restart?
 
-    MesaScript_Table *input = EmplaceMapInGlobalScope("input");
-    TValue left;
-    left.type = TValue::ValueType::Boolean;
-    left.boolValue = false;
-    TValue right;
-    right.type = TValue::ValueType::Boolean;
-    right.boolValue = false;
-    TValue up;
-    up.type = TValue::ValueType::Boolean;
-    up.boolValue = false;
-    TValue down;
-    down.type = TValue::ValueType::Boolean;
-    down.boolValue = false;
-    input->CreateNewMapEntry("left", left);
-    input->CreateNewMapEntry("right", right);
-    input->CreateNewMapEntry("up", up);
-    input->CreateNewMapEntry("down", down);
+        MesaScript_Table *input = EmplaceMapInGlobalScope("input");
+        TValue left;
+        left.type = TValue::ValueType::Boolean;
+        left.boolValue = false;
+        TValue right;
+        right.type = TValue::ValueType::Boolean;
+        right.boolValue = false;
+        TValue up;
+        up.type = TValue::ValueType::Boolean;
+        up.boolValue = false;
+        TValue down;
+        down.type = TValue::ValueType::Boolean;
+        down.boolValue = false;
+        input->CreateNewMapEntry("left", left);
+        input->CreateNewMapEntry("right", right);
+        input->CreateNewMapEntry("up", up);
+        input->CreateNewMapEntry("down", down);
 
-    MesaScript_Table *time = EmplaceMapInGlobalScope("time");
-    TValue deltaTime;
-    deltaTime.type = TValue::ValueType::Real;
-    deltaTime.realValue = Time.deltaTime;
-    time->CreateNewMapEntry("dt", deltaTime);
+        MesaScript_Table *time = EmplaceMapInGlobalScope("time");
+        TValue deltaTime;
+        deltaTime.type = TValue::ValueType::Real;
+        deltaTime.realValue = Time.deltaTime;
+        time->CreateNewMapEntry("dt", deltaTime);
+    }
 }
 
 void TemporaryGameLoop()
