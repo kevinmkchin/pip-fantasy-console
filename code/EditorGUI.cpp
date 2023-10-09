@@ -39,9 +39,7 @@ enum class EditorMode
 };
 
 static EditorMode s_ActiveMode = EditorMode::WorldDesigner;
-
-
-int s_SelectedEntityAssetId = -1;
+static int s_SelectedEntityAssetId = -1;
 
 // I select an entity template: it's code shows up in the code editor -> a code editor state is created
 // I can keep multiple code editor states open at once (multiple tabs, one tab for each entity code)
@@ -49,7 +47,7 @@ int s_SelectedEntityAssetId = -1;
 //     (how many lines down from the top?)
 // Does the entity code get updated constantly or only when saved?
 
-code_editor_state_t s_ActiveCodeEditorState;
+static code_editor_state_t s_ActiveCodeEditorState;
 
 void DoCodeEditor(code_editor_state_t *codeEditorState)
 {
@@ -286,8 +284,10 @@ void DoEditorGUI()
         //                            "                    `!9899fT|!^\"'\n"
         //                            "                      `!^\"'\n"
         //                            "";
-        activeEditorState->RetrieveEntityAssetById(bid)->code = "fn Update() { print('et1 update') }";
+        activeEditorState->RetrieveEntityAssetById(bid)->code = "fn Update(self) { self['x'] = self['x'] + 1 }";
         activeEditorState->RetrieveEntityAssetById(cid)->code = "fn Update() { print('et2 update') }";
+
+        activeEditorState->activeSpaceId = activeEditorState->CreateNewSpaceAsset("name for new space");
 
         AllocateMemoryCodeEditorState(&s_ActiveCodeEditorState);
     }

@@ -60,12 +60,22 @@ public:
     EntityAsset *RetrieveEntityAssetById(int assetId);
     const std::vector<int> *RetrieveAllEntityAssetIds();
 
+    int CreateNewSpaceAsset(const char *name);
+    SpaceAsset *RetrieveSpaceAssetById(int assetId);
+
 private:
     int FreshAssetID();
+
+public:
+    int activeSpaceId = -1;
 
 private:
     std::vector<int> projectEntityAssetIds;
     std::unordered_map<int, EntityAsset> projectEntityAssets;
+
+    std::vector<int> projectSpaceAssetIds;
+    std::unordered_map<int, SpaceAsset> projectSpaceAssets;
+
     int assetIdTicker = 100;
 };
 

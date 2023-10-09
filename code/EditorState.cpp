@@ -41,3 +41,18 @@ const std::vector<int> *EditorState::RetrieveAllEntityAssetIds()
     return &projectEntityAssetIds;
 }
 
+
+int EditorState::CreateNewSpaceAsset(const char *name)
+{
+    SpaceAsset createdSpace;
+    int assetId = FreshAssetID();
+    projectSpaceAssets.insert(std::make_pair(assetId, createdSpace));
+    projectSpaceAssetIds.push_back(assetId);
+    return assetId;
+}
+
+SpaceAsset *EditorState::RetrieveSpaceAssetById(int assetId)
+{
+    return &projectSpaceAssets.at(assetId);
+}
+

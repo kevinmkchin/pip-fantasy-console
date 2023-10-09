@@ -185,7 +185,7 @@ struct MesaGCObject
 
 public:
     i32 refCount = 0;
-    u64 selfId = 0;
+    i64 selfId = 0;
 private:
     GCObjectType type = GCObjectType::Invalid;
 public:
