@@ -6,7 +6,14 @@
 
 # Next
 - clicky into world viewer
-- higher resolution render? maybe? 
+- higher resolution render? maybe?
+
+* place instances of entity assets in world
+* create new entity assets and set sprite and code
+* entity code -> game behaviour pipeline is further refined (e.g. self? how to use local variables? global vars? how to refer to other ents?)
+
+- move fib.ms test code into the editor itself. maybe
+
 
 
 # Todo
@@ -22,14 +29,9 @@
         - SetActiveContainer()
     - Maybe...the layout system needs to be RETAINED MODE, then i can populate those retained mode containers with imgui stuff.
 
-- place instances of entity assets in world
-- create new entity assets and set sprite and code
 - Depth for GUI? depth ranges and depth test and shit?
 - Markdown reader - manual in markdown, toggled with F1
-
 - boot sound (SDL_mixer)
-- move fib.ms test code into the editor itself.
-
 
 
 MESASCRIPT EPIC:
