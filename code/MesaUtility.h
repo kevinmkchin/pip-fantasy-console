@@ -50,7 +50,7 @@ template<typename T, int _count> struct NiceArray
     {
         if (index < count - 1)
         {
-            memmove(data + index, data + index + 1, count - index - 1);
+            memmove(data + index, data + index + 1, (count - index - 1) * sizeof(*data));
         }
         --count;
     }
