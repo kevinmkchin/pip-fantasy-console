@@ -7,6 +7,19 @@
 
 namespace Gfx
 {
+    struct AutoLayoutHandle
+    {
+        int x;
+        int y;
+        int w;
+        int h;
+        bool xauto = true;
+        bool yauto = true;
+        bool wauto = true;
+        bool hauto = true;
+
+        std::vector<AutoLayoutHandle*> container;
+    };
 
     enum class PixelPerfectRenderScale
     {
@@ -78,6 +91,12 @@ namespace Gfx
 
     private:
         Mesh screenSizeQuad;
+
+    public:
+
+        void UpdateAutoLayouting();
+
+        AutoLayoutHandle *RegisterAutoLayout(int absX, int absY, int absW, int absH);
 
     };
 

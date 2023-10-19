@@ -165,17 +165,21 @@ bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
     return result;
 }
 
+Gfx::AutoLayoutHandle *aaa;
+Gfx::AutoLayoutHandle *bbb;
+Gfx::AutoLayoutHandle *ccc;
+
 void EditorMainBar()
 {
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, EDITOR_FIXED_INTERNAL_RESOLUTION_W, s_ToolBarHeight), vec4(RGBHEXTO1(0xd2cabd),1));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(aaa->x, aaa->y, aaa->w, aaa->h), vec4(RGBHEXTO1(0xd2cabd),1));
 
     if(s_ActiveMode == EditorMode::ArtAndAnimation)
     {
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(718, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(aaa->w - 136, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
     }
     else
     {
-        if(MesaGUI::ImageButton(MesaGUI::UIRect(718, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+        if(MesaGUI::ImageButton(MesaGUI::UIRect(aaa->w - 136, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
         {
             s_ActiveMode = EditorMode::ArtAndAnimation;
         } 
@@ -183,11 +187,11 @@ void EditorMainBar()
 
     if(s_ActiveMode == EditorMode::EntityDesigner)
     {
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(752, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(aaa->w - 102, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
     }
     else
     {
-        if(MesaGUI::ImageButton(MesaGUI::UIRect(752, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+        if(MesaGUI::ImageButton(MesaGUI::UIRect(aaa->w - 102, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
         {
             s_ActiveMode = EditorMode::EntityDesigner;
         } 
@@ -195,11 +199,11 @@ void EditorMainBar()
 
     if(s_ActiveMode == EditorMode::WorldDesigner)
     {
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(786, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(aaa->w - 68, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
     }
     else
     {
-        if(MesaGUI::ImageButton(MesaGUI::UIRect(786, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+        if(MesaGUI::ImageButton(MesaGUI::UIRect(aaa->w - 68, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
         {
             s_ActiveMode = EditorMode::WorldDesigner;
         } 
@@ -207,11 +211,11 @@ void EditorMainBar()
 
     if(s_ActiveMode == EditorMode::SoundAndMusic)
     {
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(820, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(aaa->w - 34, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
     }
     else
     {
-        if(MesaGUI::ImageButton(MesaGUI::UIRect(820, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+        if(MesaGUI::ImageButton(MesaGUI::UIRect(aaa->w - 34, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
         {
             s_ActiveMode = EditorMode::SoundAndMusic;
         } 
@@ -290,7 +294,17 @@ void DoEditorGUI()
         activeEditorState->activeSpaceId = activeEditorState->CreateNewSpaceAsset("name for new space");
 
         AllocateMemoryCodeEditorState(&s_ActiveCodeEditorState);
+
+        aaa = Gfx::GetCoreRenderer()->RegisterAutoLayout(-1,-1,-1,s_ToolBarHeight);
+        bbb = Gfx::GetCoreRenderer()->RegisterAutoLayout(-1,-1,-1,-1);
+        ccc = Gfx::GetCoreRenderer()->RegisterAutoLayout(-1,-1,-1,-1);
     }
+
+    // main bar layout
+    // Layout at auto auto auto s_ToolbarHeight
+    // take layout and grab its width, width - some value
+
+    Gfx::GetCoreRenderer()->UpdateAutoLayouting();
 
     EditorMainBar();
 
@@ -317,4 +331,8 @@ void DoEditorGUI()
             break;
         }
     }
+
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(aaa->x, aaa->y, aaa->w, aaa->h), vec4(1,0,0,0.5));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(bbb->x, bbb->y, bbb->w, bbb->h), vec4(0,1,0,0.5));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(ccc->x, ccc->y, ccc->w, ccc->h), vec4(0,0,1,0.5));
 }
