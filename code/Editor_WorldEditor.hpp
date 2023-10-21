@@ -8,11 +8,19 @@
 
 EditorWorldViewInfo worldViewInfo;
 
+struct TempLayout
+{
+    int absx;
+    int absy;
+    int absw;
+    int absh;
+};
+
 void WorldDesigner()
 {
     // Layouts
 
-    Layout worldEditorArea;
+    TempLayout worldEditorArea;
     worldEditorArea.absx = 230;
     worldEditorArea.absy = 50;
     worldEditorArea.absw = 450;

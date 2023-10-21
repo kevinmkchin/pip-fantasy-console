@@ -19,7 +19,7 @@
 #include "Console.h"
 #include "PrintLog.h"
 #include "MesaIMGUI.h"
-#include "EditorGUI.h"
+#include "Editor.h"
 #include "Game.h"
 #include "MesaScript.h"
 
