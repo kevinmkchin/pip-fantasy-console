@@ -90,6 +90,8 @@ namespace MesaGUI
         return bitmapFont;
     }
 
+    UIRect::UIRect(struct ALH *layout) : x(layout->x), y(layout->y), w(layout->w), h(layout->h) {};
+
     static Gfx::Shader __main_ui_shader;
     static const char* __main_ui_shader_vs =
             "#version 330 core\n"
@@ -1017,6 +1019,129 @@ namespace MesaGUI
     {
 
     }
+
+    static void UpdateALHContainer(ALH *layout)
+    {
+        const int lx = layout->x;
+        const int ly = layout->y;
+        const int lw = layout->w;
+        const int lh = layout->h;
+        const int lc = layout->Count();
+
+        if (lc == 0) return;
+
+        if (layout->vertical)
+        {
+            int absHeightSum = 0;
+            int elemIgnoredCount = 0;
+
+            for (ALH *child : layout->container)
+            {
+                if (child->xauto == false || child->yauto == false)
+                {
+                    ++elemIgnoredCount;
+                }
+                else if (child->hauto == false)
+                {
+                    absHeightSum += child->h;
+                    ++elemIgnoredCount;
+                }
+            }
+
+            int elemAutoHeight = (lh - absHeightSum) / (lc - elemIgnoredCount);
+
+            int yPosAccum = ly;
+
+            for (ALH *child : layout->container)
+            {
+                if (child->xauto == false || child->yauto == false) continue;
+
+                child->x = lx;
+                child->y = yPosAccum;
+                child->w = child->wauto ? lw : child->w;
+                child->h = child->hauto ? elemAutoHeight : child->h;
+
+                yPosAccum += child->h;
+            }
+        }
+        else
+        {
+            int absWidthSum = 0;
+            int elemIgnoredCount = 0;
+
+            for (ALH *child : layout->container)
+            {
+                if (child->xauto == false || child->yauto == false)
+                {
+                    ++elemIgnoredCount;
+                }
+                else if (child->wauto == false)
+                {
+                    absWidthSum += child->w;
+                    ++elemIgnoredCount;
+                }
+            }
+
+            int elemAutoWidth = (lw - absWidthSum) / (lc - elemIgnoredCount);
+
+            int xPosAccum = lx;
+
+            for (ALH *child : layout->container)
+            {
+                if (child->xauto == false || child->yauto == false) continue;
+
+                child->x = xPosAccum;
+                child->y = ly;
+                child->w = child->wauto ? elemAutoWidth : child->w;
+                child->h = child->hauto ? lh : child->h;
+
+                xPosAccum += child->w;
+            }
+        }
+
+        for (ALH *child : layout->container)
+        {
+            UpdateALHContainer(child);
+        }
+    }
+
+    void UpdateMainCanvasALH(ALH *layout)
+    {
+        layout->x = 0;
+        layout->y = 0;
+        Gfx::GetCoreRenderer()->GetInternalRenderSize(&layout->w, &layout->h);
+
+        UpdateALHContainer(layout);
+    }
+
+    ALH *NewALH(bool vertical)
+    {
+        return NewALH(-1, -1, -1, -1, vertical);
+    }
+
+    ALH *NewALH(int absX, int absY, int absW, int absH, bool vertical)
+    {
+        ALH *alh = new ALH();
+        
+        alh->x = absX;
+        alh->xauto = alh->x < 0 ? true : false;
+        alh->y = absY;
+        alh->yauto = alh->y < 0 ? true : false;
+        alh->w = absW;
+        alh->wauto = alh->w < 0 ? true : false;
+        alh->h = absH;
+        alh->hauto = alh->h < 0 ? true : false;
+        
+        alh->vertical = vertical;
+        
+        return alh;
+    }
+
+    void DeleteALH(ALH *layout)
+    {
+
+    }
+
 
 
 

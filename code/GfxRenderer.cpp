@@ -427,6 +427,12 @@ namespace Gfx
         *widthOutput = backBufferWidth;
         *heightOutput = backBufferHeight;
     }
+    
+    void CoreRenderer::GetInternalRenderSize(i32 *widthOutput, i32 *heightOutput)
+    {
+        *widthOutput = internalGameResolutionW;
+        *heightOutput = internalGameResolutionH;
+    }
 
     void CoreRenderer::CreateFrameBuffers()
     {
@@ -519,58 +525,6 @@ namespace Gfx
             return ivec2(-1, -1);
 
         return ivec2(winCoord.x / (int)screenScaling, winCoord.y / (int)screenScaling);
-    }
-
-
-    NiceArray<AutoLayoutHandle, 16> mainCanvasLayouts;
-    bool mainCanvasLayoutsAlignVertical = true;
-
-    void CoreRenderer::UpdateAutoLayouting()
-    {
-        const int mainCanvasW = internalGameResolutionW;
-        const int mainCanvasH = internalGameResolutionH;
-
-        if (mainCanvasLayoutsAlignVertical)
-        {
-            int absHeightSum = 0;
-            int absHeightCount = 0;
-            for (int i = 0; i < mainCanvasLayouts.count; ++i)
-            {
-                AutoLayoutHandle& handle = mainCanvasLayouts.At(i);
-                if (handle.hauto == false)
-                {
-                    absHeightSum += handle.h;
-                    ++absHeightCount;
-                }
-            }
-            int autoElemH = (mainCanvasH - absHeightSum) / (mainCanvasLayouts.count - absHeightCount);
-
-            int yPosAccum = 0;
-            for (int i = 0; i < mainCanvasLayouts.count; ++i)
-            {
-                AutoLayoutHandle& handle = mainCanvasLayouts.At(i);
-                handle.x = 0;
-                handle.y = yPosAccum;
-                handle.w = mainCanvasW;
-                handle.h = handle.hauto ? autoElemH : handle.h;
-                yPosAccum += handle.h;
-            }
-        }
-    }
-
-    AutoLayoutHandle *CoreRenderer::RegisterAutoLayout(int absX, int absY, int absW, int absH)
-    {
-        AutoLayoutHandle alh;
-        alh.x = absX;
-        alh.xauto = alh.x < 0 ? true : false;
-        alh.y = absY;
-        alh.yauto = alh.y < 0 ? true : false;
-        alh.w = absW;
-        alh.wauto = alh.w < 0 ? true : false;
-        alh.h = absH;
-        alh.hauto = alh.h < 0 ? true : false;
-        mainCanvasLayouts.PushBack(alh);
-        return &mainCanvasLayouts.Back();
     }
 }
 

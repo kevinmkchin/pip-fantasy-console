@@ -46,8 +46,8 @@ set(SOURCE_FILES
     code/MemoryAllocator.cpp
     code/EditorState.h
     code/EditorState.cpp
-    code/EditorGUI.h
-    code/EditorGUI.cpp
+    code/Editor.h
+    code/Editor.cpp
     code/EditorCodeEditor.h
     code/EditorCodeEditor.cpp
     code/MesaScript.h

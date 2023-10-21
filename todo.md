@@ -6,6 +6,8 @@
 
 # Next
 - clicky into world viewer
+- GUI layouting
+
 - higher resolution render? maybe?
 
 * place instances of entity assets in world

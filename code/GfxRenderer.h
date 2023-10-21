@@ -7,19 +7,6 @@
 
 namespace Gfx
 {
-    struct AutoLayoutHandle
-    {
-        int x;
-        int y;
-        int w;
-        int h;
-        bool xauto = true;
-        bool yauto = true;
-        bool wauto = true;
-        bool hauto = true;
-
-        std::vector<AutoLayoutHandle*> container;
-    };
 
     enum class PixelPerfectRenderScale
     {
@@ -36,11 +23,11 @@ namespace Gfx
 
         void Render();
 
-        void UpdateBackBufferAndGameSize();
-
-        void GetBackBufferSize(i32* widthOutput, i32* heightOutput);
-
         BasicFrameBuffer RenderTheFuckingWorldEditor(SpaceAsset *worldToView, EditorState *state, EditorWorldViewInfo worldViewInfo);
+
+        void UpdateBackBufferAndGameSize();
+        void GetBackBufferSize(i32 *widthOutput, i32 *heightOutput);
+        void GetInternalRenderSize(i32 *widthOutput, i32 *heightOutput);
 
     public:
         ivec2 TransformWindowCoordinateToInternalCoordinate(ivec2 winCoord);
@@ -69,12 +56,15 @@ namespace Gfx
         PixelPerfectRenderScale screenScaling = PixelPerfectRenderScale::OneHundredPercent;
 
     private:
+        // actual window size
         i32 windowDrawableWidth = -1;
         i32 windowDrawableHeight = -1;
+
+        // window size minus whatever epsilon to make render pixel perfect
         i32 backBufferWidth = -1;
         i32 backBufferHeight = -1;
 
-        // constant during the runtime of a game disregard of window resize
+        // backbuffer size divided by screen/render scaling
         i32 internalGameResolutionW = 800;
         i32 internalGameResolutionH = 600;
 
@@ -91,12 +81,6 @@ namespace Gfx
 
     private:
         Mesh screenSizeQuad;
-
-    public:
-
-        void UpdateAutoLayouting();
-
-        AutoLayoutHandle *RegisterAutoLayout(int absX, int absY, int absW, int absH);
 
     };
 

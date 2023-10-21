@@ -1,10 +1,9 @@
 #pragma once
 
-#pragma once
-
 #include <SDL.h>
 
 #include <string>
+#include <vector>
 
 #include "MesaMath.h"
 #include "MesaCommon.h"
@@ -35,6 +34,7 @@ namespace MesaGUI
     {
         UIRect() : x(0), y(0), w(0), h(0) {};
         UIRect(int _x, int _y, int _w, int _h) : x(_x), y(_y), w(_w), h(_h) {};
+        UIRect(struct ALH *layout);
         int x;
         int y;
         int w;
@@ -106,7 +106,7 @@ namespace MesaGUI
 
     bool LabelledButton(UIRect rect, const char* label, TextAlignment textAlignment);
 
-    /** Zones
+    /** Zonesvec3
      * For aligning UI elements in order like a DearImGui window.
      * TODO Can be set to stop clicks from going through (if i click inside zone, then click doesn't go through to zones or program behind?)
      * TODO think about: 
@@ -127,6 +127,44 @@ namespace MesaGUI
 
     void EditorBeginListBox();
     void EditorEndListBox();
+
+
+    struct ALH
+    {
+        // if layout has absolute x y then it is not auto layouted
+        int x;
+        int y;
+        bool xauto = true;
+        bool yauto = true;
+
+        int w;
+        int h;
+        bool wauto = true;
+        bool hauto = true;
+
+        bool vertical = true;
+
+        void Insert(ALH *layout, int index)
+        {
+            container.insert(container.begin() + index, layout);
+        }
+
+        void Insert(ALH *layout)
+        {
+            container.push_back(layout);
+        }
+
+        int Count()
+        {
+            return int(container.size());
+        }
+
+        std::vector<ALH*> container;
+    };
     
+    void UpdateMainCanvasALH(ALH *layout);
+    ALH *NewALH(bool vertical);
+    ALH *NewALH(int absX, int absY, int absW, int absH, bool vertical);
+    void DeleteALH(ALH *layout);
 }
 
