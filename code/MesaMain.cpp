@@ -64,7 +64,8 @@ static bool InitializeEverything()
     SDL_GL_SetSwapInterval(1);
     //SDL_SetWindowFullscreen(g_SDLWindow, SDL_WINDOW_FULLSCREEN);
 
-    PrintLog.Message("Mesa Game Creation System " + std::string(PROJECT_BUILD_VERSION));
+    PrintLog.Message("MesaBIOS (" + std::string(PROJECT_BUILD_VERSION) + ")");
+    PrintLog.Message("Booting from Disk...\n");
     // PrintLog.Message("--Screen size " + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_W) + 
     //                  "x" + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_H));
 
@@ -74,11 +75,13 @@ static bool InitializeEverything()
     InitializeLanguageCompilerAndRuntime();
     SetupConsoleCommands();
 
-    PrintLog.Message("--Graphics loaded.");
-    PrintLog.Message("--Sound loaded.");
+    PrintLog.Message("Graphics loaded...");
+    PrintLog.Message("Sound loaded...\n");
+
+    PrintLog.Message("The Mesa Personal Computer");
+    PrintLog.Message(std::string(PROJECT_BUILD_VERSION) + " (C)Copyright Kevin Chin 2023");
 
     PrintLog.Message("\n");
-
 
 	return true;
 }
@@ -186,8 +189,7 @@ void StartGameSpace()
 static void LoadFantasyConsole()
 {
     g_ProgramMode = MesaProgramMode::BootScreen;
-    std::string welcome = std::string("== Mesa PC Boot Menu ") +
-                          std::string(" ==\n\ntype 'help'\n");
+    std::string welcome = std::string("type 'help'\n");
     SendMessageToConsole(welcome.c_str(), welcome.size());
 
     g_gfx.screenScaling = (Gfx::PixelPerfectRenderScale)3; // TODO (Kevin): read from .ini

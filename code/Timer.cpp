@@ -9,6 +9,7 @@ using Clock = std::chrono::high_resolution_clock;
 Timer::Timer()
         : deltaTime(-1.f)
         , time(0.f)
+        , timeSinceStart(0.f)
         , timeScale(1.f)
         , unscaledDeltaTime(-1.f)
 {}
@@ -24,6 +25,7 @@ float Timer::UpdateDeltaTime()
     float currentTimeInSeconds = (float)(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() * 0.001f);
     time = currentTimeInSeconds;
     unscaledDeltaTime = deltaTimeInSeconds;
+    timeSinceStart += unscaledDeltaTime;
     deltaTime = unscaledDeltaTime * Time.timeScale;
 
     return deltaTime;
