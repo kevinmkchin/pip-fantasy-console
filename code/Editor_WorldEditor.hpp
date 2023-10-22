@@ -5,7 +5,6 @@
 // Editor Camera Position
 // Editor World View Dimensions in pixels
 
-
 EditorWorldViewInfo worldViewInfo;
 
 struct TempLayout
@@ -16,28 +15,28 @@ struct TempLayout
     int absh;
 };
 
-void WorldDesigner()
+static MesaGUI::ALH *worldEditorTabLayout = NULL;
+static MesaGUI::ALH *worldEntitySelectorLayout = NULL;
+static MesaGUI::ALH *worldViewerLayout = NULL;
+
+static void SetupWorldDesigner()
 {
-    // Layouts
+    worldEditorTabLayout = MesaGUI::NewALH(false);
+    worldEntitySelectorLayout = MesaGUI::NewALH(-1, -1, 180, -1, true);
+    worldViewerLayout = MesaGUI::NewALH(true);
 
-    TempLayout worldEditorArea;
-    worldEditorArea.absx = 230;
-    worldEditorArea.absy = 50;
-    worldEditorArea.absw = 450;
-    worldEditorArea.absh = 450;
+    worldEditorTabLayout->Insert(worldEntitySelectorLayout);
+    worldEditorTabLayout->Insert(worldViewerLayout);
+}
+
+static void WorldDesigner()
+{
+    editorLayout->Replace(1, worldEditorTabLayout);
+    MesaGUI::UpdateMainCanvasALH(editorLayout);
 
 
-    // DoEntitySelectionPanel();
-
-    worldViewInfo.pan = ivec2(0, 0); // based on mouse panning
-    worldViewInfo.dimAfterZoom = ivec2(worldEditorArea.absw / 1, worldEditorArea.absh / 1);
-    worldViewInfo.dimInUIScale = ivec2(worldEditorArea.absw, worldEditorArea.absh);
-
-    const int selectionPanelW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
-    const int selectionPanelH = EDITOR_FIXED_INTERNAL_RESOLUTION_H/2;
-
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, s_ToolBarHeight, selectionPanelW, selectionPanelH), s_EditorColor1);
-    MesaGUI::BeginZone(MesaGUI::UIRect(0, s_ToolBarHeight, selectionPanelW, selectionPanelH));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(worldEntitySelectorLayout), s_EditorColor1);
+    MesaGUI::BeginZone(MesaGUI::UIRect(worldEntitySelectorLayout));
 
     EditorState *activeEditorState = EditorState::ActiveEditorState();
 
@@ -55,10 +54,20 @@ void WorldDesigner()
         }
     }
     MesaGUI::EditorEndListBox();
-
     MesaGUI::MoveXYInZone(0, 10);
-
     MesaGUI::EndZone();
+
+    // world editor
+
+    TempLayout worldEditorArea;
+    worldEditorArea.absx = worldViewerLayout->x;
+    worldEditorArea.absy = worldViewerLayout->y;
+    worldEditorArea.absw = worldViewerLayout->w;
+    worldEditorArea.absh = worldViewerLayout->h;
+
+    worldViewInfo.pan = ivec2(0, 0); // based on mouse panning
+    worldViewInfo.dimAfterZoom = ivec2(worldEditorArea.absw / 1, worldEditorArea.absh / 1);
+    worldViewInfo.dimInUIScale = ivec2(worldEditorArea.absw, worldEditorArea.absh);
 
     SpaceAsset& spaceAssetTemp = *activeEditorState->RetrieveSpaceAssetById(activeEditorState->activeSpaceId);
 
@@ -71,7 +80,7 @@ void WorldDesigner()
         {
             //printf("hello %d %d \n", clickedViewCoord.x, clickedViewCoord.y);
 
-            vec3 thingy225 = vec3(clickedViewCoord.x - (450.f / 2.f), -clickedViewCoord.y + (450.f / 2.f), 1.f) / 1.f;
+            vec3 thingy225 = vec3(clickedViewCoord.x - (float(worldEditorArea.absw) / 2.f), -clickedViewCoord.y + (float(worldEditorArea.absh) / 2.f), 1.f) / 1.f;
 
             int bruhx = int(floor(thingy225.x)) - worldViewInfo.pan.x;
             int bruhy = int(floor(thingy225.y)) - worldViewInfo.pan.y;

@@ -155,6 +155,12 @@ namespace MesaGUI
             container.push_back(layout);
         }
 
+        void Replace(int index, ALH *layout)
+        {
+            ASSERT(index < (int)container.size());
+            container.at(index) = layout;
+        }
+
         int Count()
         {
             return int(container.size());

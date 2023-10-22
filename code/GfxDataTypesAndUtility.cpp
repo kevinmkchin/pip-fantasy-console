@@ -29,6 +29,8 @@ namespace Gfx
 
     void UpdateBasicFrameBufferSize(BasicFrameBuffer* buffer, i32 newWidth, i32 newHeight)
     {
+        if (buffer->width == newWidth && buffer->height == newHeight) return;
+
         buffer->width = newWidth;
         buffer->height = newHeight;
         glBindFramebuffer(GL_FRAMEBUFFER, buffer->FBO);

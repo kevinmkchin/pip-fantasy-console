@@ -1057,9 +1057,9 @@ namespace MesaGUI
             int elemAutoHeight = (lh - absHeightSum) / (lc - elemIgnoredCount);
 
             int yPosAccum = ly;
-
-            for (ALH *child : layout->container)
+            for (int i = 0; i < lc; ++i)
             {
+                ALH *child = layout->container.at(i);
                 if (child->xauto == false || child->yauto == false) continue;
 
                 child->x = lx;
@@ -1068,6 +1068,9 @@ namespace MesaGUI
                 child->h = child->hauto ? elemAutoHeight : child->h;
 
                 yPosAccum += child->h;
+
+                if (i == lc - 1 && yPosAccum < lh)
+                    child->h += lh - yPosAccum;
             }
         }
         else
@@ -1091,9 +1094,9 @@ namespace MesaGUI
             int elemAutoWidth = (lw - absWidthSum) / (lc - elemIgnoredCount);
 
             int xPosAccum = lx;
-
-            for (ALH *child : layout->container)
+            for (int i = 0; i < lc; ++i)
             {
+                ALH *child = layout->container.at(i);
                 if (child->xauto == false || child->yauto == false) continue;
 
                 child->x = xPosAccum;
@@ -1102,6 +1105,9 @@ namespace MesaGUI
                 child->h = child->hauto ? lh : child->h;
 
                 xPosAccum += child->w;
+
+                if (i == lc - 1 && xPosAccum < lw)
+                    child->w += lw - xPosAccum;
             }
         }
 
