@@ -2,7 +2,6 @@
 
 #include "PrintLog.h"
 #include "MesaIMGUI.h"
-#include "EditorCodeEditor.h"
 #include "EditorState.h"
 #include "GfxDataTypesAndUtility.h"
 #include "GfxRenderer.h"
@@ -21,6 +20,10 @@ static Gfx::TextureHandle thBu01_active;
 
 static MesaGUI::ALH *editorLayout = NULL;
 static MesaGUI::ALH *mainbarLayout = NULL;
+
+static MesaGUI::ALH *entityDesignerLayout = NULL;
+static MesaGUI::ALH *entitySelectorLayout = NULL;
+static MesaGUI::ALH *entityCodeEditorLayout = NULL;
 
 static void LoadResourcesForEditorGUI()
 {
@@ -50,42 +53,16 @@ static int s_SelectedEntityAssetId = -1;
 //     (how many lines down from the top?)
 // Does the entity code get updated constantly or only when saved?
 
+#include "EditorCodeEditor.h"
+
 static code_editor_state_t s_ActiveCodeEditorState;
 
-void DoCodeEditor(code_editor_state_t *codeEditorState)
+void EntityDesigner()
 {
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/4 + 1, s_ToolBarHeight, 
-                                            EDITOR_FIXED_INTERNAL_RESOLUTION_W * 3 / 4, EDITOR_FIXED_INTERNAL_RESOLUTION_H - 1),
-                            s_EditorColor1);
-                     //vec4(RGB255TO1(126, 145, 159), 1.f));
-                     //vec4(RGB255TO1(101, 124, 140), 1.f));
-
-    MesaGUI::BeginZone(MesaGUI::UIRect(EDITOR_FIXED_INTERNAL_RESOLUTION_W/4, s_ToolBarHeight,
-                                       EDITOR_FIXED_INTERNAL_RESOLUTION_W * 3 / 4, EDITOR_FIXED_INTERNAL_RESOLUTION_H));
-
-    EditorCodeEditor(&s_ActiveCodeEditorState, EDITOR_FIXED_INTERNAL_RESOLUTION_W * 3 / 4 - 8, EDITOR_FIXED_INTERNAL_RESOLUTION_H - s_ToolBarHeight - 8, s_SelectedEntityAssetId > 0);
-
-    MesaGUI::EndZone();
-}
-
-void DoEntitySelectionPanel()
-{
-    const int selectionPanelW = EDITOR_FIXED_INTERNAL_RESOLUTION_W/4;
-    const int selectionPanelH = EDITOR_FIXED_INTERNAL_RESOLUTION_H/2;
-
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, s_ToolBarHeight, selectionPanelW, selectionPanelH), s_EditorColor1);
-    MesaGUI::BeginZone(MesaGUI::UIRect(0, s_ToolBarHeight, selectionPanelW, selectionPanelH));
-
-    // MesaGUI::DoTextUnformatted(8, 32, 9, MesaGUI::TextAlignment::Left, "Search");
-    // MesaGUI::DoTextUnformatted(8, 42, 9, MesaGUI::TextAlignment::Left, "v entities");
-    // MesaGUI::DoTextUnformatted(8, 52, 9, MesaGUI::TextAlignment::Left, "  - folders");
-    // MesaGUI::DoTextUnformatted(8, 62, 9, MesaGUI::TextAlignment::Left, "v sprites");
-    // MesaGUI::DoTextUnformatted(8, 72, 9, MesaGUI::TextAlignment::Left, "  - folders");
-    // MesaGUI::DoTextUnformatted(8, 82, 9, MesaGUI::TextAlignment::Left, "v spaces");
-    // MesaGUI::DoTextUnformatted(8, 92, 9, MesaGUI::TextAlignment::Left, "  - folders");
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(entitySelectorLayout), s_EditorColor1);
+    MesaGUI::BeginZone(MesaGUI::UIRect(entitySelectorLayout));
 
     EditorState *activeEditorState = EditorState::ActiveEditorState();
-
 
     MesaGUI::EditorBeginListBox();
     const std::vector<int> entityAssetIdsList = *activeEditorState->RetrieveAllEntityAssetIds();
@@ -117,23 +94,16 @@ void DoEntitySelectionPanel()
     }
 
     MesaGUI::EndZone();
+    
+
+    //DoEntityConfigurationPanel();
+
+
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(entityCodeEditorLayout), s_EditorColor1);
+    MesaGUI::BeginZone(MesaGUI::UIRect(entityCodeEditorLayout));
+    EditorCodeEditor(&s_ActiveCodeEditorState, s_SelectedEntityAssetId > 0);
+    MesaGUI::EndZone();
 }
-
-void DoEntityConfigurationPanel()
-{
-    const int configurationPanelW = EDITOR_FIXED_INTERNAL_RESOLUTION_W / 4;
-    const int configurationPanelH = EDITOR_FIXED_INTERNAL_RESOLUTION_H - s_ToolBarHeight - (EDITOR_FIXED_INTERNAL_RESOLUTION_H/2);
-
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, s_ToolBarHeight + (EDITOR_FIXED_INTERNAL_RESOLUTION_H / 2) + 1, configurationPanelW, configurationPanelH), s_EditorColor1);
-}
-
-void EntityDesigner()
-{
-    DoEntitySelectionPanel();
-    DoEntityConfigurationPanel();
-    DoCodeEditor(&s_ActiveCodeEditorState);
-}
-
 
 #include "Editor_WorldEditor.hpp"
 
@@ -217,12 +187,8 @@ bool Temp_StartGameOrEditorButton()
     return EditorButton(38105130914, 2, 4, 50, 19, "> Start");
 }
 
-// todo remove
-MesaGUI::ALH *bbb = NULL;
-MesaGUI::ALH *ccc = NULL;
-MesaGUI::ALH *ddd = NULL;
 
-void InitGUI()
+void InitEditorGUI()
 {
     LoadResourcesForEditorGUI();
 
@@ -287,14 +253,15 @@ void InitGUI()
 
     // AUTO LAYOUTING SETUP
     editorLayout = MesaGUI::NewALH(true);
-    mainbarLayout = MesaGUI::NewALH(-1,-1,-1,s_ToolBarHeight,false);
-    bbb = MesaGUI::NewALH(false);
-    ccc = MesaGUI::NewALH(true);
-    ddd = MesaGUI::NewALH(true);
+    mainbarLayout = MesaGUI::NewALH(-1, -1, -1, s_ToolBarHeight, false);
+    entityDesignerLayout = MesaGUI::NewALH(false);
+    entitySelectorLayout = MesaGUI::NewALH(-1, -1, 180, -1, true);
+    entityCodeEditorLayout = MesaGUI::NewALH(true);
+
     editorLayout->Insert(mainbarLayout);
-    editorLayout->Insert(bbb);
-    bbb->Insert(ccc);
-    bbb->Insert(ddd);
+    editorLayout->Insert(entityDesignerLayout);
+    entityDesignerLayout->Insert(entitySelectorLayout);
+    entityDesignerLayout->Insert(entityCodeEditorLayout);
 }
 
 void DoEditorGUI()
@@ -303,7 +270,7 @@ void DoEditorGUI()
     if (!doOnce)
     {
         doOnce = true;
-        InitGUI();
+        InitEditorGUI();
     }
 
     MesaGUI::UpdateMainCanvasALH(editorLayout);
@@ -334,8 +301,8 @@ void DoEditorGUI()
         }
     }
 
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout), vec4(1,0,0,0.5));
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(bbb), vec4(0,1,0,0.5));
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(ccc), vec4(0,0,1,0.5));
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(ddd), vec4(1,0,1,0.5));
+    // MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout), vec4(1,0,0,0.5));
+    // //MesaGUI::PrimitivePanel(MesaGUI::UIRect(entityDesignerLayout), vec4(0,1,0,0.5));
+    // MesaGUI::PrimitivePanel(MesaGUI::UIRect(entitySelectorLayout), vec4(0,0,1,0.5));
+    // MesaGUI::PrimitivePanel(MesaGUI::UIRect(entityCodeEditorLayout), vec4(1,0,1,0.5));
 }

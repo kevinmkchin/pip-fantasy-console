@@ -873,6 +873,12 @@ namespace MesaGUI
         activeZone.topLeftYOffset = 5;
     }
 
+    void GetWHOfZone(int *w, int *h)
+    {
+        *w = activeZone.zoneRect.w;
+        *h = activeZone.zoneRect.h;
+    }
+
     void GetXYInZone(int *x, int *y)
     {
         *x = activeZone.zoneRect.x + activeZone.topLeftXOffset;
