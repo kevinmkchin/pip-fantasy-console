@@ -119,6 +119,8 @@ namespace Gfx
 
     BasicFrameBuffer CoreRenderer::RenderTheFuckingWorldEditor(SpaceAsset *worldToView, EditorState *state, EditorWorldViewInfo worldViewInfo)
     {
+        UpdateBasicFrameBufferSize(&worldEditorView, worldViewInfo.dimInUIScale.x, worldViewInfo.dimInUIScale.y);
+
         glBindFramebuffer(GL_FRAMEBUFFER, worldEditorView.FBO);
         glViewport(0, 0, worldViewInfo.dimInUIScale.x, worldViewInfo.dimInUIScale.y);
         glClearColor(RGBHEXTO1(0x6495ed), 1.f);

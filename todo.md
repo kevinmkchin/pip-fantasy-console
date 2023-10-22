@@ -8,8 +8,8 @@
 - GUI MASKING
 - some refactor
 - clicky into world viewer
-
-- higher resolution render? maybe?
+    - with zoom
+    - higher resolution render? maybe?
 
 * place instances of entity assets in world
 * create new entity assets and set sprite and code

@@ -21,10 +21,6 @@ static Gfx::TextureHandle thBu01_active;
 static MesaGUI::ALH *editorLayout = NULL;
 static MesaGUI::ALH *mainbarLayout = NULL;
 
-static MesaGUI::ALH *entityDesignerLayout = NULL;
-static MesaGUI::ALH *entitySelectorLayout = NULL;
-static MesaGUI::ALH *entityCodeEditorLayout = NULL;
-
 static void LoadResourcesForEditorGUI()
 {
     thBu00_generic_n = Gfx::CreateGPUTextureFromDisk(data_path("bu00_generic.png").c_str());
@@ -53,58 +49,7 @@ static int s_SelectedEntityAssetId = -1;
 //     (how many lines down from the top?)
 // Does the entity code get updated constantly or only when saved?
 
-#include "EditorCodeEditor.h"
-
-static code_editor_state_t s_ActiveCodeEditorState;
-
-void EntityDesigner()
-{
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(entitySelectorLayout), s_EditorColor1);
-    MesaGUI::BeginZone(MesaGUI::UIRect(entitySelectorLayout));
-
-    EditorState *activeEditorState = EditorState::ActiveEditorState();
-
-    MesaGUI::EditorBeginListBox();
-    const std::vector<int> entityAssetIdsList = *activeEditorState->RetrieveAllEntityAssetIds();
-    for (size_t i = 0; i < entityAssetIdsList.size(); ++i)
-    {
-        int entityAssetId = entityAssetIdsList.at(i);
-        EntityAsset *e = activeEditorState->RetrieveEntityAssetById(entityAssetId);
-        bool selected = entityAssetId == s_SelectedEntityAssetId;
-        if (MesaGUI::EditorSelectable(e->name.c_str(), &selected))
-        {
-            s_SelectedEntityAssetId = entityAssetId;
-            InitializeCodeEditorState(&s_ActiveCodeEditorState, false, e->code.c_str(), (u32)e->code.size());
-        }
-    }
-    MesaGUI::EditorEndListBox();
-
-    MesaGUI::MoveXYInZone(0, 10);
-    if (s_SelectedEntityAssetId && MesaGUI::EditorLabelledButton("Save Code Changes"))
-    {
-        activeEditorState->RetrieveEntityAssetById(s_SelectedEntityAssetId)->code = std::string(s_ActiveCodeEditorState.code_buf, s_ActiveCodeEditorState.code_len);
-        PrintLog.Message("Saved code changes...");
-    }
-    if (s_SelectedEntityAssetId && MesaGUI::EditorLabelledButton("New Entity Asset"))
-    {
-        EditorState *activeEditorState = EditorState::ActiveEditorState();
-        int newId = activeEditorState->CreateNewEntityAsset("entity_x");
-        activeEditorState->RetrieveEntityAssetById(newId)->code = "fn Update() { print('fucky fucky') }";
-        PrintLog.Message("Created new entity asset...");
-    }
-
-    MesaGUI::EndZone();
-    
-
-    //DoEntityConfigurationPanel();
-
-
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(entityCodeEditorLayout), s_EditorColor1);
-    MesaGUI::BeginZone(MesaGUI::UIRect(entityCodeEditorLayout));
-    EditorCodeEditor(&s_ActiveCodeEditorState, s_SelectedEntityAssetId > 0);
-    MesaGUI::EndZone();
-}
-
+#include "Editor_EntityDesigner.hpp"
 #include "Editor_WorldEditor.hpp"
 
 bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
@@ -130,56 +75,31 @@ bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
 
 void EditorMainBar()
 {
-
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->x, mainbarLayout->y, mainbarLayout->w, mainbarLayout->h), vec4(RGBHEXTO1(0xd2cabd),1));
 
     if(s_ActiveMode == EditorMode::ArtAndAnimation)
-    {
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 136, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
-    }
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
     else
-    {
         if(MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
-        {
             s_ActiveMode = EditorMode::ArtAndAnimation;
-        } 
-    }
 
     if(s_ActiveMode == EditorMode::EntityDesigner)
-    {
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 102, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
-    }
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 102, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
     else
-    {
         if(MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 102, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
-        {
             s_ActiveMode = EditorMode::EntityDesigner;
-        } 
-    }
 
     if(s_ActiveMode == EditorMode::WorldDesigner)
-    {
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 68, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
-    }
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 68, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
     else
-    {
         if(MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 68, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
-        {
             s_ActiveMode = EditorMode::WorldDesigner;
-        } 
-    }
 
     if(s_ActiveMode == EditorMode::SoundAndMusic)
-    {
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 34, 3, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
-    }
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 34, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
     else
-    {
         if(MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 34, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
-        {
             s_ActiveMode = EditorMode::SoundAndMusic;
-        } 
-    }
 }
 
 bool Temp_StartGameOrEditorButton()
@@ -213,55 +133,51 @@ void InitEditorGUI()
                "        self['y'] = self['y'] - 180 * time['dt']\n" 
                "    }\n" 
                "}";
-    // entityAssets->at(1).code = "                       .,,uod8B8bou,,.\n"
-    //                            "              ..,uod8BBBBBBBBBBBBBBBBRPFT?l!i:.\n"
-    //                            "         ,=m8BBBBBBBBBBBBBBBRPFT?!||||||||||||||\n"
-    //                            "         !...:!TVBBBRPFT||||||||||!!^^\"\"'   ||||\n"
-    //                            "         !.......:!?|||||!!^^\"\"'            ||||\n"
-    //                            "         !.........||||                     ||||\n"
-    //                            "         !.........||||  ##                 ||||\n"
-    //                            "         !.........||||  mesa               ||||\n"
-    //                            "         !.........||||                     ||||\n"
-    //                            "         !.........||||                     ||||\n"
-    //                            "         !.........||||                     ||||\n"
-    //                            "         `.........||||                    ,||||\n"
-    //                            "          .;.......||||               _.-!!|||||\n"
-    //                            "   .,uodWBBBBb.....||||       _.-!!|||||||||!:'\n"
-    //                            "!YBBBBBBBBBBBBBBb..!|||:..-!!|||||||!iof68BBBBBb.... \n"
-    //                            "!..YBBBBBBBBBBBBBBb!!||||||||!iof68BBBBBBRPFT?!::   `.\n"
-    //                            "!....YBBBBBBBBBBBBBBbaaitf68BBBBBBRPFT?!:::::::::     `.\n"
-    //                            "!......YBBBBBBBBBBBBBBBBBBBRPFT?!::::::;:!^\"`;:::       `.  \n"
-    //                            "!........YBBBBBBBBBBRPFT?!::::::::::^''...::::::;         iBBbo.\n"
-    //                            "`..........YBRPFT?!::::::::::::::::::::::::;iof68bo.      WBBBBbo.\n"
-    //                            "  `..........:::::::::::::::::::::::;iof688888888888b.     `YBBBP^'\n"
-    //                            "    `........::::::::::::::::;iof688888888888888888888b.     `\n"
-    //                            "      `......:::::::::;iof688888888888888888888888888888b.\n"
-    //                            "        `....:::;iof688888888888888888888888888888888899fT!  \n"
-    //                            "          `..::!8888888888888888888888888888888899fT|!^\"'   \n"
-    //                            "            `' !!988888888888888888888888899fT|!^\"' \n"
-    //                            "                `!!8888888888888888899fT|!^\"'\n"
-    //                            "                  `!988888888899fT|!^\"'\n"
-    //                            "                    `!9899fT|!^\"'\n"
-    //                            "                      `!^\"'\n"
-    //                            "";
     activeEditorState->RetrieveEntityAssetById(bid)->code = "fn Update(self) { self['x'] = self['x'] + 1 }";
     activeEditorState->RetrieveEntityAssetById(cid)->code = "fn Update() { print('et2 update') }";
+    //activeEditorState->RetrieveEntityAssetById(cid)->code = 
+    //                           "                       .,,uod8B8bou,,.\n"
+    //                           "              ..,uod8BBBBBBBBBBBBBBBBRPFT?l!i:.\n"
+    //                           "         ,=m8BBBBBBBBBBBBBBBRPFT?!||||||||||||||\n"
+    //                           "         !...:!TVBBBRPFT||||||||||!!^^\"\"'   ||||\n"
+    //                           "         !.......:!?|||||!!^^\"\"'            ||||\n"
+    //                           "         !.........||||                     ||||\n"
+    //                           "         !.........||||  ##                 ||||\n"
+    //                           "         !.........||||  mesa               ||||\n"
+    //                           "         !.........||||                     ||||\n"
+    //                           "         !.........||||                     ||||\n"
+    //                           "         !.........||||                     ||||\n"
+    //                           "         `.........||||                    ,||||\n"
+    //                           "          .;.......||||               _.-!!|||||\n"
+    //                           "   .,uodWBBBBb.....||||       _.-!!|||||||||!:'\n"
+    //                           "!YBBBBBBBBBBBBBBb..!|||:..-!!|||||||!iof68BBBBBb.... \n"
+    //                           "!..YBBBBBBBBBBBBBBb!!||||||||!iof68BBBBBBRPFT?!::   `.\n"
+    //                           "!....YBBBBBBBBBBBBBBbaaitf68BBBBBBRPFT?!:::::::::     `.\n"
+    //                           "!......YBBBBBBBBBBBBBBBBBBBRPFT?!::::::;:!^\"`;:::       `.  \n"
+    //                           "!........YBBBBBBBBBBRPFT?!::::::::::^''...::::::;         iBBbo.\n"
+    //                           "`..........YBRPFT?!::::::::::::::::::::::::;iof68bo.      WBBBBbo.\n"
+    //                           "  `..........:::::::::::::::::::::::;iof688888888888b.     `YBBBP^'\n"
+    //                           "    `........::::::::::::::::;iof688888888888888888888b.     `\n"
+    //                           "      `......:::::::::;iof688888888888888888888888888888b.\n"
+    //                           "        `....:::;iof688888888888888888888888888888888899fT!  \n"
+    //                           "          `..::!8888888888888888888888888888888899fT|!^\"'   \n"
+    //                           "            `' !!988888888888888888888888899fT|!^\"' \n"
+    //                           "                `!!8888888888888888899fT|!^\"'\n"
+    //                           "                  `!988888888899fT|!^\"'\n"
+    //                           "                    `!9899fT|!^\"'\n"
+    //                           "                      `!^\"'\n"
+    //                           "";
 
     activeEditorState->activeSpaceId = activeEditorState->CreateNewSpaceAsset("name for new space");
 
-    AllocateMemoryCodeEditorState(&s_ActiveCodeEditorState);
+    SetupEntityDesigner();
+    SetupWorldDesigner();
 
-    // AUTO LAYOUTING SETUP
     editorLayout = MesaGUI::NewALH(true);
     mainbarLayout = MesaGUI::NewALH(-1, -1, -1, s_ToolBarHeight, false);
-    entityDesignerLayout = MesaGUI::NewALH(false);
-    entitySelectorLayout = MesaGUI::NewALH(-1, -1, 180, -1, true);
-    entityCodeEditorLayout = MesaGUI::NewALH(true);
 
     editorLayout->Insert(mainbarLayout);
-    editorLayout->Insert(entityDesignerLayout);
-    entityDesignerLayout->Insert(entitySelectorLayout);
-    entityDesignerLayout->Insert(entityCodeEditorLayout);
+    editorLayout->Insert(worldEditorTabLayout);
 }
 
 void DoEditorGUI()
@@ -302,7 +218,7 @@ void DoEditorGUI()
     }
 
     // MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout), vec4(1,0,0,0.5));
-    // //MesaGUI::PrimitivePanel(MesaGUI::UIRect(entityDesignerLayout), vec4(0,1,0,0.5));
+    // //MesaGUI::PrimitivePanel(MesaGUI::UIRect(entityDesignerTabLayout), vec4(0,1,0,0.5));
     // MesaGUI::PrimitivePanel(MesaGUI::UIRect(entitySelectorLayout), vec4(0,0,1,0.5));
     // MesaGUI::PrimitivePanel(MesaGUI::UIRect(entityCodeEditorLayout), vec4(1,0,1,0.5));
 }
