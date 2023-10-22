@@ -86,13 +86,23 @@ void SendInputToConsole(SDL_KeyboardEvent& keyevent)
 }
 
 
+static MesaGUI::ALH *consoleLayout = NULL;
+static vec4 s_ConsoleBlack = vec4(0.05f, 0.05f, 0.05f, 1);
+
 void DoBootScreen()
 {
+    bool doOnce = false;
+    if (!doOnce)
+    {
+        doOnce = true;
+        consoleLayout = MesaGUI::NewALH(true);
+    }
+    MesaGUI::UpdateMainCanvasALH(consoleLayout);
+
     static float a = float(rand());
     static float b = float(rand());
     static float c = float(rand());
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, EDITOR_FIXED_INTERNAL_RESOLUTION_W, EDITOR_FIXED_INTERNAL_RESOLUTION_H), 
-                            vec4(0.05f, 0.05f, 0.05f, 1));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(consoleLayout), s_ConsoleBlack);
     // MesaGUI::PrimitivePanel(MesaGUI::UIRect(1, 1, 10, 10), 5, 
     //                         vec4((sinf(Time.time * 4.f + a) + 1.f) * 0.5f, 
     //                              (sinf(Time.time * 4.f + b) + 1.f) * 0.5f, 
@@ -109,26 +119,28 @@ void DoBootScreen()
         MesaGUI::PrimitiveText(40, 40, 9, MesaGUI::TextAlignment::Left, sConsoleMessagesBuffer + zeros);
     }
 
-    sConsoleCommandInputBuffer.PushBack('_');
+    if (int(Time.time * 3.6f) % 2 == 0)
+        sConsoleCommandInputBuffer.PushBack('_');
+    else
+        sConsoleCommandInputBuffer.PushBack(' ');
     if (sConsoleCommandInputBuffer.count > 0)
     {
-        MesaGUI::PrimitiveText(40, 344, 9, MesaGUI::TextAlignment::Left, sConsoleCommandInputBuffer.data);
+        MesaGUI::PrimitiveText(40, consoleLayout->h - 60, 9, MesaGUI::TextAlignment::Left, sConsoleCommandInputBuffer.data);
     }
     sConsoleCommandInputBuffer.PopBack();
 }
 
-void DoSingleCommandLine()
-{
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, EDITOR_FIXED_INTERNAL_RESOLUTION_W, 13), 
-                            vec4(0.05f, 0.05f, 0.05f, 1));
+// void DoSingleCommandLine()
+// {
+//     MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, consoleLayout->w, 13), s_ConsoleBlack);
 
-    sConsoleCommandInputBuffer.PushBack('_');
-    if (sConsoleCommandInputBuffer.count > 0)
-    {
-        MesaGUI::PrimitiveText(4, 11, 9, MesaGUI::TextAlignment::Left, sConsoleCommandInputBuffer.data);
-    }
-    sConsoleCommandInputBuffer.PopBack();
-}
+//     sConsoleCommandInputBuffer.PushBack('_');
+//     if (sConsoleCommandInputBuffer.count > 0)
+//     {
+//         MesaGUI::PrimitiveText(4, 11, 9, MesaGUI::TextAlignment::Left, sConsoleCommandInputBuffer.data);
+//     }
+//     sConsoleCommandInputBuffer.PopBack();
+// }
 
 #include "MesaMain.h"
 #include "MesaScript.h"
@@ -161,6 +173,6 @@ void SetupConsoleCommands()
     sNoclipConsole.bind_cmd("wscale", SetWinSizeMult);
     sNoclipConsole.bind_cmd("exec", TemporaryRunMesaScriptInterpreterOnFile);
 
-    PrintLog.Message("--Boot menu initialized.");
+    PrintLog.Message("Boot menu initialized...");
 }
 

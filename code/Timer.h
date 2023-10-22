@@ -17,6 +17,9 @@ public:
     // Time since epoch
     float time;
 
+    // Time since program start
+    float timeSinceStart;
+
     // The scale at which time passes
     float timeScale;
 

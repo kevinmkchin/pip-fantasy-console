@@ -16,4 +16,4 @@ void SetupConsoleCommands();
 
 /* -- Front ends -- */
 void DoBootScreen();
-void DoSingleCommandLine();
+//void DoSingleCommandLine();
