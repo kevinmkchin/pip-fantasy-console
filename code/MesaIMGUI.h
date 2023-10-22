@@ -99,6 +99,7 @@ namespace MesaGUI
     bool PrimitiveButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor, bool activeColorOnClickReleaseFrame = false);
     void PrimitiveText(int x, int y, int size, TextAlignment alignment, const char* text);
     void PrimitiveTextFmt(int x, int y, int size, TextAlignment alignment, const char* textFmt, ...);
+    void PrimitiveTextMasked(int x, int y, int size, TextAlignment alignment, const char* text, UIRect mask, int maskCornerRadius);
     void PrimtiveImage(UIRect rect, u32 glTextureId = 0);
     void PrimitiveIntegerInputField(ui_id id, UIRect rect, int* v);
     void PrimitiveFloatInputField(ui_id id, UIRect rect, float* v);

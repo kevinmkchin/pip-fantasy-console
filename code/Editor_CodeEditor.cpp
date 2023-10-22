@@ -275,12 +275,15 @@ void EditorCodeEditor(code_editor_state_t *state, bool enabled)
         MesaGUI::SetHovered(id);
     }
 
-    MesaGUI::PrimitivePanel(codeEditorRect, 6, MesaGUI::IsActive(id) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
+    const int codeEditorRectCornerRadius = 6;
+    MesaGUI::PrimitivePanel(codeEditorRect, codeEditorRectCornerRadius, MesaGUI::IsActive(id) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
 
     int lineNumbersDisplayWidth = 15;
 
     int textBeginAnchorX = x + lineNumbersDisplayWidth + 8;
     int textBeginAnchorY = y + 13;
+
+    // Draw code
 
     if (MesaGUI::IsActive(id)) 
     {
@@ -293,9 +296,12 @@ void EditorCodeEditor(code_editor_state_t *state, bool enabled)
     {
         uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 1.f);
         MesaGUI::PushUIStyle(uiss);
-        MesaGUI::PrimitiveText(textBeginAnchorX, textBeginAnchorY, 9, MesaGUI::TextAlignment::Left, std::string(state->code_buf, state->code_len - 1).c_str());
+        MesaGUI::PrimitiveTextMasked(textBeginAnchorX, textBeginAnchorY, 9, MesaGUI::TextAlignment::Left, std::string(state->code_buf, state->code_len - 1).c_str(), codeEditorRect, codeEditorRectCornerRadius);
         MesaGUI::PopUIStyle();
     }
+
+
+    // Draw line numbers
 
     int countOfLineNumToDisplay = h / 12 + 1;
 
@@ -309,7 +315,7 @@ void EditorCodeEditor(code_editor_state_t *state, bool enabled)
     uiss = MesaGUI::GetActiveUIStyleCopy();
     uiss.textColor = vec4(1.f, 1.f, 1.f, 0.38f);
     MesaGUI::PushUIStyle(uiss);
-    MesaGUI::PrimitiveText(textBeginAnchorX - 8, textBeginAnchorY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str());
+    MesaGUI::PrimitiveTextMasked(textBeginAnchorX - 8, textBeginAnchorY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str(), codeEditorRect, codeEditorRectCornerRadius);
     MesaGUI::PopUIStyle();
 }
 
