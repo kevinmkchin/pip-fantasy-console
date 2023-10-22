@@ -113,6 +113,7 @@ namespace MesaGUI
      * Can be set to capture focus?
      * Can be set to collapse? */
     void BeginZone(UIRect windowRect);
+    void GetWHOfZone(int *w, int *h);
     void GetXYInZone(int *x, int *y);
     void MoveXYInZone(int x, int y);
     void EndZone();

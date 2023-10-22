@@ -39,4 +39,4 @@ struct code_editor_state_t
 
 void AllocateMemoryCodeEditorState(code_editor_state_t* state);
 void InitializeCodeEditorState(code_editor_state_t *state, bool reallocMemory, const char* initString, u32 len);
-void EditorCodeEditor(code_editor_state_t *state, u32 width, u32 height, bool enabled);
+void EditorCodeEditor(code_editor_state_t *state, bool enabled);

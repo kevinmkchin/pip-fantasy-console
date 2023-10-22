@@ -5,8 +5,9 @@
 
 
 # Next
+- GUI MASKING
+- some refactor
 - clicky into world viewer
-- GUI layouting
 
 - higher resolution render? maybe?
 
@@ -20,20 +21,9 @@
 
 # Todo
 
-- Layout system. I need my UI to resize dynamically based on window size.
-  - DeclareVerticalLayout(container/canvas, A auto auto abs abs, B auto auto auto auto, C auto auto abs abs)
-    - Gives back container handles A B C
-    - DeclareHorizontalLayout(B, D auto auto auto auto, E auto auto auto auto)
-      - Gives back container handles D E
-        - SetActiveContainer(D)
-        - Button(blah blah)
-        - Text(blah blah)
-        - SetActiveContainer()
-    - Maybe...the layout system needs to be RETAINED MODE, then i can populate those retained mode containers with imgui stuff.
-
-- Depth for GUI? depth ranges and depth test and shit?
 - Markdown reader - manual in markdown, toggled with F1
 - boot sound (SDL_mixer)
+- Depth for GUI? depth ranges and depth test and shit?
 
 
 MESASCRIPT EPIC:
@@ -110,6 +100,7 @@ MESASCRIPT EPIC:
 
 # Done
 
+- Basic GUI retained mode auto layouting
 - DesktopWindowsManager DPI Awareness to System, and SDL_HINT_WINDOWS_DPI_SCALING to 0. Stuff isn't blurry anymore thank fuck.
 - DesktopWindowsManager Flush to improve opengl vsync stutter on Windows devices while program is windowed
 - FLOATS

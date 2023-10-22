@@ -179,11 +179,13 @@ void EraseChars(code_editor_state_t *state, u32 beginRow, u32 beginCol, u32 endR
     }
 }
 
-void EditorCodeEditor(code_editor_state_t *state, u32 width, u32 height, bool enabled)
+void EditorCodeEditor(code_editor_state_t *state, bool enabled)
 {
-    int x, y;
+    int x, y, w, h;
     MesaGUI::GetXYInZone(&x, &y);
-    MesaGUI::UIRect codeEditorRect = MesaGUI::UIRect(x, y, width, height);
+    MesaGUI::GetWHOfZone(&w, &h);
+
+    MesaGUI::UIRect codeEditorRect = MesaGUI::UIRect(x, y, w - 8, h - 8);
 
     ui_id id = 0xbc9526f97dff3dec;
 
@@ -295,8 +297,10 @@ void EditorCodeEditor(code_editor_state_t *state, u32 width, u32 height, bool en
         MesaGUI::PopUIStyle();
     }
 
+    int countOfLineNumToDisplay = h / 12 + 1;
+
     std::string lineNumbersBuf;
-    for (int i = 1; i < 44; ++i)
+    for (int i = 1; i < countOfLineNumToDisplay; ++i)
     {
         int lineNum = state->first_visible_row + i;
         lineNumbersBuf += std::to_string(lineNum) + '\n';
