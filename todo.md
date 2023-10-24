@@ -5,7 +5,6 @@
 
 
 # Next
-- GUI MASKING
 - some refactor
 - clicky into world viewer
     - with zoom
@@ -100,6 +99,8 @@ MESASCRIPT EPIC:
 
 # Done
 
+- Import temporary placeholder sprites
+- Basic GUI masking
 - Basic GUI retained mode auto layouting
 - DesktopWindowsManager DPI Awareness to System, and SDL_HINT_WINDOWS_DPI_SCALING to 0. Stuff isn't blurry anymore thank fuck.
 - DesktopWindowsManager Flush to improve opengl vsync stutter on Windows devices while program is windowed
