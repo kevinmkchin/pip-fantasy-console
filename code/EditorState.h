@@ -7,6 +7,7 @@
 #include "MesaMath.h"
 
 #include "Space.h"
+#include "GfxDataTypesAndUtility.h"
 
 /*
 Keeps track of all assets in project.
@@ -31,6 +32,9 @@ struct EntityAsset
 
     std::string name = "";
     std::string code = "";
+
+    Gfx::TextureHandle sprite;
+    ivec2 spriteOriginOffset;
 };
 
 struct EntityAssetInstanceInSpace

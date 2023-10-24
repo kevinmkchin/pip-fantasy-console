@@ -64,6 +64,8 @@ static void WorldDesigner()
     worldEditorArea.absy = worldViewerLayout->y;
     worldEditorArea.absw = worldViewerLayout->w;
     worldEditorArea.absh = worldViewerLayout->h;
+    if (worldEditorArea.absw % 2 == 1) worldEditorArea.absw += 1; // Note(Kevin): Ortho projection matrix is weird when odd w h t.f. fix to even number
+    if (worldEditorArea.absh % 2 == 1) worldEditorArea.absh += 1; // probably do something better in the future cuz now we might render to a canvas 1 pixel larger than expected.
 
     worldViewInfo.pan = ivec2(0, 0); // based on mouse panning
     worldViewInfo.dimAfterZoom = ivec2(worldEditorArea.absw / 1, worldEditorArea.absh / 1);
@@ -93,6 +95,7 @@ static void WorldDesigner()
             EntityAssetInstanceInSpace aardvark;
             aardvark.spaceX = bruhx;
             aardvark.spaceY = bruhy;
+            aardvark.entityAssetId = s_SelectedEntityAssetId;
             spaceAssetTemp.placedEntities.push_back(aardvark);
         }
     }

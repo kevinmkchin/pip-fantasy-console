@@ -49,9 +49,6 @@ static int s_SelectedEntityAssetId = -1;
 //     (how many lines down from the top?)
 // Does the entity code get updated constantly or only when saved?
 
-#include "Editor_EntityDesigner.hpp"
-#include "Editor_WorldEditor.hpp"
-
 bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
 {
     bool result = MesaGUI::Behaviour_Button(id, MesaGUI::UIRect(x,y,w,h));
@@ -73,6 +70,9 @@ bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
     return result;
 }
 
+#include "Editor_EntityDesigner.hpp"
+#include "Editor_WorldEditor.hpp"
+
 void EditorMainBar()
 {
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->x, mainbarLayout->y, mainbarLayout->w, mainbarLayout->h), vec4(RGBHEXTO1(0xd2cabd),1));
@@ -80,25 +80,25 @@ void EditorMainBar()
     if(s_ActiveMode == EditorMode::ArtAndAnimation)
         MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
     else
-        if(MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F1) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
             s_ActiveMode = EditorMode::ArtAndAnimation;
 
     if(s_ActiveMode == EditorMode::EntityDesigner)
         MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 102, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
     else
-        if(MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 102, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F2) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 102, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
             s_ActiveMode = EditorMode::EntityDesigner;
 
     if(s_ActiveMode == EditorMode::WorldDesigner)
         MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 68, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
     else
-        if(MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 68, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F3) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 68, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
             s_ActiveMode = EditorMode::WorldDesigner;
 
     if(s_ActiveMode == EditorMode::SoundAndMusic)
         MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 34, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
     else
-        if(MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 34, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F4) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 34, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
             s_ActiveMode = EditorMode::SoundAndMusic;
 }
 
@@ -135,7 +135,8 @@ void InitEditorGUI()
                "}";
     activeEditorState->RetrieveEntityAssetById(bid)->code = "fn Update(self) { self['x'] = self['x'] + 1 }";
     activeEditorState->RetrieveEntityAssetById(cid)->code = "fn Update() { print('et2 update') }";
-    //activeEditorState->RetrieveEntityAssetById(cid)->code = 
+    // activeEditorState->RetrieveEntityAssetById(cid)->code = 
+    //                           "fn Update() { str = '\n"
     //                           "                       .,,uod8B8bou,,.\n"
     //                           "              ..,uod8BBBBBBBBBBBBBBBBRPFT?l!i:.\n"
     //                           "         ,=m8BBBBBBBBBBBBBBBRPFT?!||||||||||||||\n"
@@ -166,7 +167,7 @@ void InitEditorGUI()
     //                           "                  `!988888888899fT|!^\"'\n"
     //                           "                    `!9899fT|!^\"'\n"
     //                           "                      `!^\"'\n"
-    //                           "";
+    //                           "'}";
 
     activeEditorState->activeSpaceId = activeEditorState->CreateNewSpaceAsset("name for new space");
 
