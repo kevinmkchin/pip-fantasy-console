@@ -118,11 +118,20 @@ static void EntityDesigner()
         }
     }
 
+    MesaGUI::MoveXYInZone(0, 35);
+    MesaGUI::GetXYInZone(&abut_x, &abut_y);
+    if (s_SelectedEntityAssetId > 0)
+    {
+        Gfx::TextureHandle spr = activeEditorState->RetrieveEntityAssetById(s_SelectedEntityAssetId)->sprite;
+        if (spr.textureId > 0)
+        {
+            MesaGUI::PrimitivePanel(MesaGUI::UIRect(abut_x, abut_y, spr.width, spr.height), spr.textureId);
+        }
+    }
+
     MesaGUI::EndZone();
-    
 
     //DoEntityConfigurationPanel();
-
 
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(entityCodeEditorLayout), s_EditorColor1);
     MesaGUI::BeginZone(MesaGUI::UIRect(entityCodeEditorLayout));

@@ -1,3 +1,26 @@
+# Branch off for rearchitecture
+
+Core (essentially the common library that everything uses)
+- MesaMath
+- MesaCommon
+- MesaUtility
+- MemoryAllocator
+- FileSystem
+- PrintLog
+- Console?
+
+- Parsers
+- Profiler
+- Config
+
+Gfx (probably don't make a module out of this)
+- Renderer
+- Shader
+- DataTypesAndUtility
+
+
+
+
 # Known Bugs
 
 - GUI fresh ID is not great...will be buggy when number of elements change dynamically
@@ -5,6 +28,8 @@
 
 
 # Next
+
+- mask basic primitive panel with a cornered rect?
 - some refactor
 - clicky into world viewer
     - with zoom
