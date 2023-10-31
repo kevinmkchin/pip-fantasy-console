@@ -62,6 +62,11 @@ static void SetupEntityDesigner()
     entityDesignerTabLayout->Insert(entityCodeEditorLayout);
 }
 
+static void ChooseEntityForCodeEditor(EntityAsset *entityAsset)
+{
+    InitializeCodeEditorState(&s_ActiveCodeEditorState, false, entityAsset->code.c_str(), (u32)entityAsset->code.size());
+}
+
 static void EntityDesigner()
 {
     editorLayout->Replace(1, entityDesignerTabLayout);
@@ -82,24 +87,27 @@ static void EntityDesigner()
         if (MesaGUI::EditorSelectable(e->name.c_str(), &selected))
         {
             s_SelectedEntityAssetId = entityAssetId;
-            InitializeCodeEditorState(&s_ActiveCodeEditorState, false, e->code.c_str(), (u32)e->code.size());
+            ChooseEntityForCodeEditor(e);
         }
     }
     MesaGUI::EditorEndListBox();
 
-    MesaGUI::MoveXYInZone(0, 10);
-    if (s_SelectedEntityAssetId > 0 && MesaGUI::EditorLabelledButton("Save Code Changes"))
-    {
-        activeEditorState->RetrieveEntityAssetById(s_SelectedEntityAssetId)->code = std::string(s_ActiveCodeEditorState.code_buf, s_ActiveCodeEditorState.code_len);
-        PrintLog.Message("Saved code changes...");
-    }
-
-    if (s_SelectedEntityAssetId > 0 && MesaGUI::EditorLabelledButton("New Entity Asset"))
+    if (MesaGUI::EditorLabelledButton("+ new entity asset"))
     {
         EditorState *activeEditorState = EditorState::ActiveEditorState();
         int newId = activeEditorState->CreateNewEntityAsset("entity_x");
-        activeEditorState->RetrieveEntityAssetById(newId)->code = "fn Update() { print('new asset bro') }";
-        PrintLog.Message("Created new entity asset...");
+        EntityAsset *newEnt = activeEditorState->RetrieveEntityAssetById(newId);
+        newEnt->code = "fn Update() { print('new asset bro') }";
+        s_SelectedEntityAssetId = newId;
+        ChooseEntityForCodeEditor(newEnt);
+    }
+
+    MesaGUI::MoveXYInZone(0, 10);
+
+    if (s_SelectedEntityAssetId > 0 && MesaGUI::EditorLabelledButton("save code"))
+    {
+        activeEditorState->RetrieveEntityAssetById(s_SelectedEntityAssetId)->code = std::string(s_ActiveCodeEditorState.code_buf, s_ActiveCodeEditorState.code_len);
+        PrintLog.Message("Saved code changes...");
     }
 
     int abut_x, abut_y;
