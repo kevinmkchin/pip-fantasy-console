@@ -30,11 +30,20 @@ Gfx (probably don't make a module out of this)
 # Next
 
 - mask basic primitive panel with a cornered rect? -> then show sprite upto x y size
-- clicky into world viewer
-    - with zoom
-    - higher resolution render? maybe?
+- use masking for MesaGUI ScrollView
+
+- EntityDesigner bottom panel configure sprite, origin, colliders
+
+- better clicky into world viewer
+  - with zoom
+  - higher resolution render? maybe?
 
 * entity code -> game behaviour pipeline is further refined (e.g. self? how to use local variables? global vars? how to refer to other ents?)
+  // Note(Kevin): 2023-10-31 actually...do we need to have a table for every entity type and then another table 
+  //              for every entity instance? i probably had a reason for doing it this way...maybe revisit? i don't think
+  //              every entity instance of asset A should have their own copy of the AST, but their "update" key can just
+  //              point to the single version AST of A.update? 
+
 - move fib.ms test code into the editor itself. maybe
 
 
