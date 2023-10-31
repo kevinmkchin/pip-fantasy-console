@@ -273,30 +273,6 @@ namespace Gfx
         float vb[verticesCount];
         u32 ib[indicesCount];
 
-        vb[0] = 0;
-        vb[1] = 0;
-        vb[2] = 0;
-        vb[3] = 1;
-        vb[4] = 16;
-        vb[5] = 0;
-        vb[6] = 1;
-        vb[7] = 1;
-        vb[8] = 0;
-        vb[9] = -16;
-        vb[10] = 0;
-        vb[11] = 0;
-        vb[12] = 16;
-        vb[13] = -16;
-        vb[14] = 1;
-        vb[15] = 0;
-
-        ib[0] = 0;
-        ib[1] = 2;
-        ib[2] = 1;
-        ib[3] = 2;
-        ib[4] = 3;
-        ib[5] = 1;
-
         // pass VBO (x, y, u, v) and IBO to shader
         static u32 spriteBatchVAO = 0;
         static u32 spriteBatchVBO = 0;
@@ -324,6 +300,39 @@ namespace Gfx
         Space* space = GetGameActiveSpace();
         for (EntityInstance e : space->aliveUpdateAndDraw)
         {
+            float sprw = (float)e.sprite.width;
+            float sprh = (float)e.sprite.height;
+            int sprtexid = e.sprite.textureId;
+            if (sprtexid == 0) sprtexid = mushroom.textureId;
+
+            vb[0] = 0;
+            vb[1] = 0;
+            vb[2] = 0;
+            vb[3] = 1;
+
+            vb[4] = sprw;
+            vb[5] = 0;
+            vb[6] = 1;
+            vb[7] = 1;
+
+            vb[8] = 0;
+            vb[9] = -sprh;
+            vb[10] = 0;
+            vb[11] = 0;
+
+            vb[12] = sprw;
+            vb[13] = -sprh;
+            vb[14] = 1;
+            vb[15] = 0;
+
+            ib[0] = 0;
+            ib[1] = 2;
+            ib[2] = 1;
+            ib[3] = 2;
+            ib[4] = 3;
+            ib[5] = 1;
+            
+
             MesaScript_Table* table = AccessMesaScriptTable(e.selfMapId);
             TValue xtv = table->AccessMapEntry("x");
             TValue ytv = table->AccessMapEntry("y");
@@ -340,7 +349,7 @@ namespace Gfx
 
             // set Sampler2D/int sampler0
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, mushroom.textureId);
+            glBindTexture(GL_TEXTURE_2D, sprtexid);
             GLBind1i(spriteShader, "sampler0", 0);
             // set vec3 fragmentColor 
             GLBind3f(spriteShader, "fragmentColor", 1.f, 1.f, 1.f);

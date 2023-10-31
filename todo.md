@@ -29,18 +29,13 @@ Gfx (probably don't make a module out of this)
 
 # Next
 
-- mask basic primitive panel with a cornered rect?
-- some refactor
+- mask basic primitive panel with a cornered rect? -> then show sprite upto x y size
 - clicky into world viewer
     - with zoom
     - higher resolution render? maybe?
 
-* place instances of entity assets in world
-* create new entity assets and set sprite and code
 * entity code -> game behaviour pipeline is further refined (e.g. self? how to use local variables? global vars? how to refer to other ents?)
-
 - move fib.ms test code into the editor itself. maybe
-
 
 
 # Todo
@@ -124,6 +119,8 @@ MESASCRIPT EPIC:
 
 # Done
 
+* place instances of entity assets in world (sorta)
+* create new entity assets and set sprite and code (sorta)
 - Import temporary placeholder sprites
 - Basic GUI masking
 - Basic GUI retained mode auto layouting

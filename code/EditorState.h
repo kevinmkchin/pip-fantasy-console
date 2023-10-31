@@ -21,7 +21,6 @@ struct EditorWorldViewInfo
     ivec2 pan;
     ivec2 dimAfterZoom;
     ivec2 dimInUIScale;
-
     // dim = actual dim / zoom level
 };
 

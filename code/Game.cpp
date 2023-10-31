@@ -7,7 +7,8 @@
 
 Space activeSpace;
 
-std::vector<MesaScript_Table> entityAssetScriptScopes; // TODO(Kevin): remplace le par stack allocator
+static std::unordered_map<int, MesaScript_Table> assetIdToEAScriptScopeMap;  
+
 
 Space* GetGameActiveSpace()
 {
@@ -23,6 +24,22 @@ void ClearActiveSpace()
         ReleaseReferenceGCObject(e.selfMapId);
 
         activeSpace.aliveUpdateAndDraw.pop_back();
+    }
+}
+
+void CompileAllEntityCodeOnGameStart()
+{
+    assetIdToEAScriptScopeMap.clear();
+
+    EditorState *activeEditorState = EditorState::ActiveEditorState();
+    const std::vector<int> entityAssetIds = *activeEditorState->RetrieveAllEntityAssetIds();
+    for (const int eaid : entityAssetIds)
+    {
+        EntityAsset& ea = *activeEditorState->RetrieveEntityAssetById(eaid);
+
+        assetIdToEAScriptScopeMap.emplace(eaid, MesaScript_Table());
+
+        CompileMesaScriptCode(ea.code, &assetIdToEAScriptScopeMap.at(eaid));
     }
 }
 
@@ -45,31 +62,26 @@ void TemporaryGameInit() // should be init space or start space, there should be
         5. Space initialization script's PostGameObjectCreationInit should run? doesn't matter for now.
     */
 
+    CompileAllEntityCodeOnGameStart();
+
     ClearActiveSpace();
 
     EditorState *activeEditorState = EditorState::ActiveEditorState();
-
-    const std::vector<int> entityAssetIds = *activeEditorState->RetrieveAllEntityAssetIds();
-    EntityAsset& et0 = *activeEditorState->RetrieveEntityAssetById(entityAssetIds.at(0));
-    EntityAsset& et1 = *activeEditorState->RetrieveEntityAssetById(entityAssetIds.at(1));
-    EntityAsset& et2 = *activeEditorState->RetrieveEntityAssetById(entityAssetIds.at(2));
-    
-    entityAssetScriptScopes.clear();
-    entityAssetScriptScopes.emplace_back();
-    entityAssetScriptScopes.emplace_back();
-    entityAssetScriptScopes.emplace_back();
-    CompileMesaScriptCode(et0.code, &entityAssetScriptScopes.at(0));
-    CompileMesaScriptCode(et1.code, &entityAssetScriptScopes.at(1));
-    CompileMesaScriptCode(et2.code, &entityAssetScriptScopes.at(2));
-
-
     SpaceAsset *spaceToInitialize = activeEditorState->RetrieveSpaceAssetById(activeEditorState->activeSpaceId);
-
     for (EntityAssetInstanceInSpace inst : spaceToInitialize->placedEntities)
     {
         EntityInstance e;
 
-        e.assetScriptScope = &entityAssetScriptScopes.at(1);
+        // other shit
+        auto entityAsset = activeEditorState->RetrieveEntityAssetById(inst.entityAssetId);
+        e.sprite = entityAsset->sprite;
+
+        // script shit
+        e.assetScriptScope = &assetIdToEAScriptScopeMap.at(inst.entityAssetId);
+        // Note(Kevin): 2023-10-31 actually...do we need to have a table for every entity type and then another table 
+        //              for every entity instance? i probably had a reason for doing it this way...maybe revisit? i don't think
+        //              every entity instance of asset A should have their own copy of the AST, but their "update" key can just
+        //              point to the single version AST of A.update? 
 
         e.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
 
