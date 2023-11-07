@@ -29,6 +29,7 @@ Gfx (probably don't make a module out of this)
 
 # Next
 
+- collision callbacks?
 - mask basic primitive panel with a cornered rect? -> then show sprite upto x y size
 - use masking for MesaGUI ScrollView
 
@@ -60,6 +61,7 @@ MESASCRIPT EPIC:
 - MesaGUI code editor
   - better inputs (ctrl and shift modifier checks)
 - profiler
+= holy fuck modulus
 
 ### Language features
 

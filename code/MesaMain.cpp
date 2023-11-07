@@ -123,22 +123,22 @@ static void ProcessSDLEvents()
                     event.type = 0;
                 }
 
-                if (event.key.keysym.sym == SDLK_1)
+                if (event.key.keysym.sym == SDLK_F5)
                 {
                     g_gfx.screenScaling = Gfx::PixelPerfectRenderScale::OneHundredPercent;
                     g_gfx.UpdateBackBufferAndGameSize();
                 }
-                if (event.key.keysym.sym == SDLK_2)
+                if (event.key.keysym.sym == SDLK_F6)
                 {
                     g_gfx.screenScaling = Gfx::PixelPerfectRenderScale::TwoHundredPercent;
                     g_gfx.UpdateBackBufferAndGameSize();
                 }
-                if (event.key.keysym.sym == SDLK_3)
+                if (event.key.keysym.sym == SDLK_F7)
                 {
                     g_gfx.screenScaling = Gfx::PixelPerfectRenderScale::ThreeHundredPercent;
                     g_gfx.UpdateBackBufferAndGameSize();
                 }
-                if (event.key.keysym.sym == SDLK_4)
+                if (event.key.keysym.sym == SDLK_F8)
                 {
                     g_gfx.screenScaling = Gfx::PixelPerfectRenderScale::FourHundredPercent;
                     g_gfx.UpdateBackBufferAndGameSize();
