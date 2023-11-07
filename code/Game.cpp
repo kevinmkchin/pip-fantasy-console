@@ -124,7 +124,64 @@ void TemporaryGameInit() // should be init space or start space, there should be
         deltaTime.type = TValue::ValueType::Real;
         deltaTime.realValue = Time.deltaTime;
         time->CreateNewMapEntry("dt", deltaTime);
+        TValue timeSinceStart;
+        timeSinceStart.type = TValue::ValueType::Real;
+        timeSinceStart.realValue = Time.timeSinceStart;
+        time->CreateNewMapEntry("timeSinceStart", timeSinceStart);
     }
+}
+
+bool Collide(EntityInstance a, EntityInstance b)
+{
+    MesaScript_Table *aMap = AccessMesaScriptTable(a.selfMapId);
+    TValue xtv = aMap->AccessMapEntry("x");
+    TValue ytv = aMap->AccessMapEntry("y");
+    float ax = float(xtv.type == TValue::ValueType::Integer ? xtv.integerValue : xtv.realValue);
+    float ay = float(ytv.type == TValue::ValueType::Integer ? ytv.integerValue : ytv.realValue);
+
+    MesaScript_Table *bMap = AccessMesaScriptTable(b.selfMapId);
+    xtv = bMap->AccessMapEntry("x");
+    ytv = bMap->AccessMapEntry("y");
+    float bx = float(xtv.type == TValue::ValueType::Integer ? xtv.integerValue : xtv.realValue);
+    float by = float(ytv.type == TValue::ValueType::Integer ? ytv.integerValue : ytv.realValue);
+
+    vec2 min1;
+    min1.x = ax;//collider1.collider_position.x + ((float) -collider1.collision_neg.x);
+    min1.y = ay - 32.f;//collider1.collider_position.y + ((float) -collider1.collision_neg.y);
+    vec2 max1;
+    max1.x = ax + 32.f;//collider1.collider_position.x + ((float) collider1.collision_pos.x);
+    max1.y = ay;//collider1.collider_position.y + ((float) collider1.collision_pos.y);
+
+    vec2 min2;
+    min2.x = bx;//collider2.collider_position.x + ((float) -collider2.collision_neg.x);
+    min2.y = by - 32.f;//collider2.collider_position.y + ((float) -collider2.collision_neg.y);
+    vec2 max2;
+    max2.x = bx + 32.f;//collider2.collider_position.x + ((float) collider2.collision_pos.x);
+    max2.y = by;//collider2.collider_position.y + ((float) collider2.collision_pos.y);
+
+    //CollisionInfo cinfo;
+
+    if (min1.x < max2.x && max1.x > min2.x && min1.y < max2.y && max1.y > min2.y) {
+
+        // Note(Kevin): doesn't work when one box is fully enveloped by the other box
+        // Calculate the x and y overlap between the two colliding entities
+        float dx = min(max1.x, max2.x) - max(min1.x, min2.x);
+        float dy = min(max1.y, max2.y) - max(min1.y, min2.y);
+
+        if(max1.x - min2.x == dx)
+        {
+            dx = -dx;
+        }
+        if(max1.y - min2.y == dy)
+        {
+            dy = -dy;
+        }
+
+        vec2 collision_overlap = { dx, dy };
+        return true;
+    }
+
+    return false;
 }
 
 void TemporaryGameLoop()
@@ -146,6 +203,7 @@ void TemporaryGameLoop()
     input->table.at("down").boolValue = Input.currentKeyState[SDL_SCANCODE_DOWN];
     MesaScript_Table *time = AccessMapInGlobalScope("time");
     time->table.at("dt").realValue = Time.deltaTime;
+    time->table.at("timeSinceStart").realValue = Time.timeSinceStart;
 
     for (size_t i = 0, max = activeSpace.aliveUpdateAndDraw.size(); i < max; ++i)
     {
@@ -158,6 +216,35 @@ void TemporaryGameLoop()
         CallFunction_OneParam("Update", self);
         ClearEnvironmentScope();
     }
+
+    // collisions
+    for (size_t i = 0, max = activeSpace.aliveUpdateAndDraw.size(); i < max; ++i)
+    {
+        EntityInstance a = activeSpace.aliveUpdateAndDraw.at(i);
+        for (size_t j = i + 1; j < max; ++j)
+        {
+            EntityInstance b = activeSpace.aliveUpdateAndDraw.at(j);
+            if (Collide(a, b))
+            {
+                printf("collided?");
+                // a.OnCollide(b)
+                // b.OnCollide(a)
+                SetEnvironmentScope(a.assetScriptScope);
+                TValue self;
+                self.type = TValue::ValueType::GCObject;
+                self.GCReferenceObject = a.selfMapId;
+                CallFunction_OneParam("OnCollide", self);
+                ClearEnvironmentScope();
+
+                SetEnvironmentScope(b.assetScriptScope);
+                self.GCReferenceObject = b.selfMapId;
+                CallFunction_OneParam("OnCollide", self);
+                ClearEnvironmentScope();
+            }
+        }
+    }
+
+
 
 
 }
