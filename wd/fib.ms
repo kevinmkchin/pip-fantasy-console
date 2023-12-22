@@ -48,21 +48,23 @@ fn caller()
 caller()
 `
 
-
+`
 fn GetPlayer()
 {
     player = {}
     player["x"] = 32
     return player
 }
-
+`
+_player = {}
+_player["x"] = 32
 fn PrintPlayer()
 {
-    _player = GetPlayer()
+    ~_player = GetPlayer()
     print(_player["x"])
 }
 
-~PrintPlayer()
+PrintPlayer()
 
 
 
