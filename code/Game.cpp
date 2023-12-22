@@ -13,7 +13,7 @@ void TemporaryGameInit()
     EditorState *activeEditorState = EditorState::ActiveEditorState();
 
     std::string& gamecode = activeEditorState->codePage1;
-    CompileMesaScriptCode(gamecode, &gamecodeTable);
+    CompileAndRunMesaScriptCode(gamecode, &gamecodeTable);
 
     static bool doOnce = false;
     if (!doOnce)
@@ -48,6 +48,10 @@ void TemporaryGameInit()
         timeSinceStart.realValue = Time.timeSinceStart;
         time->CreateNewMapEntry("timeSinceStart", timeSinceStart);
     }
+
+    // SetEnvironmentScope(&gamecodeTable);
+    // CallFunction_Parameterless("init");
+    // ClearEnvironmentScope();
 }
 
 void TemporaryGameLoop()

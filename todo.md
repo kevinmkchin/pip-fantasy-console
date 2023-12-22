@@ -1,3 +1,9 @@
+# Quick thoughts
+
+maybe ; starts a line comment? like Lisp and DrRacket. # could also start line comment. What about block comment?
+
+
+
 # Known Bugs
 
 - GUI fresh ID is not great...will be buggy when number of elements change dynamically
@@ -109,7 +115,7 @@ Gfx (probably don't make a module out of this)
 - DataTypesAndUtility
 
 # Done
-
+- MesaScript change formal program defintion to: program : (procedure_decl | statement) (program)* Basically allow statements at script top-level. Added top-level script execution.
 * place instances of entity assets in world (sorta)
 * create new entity assets and set sprite and code (sorta)
 - Import temporary placeholder sprites
