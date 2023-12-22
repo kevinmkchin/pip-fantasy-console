@@ -294,5 +294,8 @@ void InitializeLanguageCompilerAndRuntime();
 void TemporaryRunMesaScriptInterpreterOnFile(const std::string& pathFromWorkingDir);
 
 
+// WRITING CPP BOUND MESASCRIPT FUNCTIONS INTERFACE
 
+void pipl_bind_cpp_fn(const char *fn_name, int argc, void *fn_ptr);
+// pipl_cpp_assert_arg_is_x
 

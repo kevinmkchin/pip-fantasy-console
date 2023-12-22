@@ -22,6 +22,7 @@
 #include "Editor.h"
 #include "Game.h"
 #include "MesaScript.h"
+#include "PipAPI.h"
 
 SDL_Window *g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
@@ -73,6 +74,7 @@ static bool InitializeEverything()
     MesaGUI::Init();
 
     InitializeLanguageCompilerAndRuntime();
+    BindPipAPI();
     SetupConsoleCommands();
 
     PrintLog.Message("Graphics loaded...");
@@ -176,8 +178,8 @@ void StartGameSpace()
     g_ProgramMode = MesaProgramMode::Game;
 
     // get game w game h game s from game file
-    int w = 514;
-    int h = 384;
+    int w = 320;
+    int h = 180;
     int s = 3;
     g_gfx.screenScaling = (Gfx::PixelPerfectRenderScale)s;
     SDL_SetWindowSize(g_SDLWindow, w*(int)g_gfx.screenScaling, h*(int)g_gfx.screenScaling);
@@ -188,7 +190,7 @@ void StartGameSpace()
 
 static void LoadFantasyConsole()
 {
-    g_ProgramMode = MesaProgramMode::BootScreen;
+    g_ProgramMode = MesaProgramMode::Editor;//MesaProgramMode::BootScreen;
     std::string welcome = std::string("type 'help'\n");
     SendMessageToConsole(welcome.c_str(), welcome.size());
 

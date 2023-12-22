@@ -1,4 +1,7 @@
-Mesa is a nice name.
+# name ideas
+- pip
+- blit
+- "Mesa is a nice name."
 
 ### By Kevin Myungkeon Chin
 

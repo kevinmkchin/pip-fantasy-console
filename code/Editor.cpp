@@ -29,6 +29,9 @@ static void LoadResourcesForEditorGUI()
     thBu01_normal = Gfx::CreateGPUTextureFromDisk(data_path("bu01.png").c_str());
     thBu01_hovered = Gfx::CreateGPUTextureFromDisk(data_path("bu01_hovered.png").c_str());
     thBu01_active = Gfx::CreateGPUTextureFromDisk(data_path("bu01_active.png").c_str());
+
+    EditorState::ActiveEditorState()->sprites.push_back(thBu01_normal);
+    EditorState::ActiveEditorState()->sprites.push_back(thBu01_active);
 }
 
 
@@ -40,8 +43,7 @@ enum class EditorMode
     SoundAndMusic
 };
 
-static EditorMode s_ActiveMode = EditorMode::WorldDesigner;
-static int s_SelectedEntityAssetId = -1;
+static EditorMode s_ActiveMode = EditorMode::EntityDesigner;
 
 // I select an entity template: it's code shows up in the code editor -> a code editor state is created
 // I can keep multiple code editor states open at once (multiple tabs, one tab for each entity code)
@@ -104,7 +106,7 @@ void EditorMainBar()
 
 bool Temp_StartGameOrEditorButton()
 {
-    return EditorButton(38105130914, 2, 4, 50, 19, "> Start");
+    return EditorButton(38105130914, 2, 4, 50, 19, "> play");
 }
 
 
@@ -113,63 +115,25 @@ void InitEditorGUI()
     LoadResourcesForEditorGUI();
 
     EditorState *activeEditorState = EditorState::ActiveEditorState();
-    int aid = activeEditorState->CreateNewEntityAsset("entity_0");
-    int bid = activeEditorState->CreateNewEntityAsset("entity_1");
-    int cid = activeEditorState->CreateNewEntityAsset("entity_2");
+    
+    activeEditorState->codePage1 = "fn tick() { print(time['dt']) }\n\nfn draw() { gfx_sprite(0, 0, 0) gfx_sprite(1, 50, 50) }";
 
-    activeEditorState->RetrieveEntityAssetById(aid)->code = 
-               "fn Update(self) { \n"
-               "    print(time['dt'])\n"
-               "    if (input['left']) {\n"
-               "        self['x'] = self['x'] - 180 * time['dt']\n" 
-               "    }\n" 
-               "    if (input['right']) {\n"
-               "        self['x'] = self['x'] + 180 * time['dt']\n" 
-               "    }\n" 
-               "    if (input['up']) {\n"
-               "        self['y'] = self['y'] + 180 * time['dt']\n" 
-               "    }\n" 
-               "    if (input['down']) {\n"
-               "        self['y'] = self['y'] - 180 * time['dt']\n" 
-               "    }\n" 
-               "}";
-    activeEditorState->RetrieveEntityAssetById(bid)->code = "fn Update(self) { self['x'] = self['x'] + 1 }";
-    activeEditorState->RetrieveEntityAssetById(cid)->code = "fn Update() { print('et2 update') }";
-    // activeEditorState->RetrieveEntityAssetById(cid)->code = 
-    //                           "fn Update() { str = '\n"
-    //                           "                       .,,uod8B8bou,,.\n"
-    //                           "              ..,uod8BBBBBBBBBBBBBBBBRPFT?l!i:.\n"
-    //                           "         ,=m8BBBBBBBBBBBBBBBRPFT?!||||||||||||||\n"
-    //                           "         !...:!TVBBBRPFT||||||||||!!^^\"\"'   ||||\n"
-    //                           "         !.......:!?|||||!!^^\"\"'            ||||\n"
-    //                           "         !.........||||                     ||||\n"
-    //                           "         !.........||||  ##                 ||||\n"
-    //                           "         !.........||||  mesa               ||||\n"
-    //                           "         !.........||||                     ||||\n"
-    //                           "         !.........||||                     ||||\n"
-    //                           "         !.........||||                     ||||\n"
-    //                           "         `.........||||                    ,||||\n"
-    //                           "          .;.......||||               _.-!!|||||\n"
-    //                           "   .,uodWBBBBb.....||||       _.-!!|||||||||!:'\n"
-    //                           "!YBBBBBBBBBBBBBBb..!|||:..-!!|||||||!iof68BBBBBb.... \n"
-    //                           "!..YBBBBBBBBBBBBBBb!!||||||||!iof68BBBBBBRPFT?!::   `.\n"
-    //                           "!....YBBBBBBBBBBBBBBbaaitf68BBBBBBRPFT?!:::::::::     `.\n"
-    //                           "!......YBBBBBBBBBBBBBBBBBBBRPFT?!::::::;:!^\"`;:::       `.  \n"
-    //                           "!........YBBBBBBBBBBRPFT?!::::::::::^''...::::::;         iBBbo.\n"
-    //                           "`..........YBRPFT?!::::::::::::::::::::::::;iof68bo.      WBBBBbo.\n"
-    //                           "  `..........:::::::::::::::::::::::;iof688888888888b.     `YBBBP^'\n"
-    //                           "    `........::::::::::::::::;iof688888888888888888888b.     `\n"
-    //                           "      `......:::::::::;iof688888888888888888888888888888b.\n"
-    //                           "        `....:::;iof688888888888888888888888888888888899fT!  \n"
-    //                           "          `..::!8888888888888888888888888888888899fT|!^\"'   \n"
-    //                           "            `' !!988888888888888888888888899fT|!^\"' \n"
-    //                           "                `!!8888888888888888899fT|!^\"'\n"
-    //                           "                  `!988888888899fT|!^\"'\n"
-    //                           "                    `!9899fT|!^\"'\n"
-    //                           "                      `!^\"'\n"
-    //                           "'}";
-
-    activeEditorState->activeSpaceId = activeEditorState->CreateNewSpaceAsset("name for new space");
+    // activeEditorState->RetrieveEntityAssetById(aid)->code = 
+    //            "fn Update(self) { \n"
+    //            "    print(time['dt'])\n"
+    //            "    if (input['left']) {\n"
+    //            "        self['x'] = self['x'] - 180 * time['dt']\n" 
+    //            "    }\n" 
+    //            "    if (input['right']) {\n"
+    //            "        self['x'] = self['x'] + 180 * time['dt']\n" 
+    //            "    }\n" 
+    //            "    if (input['up']) {\n"
+    //            "        self['y'] = self['y'] + 180 * time['dt']\n" 
+    //            "    }\n" 
+    //            "    if (input['down']) {\n"
+    //            "        self['y'] = self['y'] - 180 * time['dt']\n" 
+    //            "    }\n" 
+    //            "}";
 
     SetupEntityDesigner();
     SetupWorldDesigner();
@@ -179,6 +143,8 @@ void InitEditorGUI()
 
     editorLayout->Insert(mainbarLayout);
     editorLayout->Insert(worldEditorTabLayout);
+
+    SetCode(activeEditorState->codePage1);
 }
 
 void DoEditorGUI()
@@ -204,6 +170,11 @@ void DoEditorGUI()
         case EditorMode::EntityDesigner: 
         {
             EntityDesigner();
+            if (EditorButton(38105130915, 54, 4, 50, 19, "save code"))
+            {
+                EditorState::ActiveEditorState()->codePage1 = std::string(s_ActiveCodeEditorState.code_buf, s_ActiveCodeEditorState.code_len);
+                PrintLog.Message("Saved code changes...");
+            }
             break;
         }
         case EditorMode::WorldDesigner:

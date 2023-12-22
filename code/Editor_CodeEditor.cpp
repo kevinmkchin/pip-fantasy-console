@@ -303,7 +303,7 @@ void EditorCodeEditor(code_editor_state_t *state, bool enabled)
 
     // Draw line numbers
 
-    int countOfLineNumToDisplay = h / 12 + 1;
+    int countOfLineNumToDisplay = (int)state->row_offsets_len + 1;//GM_min((int)state->row_offsets_len, h / 12) + 1;
 
     std::string lineNumbersBuf;
     for (int i = 1; i < countOfLineNumToDisplay; ++i)
