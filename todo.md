@@ -11,7 +11,6 @@ maybe ; starts a line comment? like Lisp and DrRacket. # could also start line c
 
 # Immediate next
 
-- Run game code as a single script and instantiate all variables and shit. probably be able to run fib.ms
 - draw rect function
 
 # Todo
