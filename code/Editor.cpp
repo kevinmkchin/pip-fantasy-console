@@ -116,7 +116,7 @@ void InitEditorGUI()
 
     EditorState *activeEditorState = EditorState::ActiveEditorState();
     
-    activeEditorState->codePage1 = "fn tick() { print(time['dt']) }\n\nfn draw() { gfx_sprite(0, 0, 0) gfx_sprite(1, 50, 50) }";
+    activeEditorState->codePage1 = "str = 'test' fn tick() { print(str) }\n\nfn draw() { gfx_sprite(0, 0, 0) gfx_sprite(1, 50, 50) }";
 
     // activeEditorState->RetrieveEntityAssetById(aid)->code = 
     //            "fn Update(self) { \n"

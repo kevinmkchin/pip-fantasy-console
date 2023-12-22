@@ -205,14 +205,14 @@ int main(int argc, char* argv[])
 
     LoadFantasyConsole();
 
+    TemporaryRunMesaScriptInterpreterOnFile("fib.ms");
+
     while (!g_ProgramShouldShutdown)
     {
         if (Time.UpdateDeltaTime() > 0.1f) { continue; } // if delta time is too large, will cause glitches
 
         MesaGUI::NewFrame();
         ProcessSDLEvents();
-
-        // console_update(Time.unscaledDeltaTime);
 
         switch (g_ProgramMode)
         {
@@ -226,24 +226,6 @@ int main(int argc, char* argv[])
                 TemporaryGameLoop();
                 break;
         }
-
-/*
-        auto sty = MesaGUI::GetActiveUIStyleCopy();
-        sty.textColor = vec4(0.f,0.f,0.f,1.f);
-        //MesaGUI::PushUIStyle(sty);
-        MesaGUI::DoTextUnformatted(30, 30, 8, MesaGUI::TextAlignment::Left, "JOURNEY");
-        MesaGUI::DoTextUnformatted(130, 30, 8, MesaGUI::TextAlignment::Left, "COMET");
-        MesaGUI::DoTextUnformatted(230, 30, 16, MesaGUI::TextAlignment::Left, "MESA");
-        MesaGUI::DoTextUnformatted(330, 30, 8, MesaGUI::TextAlignment::Left, "STAR");
-        MesaGUI::DoTextUnformatted(430, 30, 8, MesaGUI::TextAlignment::Left, "HEART");
-        MesaGUI::DoTextUnformatted(30, 60, 16, MesaGUI::TextAlignment::Left, "Start Editor");
-        MesaGUI::DoTextUnformatted(30, 90, 8, MesaGUI::TextAlignment::Left, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!");
-        //MesaGUI::PopUIStyle();
-        //MesaGUI::DoButton(MesaGUI::FreshID(), MesaGUI::UIRect(30, 90, 100, 30), vec4(0,0,0,1), vec4(0.5,0.5,0.5,1), vec4(1.f, 1.f, 1.f, 1.f));
-        MesaGUI::EditorBeginWindow(MesaGUI::UIRect(30, 120, 200, 200));
-        MesaGUI::EditorLabelledButton("Insert Cartridge");
-        MesaGUI::EditorEndWindow();
-*/
 
         // static float lastFPSShowTime = Time.time;
         // static float framerate = 0.f;

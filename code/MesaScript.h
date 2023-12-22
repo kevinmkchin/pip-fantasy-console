@@ -103,9 +103,7 @@ IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 
 
 
-// program : procedure_decl (program)*
-// program : procedure_call
-// todo program : global variable assignment (program)*
+// program : (procedure_decl | statement) (program)*
 
 // procedure_decl : SYMBOL LPAREN (SYMBOL)* RPAREN statement_list
 
@@ -118,7 +116,7 @@ IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 // statement : PRINT cond_or
 // statement : procedure_call
 // statement : IF cond_or statement_list /*todo (ELIF statement_list)* */ (ELSE statement_list)?
-// todo : WHILE cond_or (statement sequence)
+// todo : WHILE cond_or statement_list
 
 // cond_expr : expr ((< | > | <= | =>) expr)?
 
@@ -279,7 +277,7 @@ i64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType);
 MesaScript_Table* EmplaceMapInGlobalScope(const std::string& id);
 MesaScript_Table* AccessMapInGlobalScope(const std::string& id);
 
-void CompileMesaScriptCode(const std::string& behaviourScript, MesaScript_Table *scriptScope);
+void CompileAndRunMesaScriptCode(const std::string& script, MesaScript_Table *scriptScope);
 void SetEnvironmentScope(MesaScript_Table *scriptScope);
 void ClearEnvironmentScope();
 

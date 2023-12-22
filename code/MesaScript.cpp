@@ -37,7 +37,8 @@ struct MesaScript_ScriptEnvironment
 
     bool KeyExistsInCurrentScope(const std::string &key)
     {
-        return scopes.back()->Contains(key);
+        // Note(Kevin): 2023-12-21 "current" scope I guess should be current function scope plus scope[0] for the script wide scope
+        return scopes.back()->Contains(key) || scopes.at(0)->Contains(key);
     }
 
     bool TransientObjectExists(i64 gcObjectId)
@@ -95,7 +96,8 @@ struct MesaScript_ScriptEnvironment
     /// Decrements ref counts here because we are removing a scope
     void PopScope()
     {
-        scopes.back()->DecrementReferenceCountOfEveryMapEntry();
+        if (scopes.size() > 1) // Note(Kevin): 2023-12-21 decrement ref counts only if NOT top-level script scope. We want to keep top-level script-wide GC objs alive.
+            scopes.back()->DecrementReferenceCountOfEveryMapEntry();
         scopes.pop_back();
         ASSERT(transients.back().count == 0);
         transients.pop_back();
@@ -988,7 +990,8 @@ private:
     size_t currentTokenIndex;
 
 public:
-    std::vector<ASTProcedureCall *> temporaryProcedureExecutionQueue;
+    //std::vector<ASTProcedureCall *> temporaryProcedureExecutionQueue;
+    std::vector<ASTNode*> scriptExecutionQueue;
 };
 
 Parser::Parser(std::vector<Token> _tokens)
@@ -1005,9 +1008,9 @@ void Parser::parse()
         {
             procedure_decl();
         }
-        else if (currentToken.type == TokenType::Identifier)
+        else
         {
-            temporaryProcedureExecutionQueue.push_back(static_cast<ASTProcedureCall*>(procedure_call()));
+            scriptExecutionQueue.push_back(statement());
         }
     }
 }
@@ -2134,13 +2137,20 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
 
 #pragma endregion Interpreter
 
-void CompileMesaScriptCode(const std::string& behaviourScript, MesaScript_Table *scriptScope)
+void CompileAndRunMesaScriptCode(const std::string& script, MesaScript_Table *scriptScope)
 {
     __MSRuntime.activeEnv.PushScope(scriptScope);
-    std::vector<Token> tokens = Lexer(behaviourScript.c_str());
+    std::vector<Token> tokens = Lexer(script.c_str());
     auto parser = Parser(tokens);
     parser.parse();
+
     // TODO(Kevin): if not release mode, probably want to keep Parser paired with the scriptScope so we have debug data later
+
+    for (auto& scriptTopLevelStatement : parser.scriptExecutionQueue)
+    {
+        InterpretStatement(scriptTopLevelStatement);
+    }
+
     __MSRuntime.activeEnv.PopScope();
 }
 
@@ -2274,20 +2284,7 @@ void TemporaryRunMesaScriptInterpreterOnFile(const std::string& pathFromWorkingD
 
     std::string mesaScriptSetupCode = "fn add(x, y) { return x + y } fn checkeq(expected, actual) { if (expected == actual) { print('test pass') } else { print('test fail') } }";
 
-    CompileMesaScriptCode(mesaScriptSetupCode, &scriptEnv);
+    CompileAndRunMesaScriptCode(mesaScriptSetupCode, &scriptEnv);
 
-    CompileMesaScriptCode(fileStr, &scriptEnv);
-
-    SetEnvironmentScope(&scriptEnv);
-
-    auto result = Lexer(fileStr.c_str());
-    auto parser = Parser(result);
-    parser.parse();
-
-    for (auto& procCallNode : parser.temporaryProcedureExecutionQueue)
-    {
-        InterpretStatement(procCallNode);
-    }
-
-    ClearEnvironmentScope();
+    CompileAndRunMesaScriptCode(fileStr, &scriptEnv);
 }
