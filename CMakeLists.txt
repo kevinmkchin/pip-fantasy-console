@@ -56,6 +56,8 @@ set(SOURCE_FILES
     code/Game.cpp
     code/Space.h
     code/Space.cpp
+    code/PipAPI.h
+    code/PipAPI.cpp
 )
 
 set(OTHER_FILES_FOR_IDE

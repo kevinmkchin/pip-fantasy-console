@@ -24,64 +24,48 @@ struct EditorWorldViewInfo
     // dim = actual dim / zoom level
 };
 
-struct EntityAsset
-{
-    // what sprite / animation to start with, what animations are available?
-    // what is the code / behaviour of all instances of this entity?
+// struct Sprite
+// {
+//     Gfx::TextureHandle sprite;
+// }
 
-    std::string name = "";
-    std::string code = "";
-
-    Gfx::TextureHandle sprite;
-    ivec2 spriteOriginOffset;
-};
-
-struct EntityAssetInstanceInSpace
-{
-    int spaceX;
-    int spaceY;
-    int entityAssetId;
-};
-
-struct SpaceAsset
-{
-    // list of entities to instantiate in this space
-
-    std::vector<EntityAssetInstanceInSpace> placedEntities;
-
-
-};
-
-struct EditorState
+struct EditorState // GameData (edited by editor, used by game?)
 {
 
 public:
     static EditorState *ActiveEditorState();
 
-    int CreateNewEntityAsset(const char *name);
-    void DeleteEntityAsset(int assetId);
-    EntityAsset *RetrieveEntityAssetById(int assetId);
-    const std::vector<int> *RetrieveAllEntityAssetIds();
-
-    int CreateNewSpaceAsset(const char *name);
-    SpaceAsset *RetrieveSpaceAssetById(int assetId);
-
-private:
-    int FreshAssetID();
+public:
+    std::vector<Gfx::TextureHandle> sprites;
 
 public:
-    int activeSpaceId = -1;
-
-private:
-    std::vector<int> projectEntityAssetIds;
-    std::unordered_map<int, EntityAsset> projectEntityAssets;
-
-    std::vector<int> projectSpaceAssetIds;
-    std::unordered_map<int, SpaceAsset> projectSpaceAssets;
-
-    int assetIdTicker = 100;
+    std::string codePage1;
 };
 
+
+
+
+/// Trash down here
+/*
+
+private:
+    int FreshSpriteID();
+    int spriteIdTicker = 100;
+
+
+    // std::vector<int> projectEntityAssetIds;
+    // std::unordered_map<int, EntityAsset> projectEntityAssets;
+
+    // std::vector<int> projectSpaceAssetIds;
+    // std::unordered_map<int, SpaceAsset> projectSpaceAssets;
+
+    // int CreateNewEntityAsset(const char *name);
+    // void DeleteEntityAsset(int assetId);
+    // EntityAsset *RetrieveEntityAssetById(int assetId);
+    // const std::vector<int> *RetrieveAllEntityAssetIds();
+
+    // int CreateNewSpaceAsset(const char *name);
+    // SpaceAsset *RetrieveSpaceAssetById(int assetId);
 
 // void CreateNewAsset_Space();
 // void CreateNewAsset_Sprite();

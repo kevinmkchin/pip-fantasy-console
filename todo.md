@@ -1,4 +1,94 @@
-# Branch off for rearchitecture
+# Known Bugs
+
+- GUI fresh ID is not great...will be buggy when number of elements change dynamically
+  - should change to be managed by the window (elements in same window will persist the same ids).
+
+# Immediate next
+
+- Run game code as a single script and instantiate all variables and shit. probably be able to run fib.ms
+- draw rect function
+
+# Todo
+
+- piplang: When exception thrown, print warning and let program continue
+- boot sound (SDL_mixer)
+- Code editor improvements
+  - honestly, maybe replace backend with stb_textedit.h
+  - selection, ctrl+c, ctrl+v
+  - click to move cursor
+  - ctrl + shift modifier checks
+- Markdown reader - manual in markdown, toggled with F1
+
+### Language features
+- Script modulus %
+- Script profiler
+
+
+map = { }
+- map initialization
+- access map elements via dot (e.g. map.x or map.f(param))
+- allow chaining list or map access like: list[4]["x"][2] (an access of an access of an access)
+
+
+- need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
+  - deleting an entry is different from deleting the object stored in that entry. if we can delete entire objects, then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).
+
+
+Libraries/Packages
+- math ops: flr, ceil, rnd -> all return integer
+
+
+- introducing "null" or "nil" means there are always going to have to be null checks. instead, provide a function to check if a variable name exists or is alive.
+- you should be able to ask for a list of identifiers/names that reference a given GCObj -> if a GCObj has 4 refs, I should be able to find out what those refs are...although that might be tough if the reference has no identifier e.g. if the reference is from inside a list or map entry.
+
+
+Low priority Items:
+- use custom assert for mesascript runtime
+- rename tables to MAP or DICTIONARY
+- while loops & break
+- for loops
+- elifs
+- +=, -=, /=, *=*
+- Better string support: concat strings and values, less friction like JavaScript, stuff like string + number operations
+- reference counting TESTS
+- add relops for GCObject type TValues. for other ops, just crash? 
+- maybe we don't need an integer type (everything can be real?)
+- Do something about cyclic references (maybe a tracing garbage collector just for cyclic refs)
+- Let current scope access every scope up until the last function scope (for loop scope can access fn scope)
+
+### Uncategorized
+
+- Sprite sheet & animations
+- Sprite batch rendering
+
+- Editor camera & game camera API
+- Game GUI API
+- Game file management
+  - meta data (Title, Cover art, Author, etc.)
+  - everything needed to play or edit the game
+- juice API
+- Sound effects and music API
+
+- Collision and dispatch system: Pixel perfect AABB Collision checks -> GJK&EPA
+  - Select collider type from AABB, Sphere, and Convex point cloud
+
+
+# Way the fuck down the line
+### Uncategorized
+- lots of potential optimizations in MesaIMGUI
+- MesaIMGUI abstract out behaviour code so reusable (e.g. button behaviour)
+- MesaIMGUI should probably eat keyboard inputs
+- MesaIMGUI overlapping elements or buttons
+- SDL_SCANCODE independent input key enums (or maybe unnecessary...)
+- (fuck off until later) vertext rewrite for better usability better API
+
+### Language features
+- replace all std data structs with alternate optimized implementations in C?
+- REFACTOR
+- Better unit test suite (built into the language would be nice, it should be dog simple to use)
+- should we have protected fields? how would this lead to encapsulation and inheritance?
+
+### Branch off for rearchitecture
 
 Core (essentially the common library that everything uses)
 - MesaMath
@@ -17,116 +107,6 @@ Gfx (probably don't make a module out of this)
 - Renderer
 - Shader
 - DataTypesAndUtility
-
-
-
-
-# Known Bugs
-
-- GUI fresh ID is not great...will be buggy when number of elements change dynamically
-  - should change to be managed by the window (elements in same window will persist the same ids).
-
-
-# Next
-
-- collision callbacks?
-- mask basic primitive panel with a cornered rect? -> then show sprite upto x y size
-- use masking for MesaGUI ScrollView
-
-- EntityDesigner bottom panel configure sprite, origin, colliders
-
-- better clicky into world viewer
-  - with zoom
-  - higher resolution render? maybe?
-
-* entity code -> game behaviour pipeline is further refined (e.g. self? how to use local variables? global vars? how to refer to other ents?)
-  // Note(Kevin): 2023-10-31 actually...do we need to have a table for every entity type and then another table 
-  //              for every entity instance? i probably had a reason for doing it this way...maybe revisit? i don't think
-  //              every entity instance of asset A should have their own copy of the AST, but their "update" key can just
-  //              point to the single version AST of A.update? 
-
-- move fib.ms test code into the editor itself. maybe
-
-
-# Todo
-
-- Markdown reader - manual in markdown, toggled with F1
-- boot sound (SDL_mixer)
-- Depth for GUI? depth ranges and depth test and shit?
-
-
-MESASCRIPT EPIC:
-- Complete MesaScript a0.1 -> MesaGUI code editor -> select entity type to edit their code -> entity type can choose sprite
-- MesaScript integration
-- MesaGUI code editor
-  - better inputs (ctrl and shift modifier checks)
-- profiler
-= holy fuck modulus
-
-### Language features
-
-- allow chaining list or map access like: list[4]["x"][2] (an access of an access of an access)
-- access map elements via dot (e.g. map.x or map.f(param))
-- map initialization
-
-- math ops: flr, ceil, rnd -> all return integer
-- stuff like string + number operations
-
-- while loops & break 
-- for loops
-- Let current scope access every scope up until the last function scope (for loop scope can access fn scope)
-
-- need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
-  - deleting an entry is different from deleting the object stored in that entry. if we can delete entire objects, then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).
-- rename tables to MAP or DICTIONARY
-
-- elifs
-- +=, -=, /=, *=*
-
-- Do something about cyclic references (maybe a tracing garbage collector just for cyclic refs)
-- Better string support: concat strings and values, less friction like JavaScript
-- reference counting TESTS
-- use custom assert for mesascript runtime
-- add relops for GCObject type TValues. for other ops, just crash? 
-- maybe we don't need an integer type (everything can be real?)
-
-
-- introducing "null" or "nil" means there are always going to have to be null checks. instead, provide a function to check if a variable name exists or is alive.
-- you should be able to ask for a list of identifiers/names that reference a given GCObj -> if a GCObj has 4 refs, I should be able to find out what those refs are...although that might be tough if the reference has no identifier e.g. if the reference is from inside a list or map entry.
-
-### Uncategorized
-
-- Game GUI atomics
-- Editor camera & game camera
-- Collision and dispatch system: Pixel perfect AABB Collision checks -> GJK&EPA
-  - Select collider type from AABB, Sphere, and Convex point cloud
-- Sound effects and music system
-- Sprite sheet & animations
-- Sprite batch rendering
-- Game file management
-  - meta data (Title, Cover art, Author, etc.)
-  - everything needed to play or edit the game
-- Space system
-- Entity system
-- Console
-- Juice and game specific utilities stuff
-
-
-### Way the fuck down the line
-##### Uncategorized
-- lots of potential optimizations in MesaIMGUI
-- MesaIMGUI abstract out behaviour code so reusable (e.g. button behaviour)
-- MesaIMGUI should probably eat keyboard inputs
-- MesaIMGUI overlapping elements or buttons
-- SDL_SCANCODE independent input key enums
-- (fuck off until later) vertext rewrite for better usability better API
-
-##### Language features
-- replace all std data structs with alternate optimized implementations in C?
-- REFACTOR
-- Better unit test suite (built into the language would be nice, it should be dog simple to use)
-- should we have protected fields? how would this lead to encapsulation and inheritance?
-
 
 # Done
 

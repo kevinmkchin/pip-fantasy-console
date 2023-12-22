@@ -55,8 +55,14 @@ typedef uint32_t EntityIndex;
     512x384 (4:3 resolution, 512/16 = 32, 384/16=24)
     640x480 (4:3 resolution, 640/16 = 40, 480/16=30)
 
+    256x224 (SNES)
+    512x448 (SNES)
 */
-#define EDITOR_FIXED_INTERNAL_RESOLUTION_W 854 //1280 //514 //512
-#define EDITOR_FIXED_INTERNAL_RESOLUTION_H 480 //914  //514 //384
-#define SDL_WINDOW_STARTING_SIZE_W 2440//EDITOR_FIXED_INTERNAL_RESOLUTION_W*2
-#define SDL_WINDOW_STARTING_SIZE_H 1440//EDITOR_FIXED_INTERNAL_RESOLUTION_H*2
+
+#define SDL_WINDOW_STARTING_SIZE_W 512*3
+#define SDL_WINDOW_STARTING_SIZE_H 448*3
+
+// TODO PIP_COMPILETIME_GUID requirements
+// - deterministic between clean compiles if code hasn't changed
+// - enough buffer for further sequential id gen: id + 1, id + 2, id + 3 are unique up to generous amount
+//#define PIP_COMPILETIME_GUID (__COUNTER__ * )

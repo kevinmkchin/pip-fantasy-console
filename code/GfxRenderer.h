@@ -7,6 +7,15 @@
 
 namespace Gfx
 {
+    struct RenderQueueData
+    {
+        Gfx::TextureHandle sprite;
+        vec2 position;
+    };
+
+    void QueueSpriteForRender(i64 spriteId, vec2 position);
+
+    void SetGameLayerClearColor(vec4 color);
 
     enum class PixelPerfectRenderScale
     {
@@ -23,7 +32,7 @@ namespace Gfx
 
         void Render();
 
-        BasicFrameBuffer RenderTheFuckingWorldEditor(SpaceAsset *worldToView, EditorState *state, EditorWorldViewInfo worldViewInfo);
+        //BasicFrameBuffer RenderTheFuckingWorldEditor(SpaceAsset *worldToView, EditorState *state, EditorWorldViewInfo worldViewInfo);
 
         void UpdateBackBufferAndGameSize();
         void GetBackBufferSize(i32 *widthOutput, i32 *heightOutput);

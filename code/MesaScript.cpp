@@ -1971,98 +1971,46 @@ InterpretStatementList(ASTNode* statements)
     }
 }
 
-TValue CPPBOUND_MESASCRIPT_Print(TValue value)
+
+typedef TValue (*cpp_bound_fn_no_param_t)();
+typedef TValue (*cpp_bound_fn_one_param_t)(TValue);
+typedef TValue (*cpp_bound_fn_two_param_t)(TValue, TValue);
+typedef TValue (*cpp_bound_fn_three_param_t)(TValue, TValue, TValue);
+typedef TValue (*cpp_bound_fn_four_param_t)(TValue, TValue, TValue, TValue);
+typedef TValue (*cpp_bound_fn_five_param_t)(TValue, TValue, TValue, TValue, TValue);
+typedef TValue (*cpp_bound_fn_six_param_t)(TValue, TValue, TValue, TValue, TValue, TValue);
+
+struct cpp_bound_fn_data
 {
-    if (value.type == TValue::ValueType::Integer)
-    {
-        printf("%lld\n", value.integerValue);
-    }
-    else if (value.type == TValue::ValueType::Boolean)
-    {
-        printf("%s\n", (value.boolValue ? "true" : "false"));
-    }
-    else if (value.type == TValue::ValueType::Real)
-    {
-        printf("%lf\n", value.realValue);
-    }
-    else if (value.type == TValue::ValueType::GCObject)
-    {
-        if (GetTypeOfGCObject(value.GCReferenceObject) == MesaGCObject::GCObjectType::Table)
-        {
-            printf("printing table\n");
-            for (const auto& pair : AccessMesaScriptTable(value.GCReferenceObject)->table)
-            {
-                if (pair.second.type == TValue::ValueType::Integer)
-                {
-                    printf("    %s : %lld\n", pair.first.c_str(), pair.second.integerValue);
-                }
-                else if (pair.second.type == TValue::ValueType::Boolean)
-                {
-                    printf("    %s : %s\n", pair.first.c_str(), (pair.second.boolValue ? "true" : "false"));
-                }
-                else if (pair.second.type == TValue::ValueType::Real)
-                {
-                    printf("    %s : %lf\n", pair.first.c_str(), pair.second.realValue);
-                }
-                else if (pair.second.type == TValue::ValueType::GCObject)
-                {
-                    printf("    %s : gcobject\n", pair.first.c_str());
-                }
-            }
-        }
-        else if (GetTypeOfGCObject(value.GCReferenceObject) == MesaGCObject::GCObjectType::List)
-        {
-            printf("printing list\n");
-            for (const auto& element : AccessMesaScriptList(value.GCReferenceObject)->list)
-            {
-                if (element.type == TValue::ValueType::Integer)
-                {
-                    printf("    %lld\n", element.integerValue);
-                }
-                else if (element.type == TValue::ValueType::Boolean)
-                {
-                    printf("    %s\n", (element.boolValue ? "true" : "false"));
-                }
-                else if (element.type == TValue::ValueType::Real)
-                {
-                    printf("    %lf\n", element.realValue);
-                }
-                else if (element.type == TValue::ValueType::GCObject)
-                {
-                    printf("    gcobject\n");
-                }
-            }  
-        }
-        else if (GetTypeOfGCObject(value.GCReferenceObject) == MesaGCObject::GCObjectType::String)
-        {
-            printf("%s\n", AccessMesaScriptString(value.GCReferenceObject)->text.c_str());
-        }
-    }
+    int argc = 0;
+    cpp_bound_fn_no_param_t f0 = NULL;
+    cpp_bound_fn_one_param_t f1 = NULL;
+    cpp_bound_fn_two_param_t f2 = NULL;
+    cpp_bound_fn_three_param_t f3 = NULL;
+    cpp_bound_fn_four_param_t f4 = NULL;
+    cpp_bound_fn_five_param_t f5 = NULL;
+    cpp_bound_fn_six_param_t f6 = NULL;
+};
 
-    return TValue();
-}
+static std::unordered_map<std::string, cpp_bound_fn_data> cpp_fn_registry;
 
-TValue CPPBOUND_MESASCRIPT_RaiseTo(TValue base, TValue exponent)
+void pipl_bind_cpp_fn(const char *fn_name, int argc, void *fn_ptr)
 {
-    ASSERT(base.type == TValue::ValueType::Integer); // todo can be float too
-    ASSERT(exponent.type == TValue::ValueType::Integer);
-
-    TValue result;
-    result.type = TValue::ValueType::Integer;
-    result.integerValue = (int)pow(double(base.integerValue), double(exponent.integerValue));
-    return result;
+    cpp_bound_fn_data fn_data;
+    fn_data.argc = argc;
+    switch(argc)
+    {
+    case 0: fn_data.f0 = (cpp_bound_fn_no_param_t)fn_ptr; break;
+    case 1: fn_data.f1 = (cpp_bound_fn_one_param_t)fn_ptr; break;
+    case 2: fn_data.f2 = (cpp_bound_fn_two_param_t)fn_ptr; break;
+    case 3: fn_data.f3 = (cpp_bound_fn_three_param_t)fn_ptr; break;
+    case 4: fn_data.f4 = (cpp_bound_fn_four_param_t)fn_ptr; break;
+    case 5: fn_data.f5 = (cpp_bound_fn_five_param_t)fn_ptr; break;
+    case 6: fn_data.f6 = (cpp_bound_fn_six_param_t)fn_ptr; break;
+    default: ASSERT(false);
+    }
+    cpp_fn_registry.insert({ fn_name, fn_data });
 }
-
-TValue CPPBOUND_MESASCRIPT_RefCount(TValue gcobj)
-{
-    ASSERT(gcobj.type == TValue::ValueType::GCObject);
-
-    TValue result;
-    result.type = TValue::ValueType::Integer;
-    result.integerValue = (int)GCOBJECTS_DATABASE.at(gcobj.GCReferenceObject)->refCount;
-    return result;
-}
-
 
 static TValue
 InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PART OF INTERPRETER, USE INTERPRETSTATEMENT INSTEAD
@@ -2081,20 +2029,64 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
     }
     else // only reach this case if valid CPPBOUND function or unknown function identifier error
     {
-        if (procedureCall->id == "raise_to")
+        auto fn_data_iter = cpp_fn_registry.find(procedureCall->id);
+        if (fn_data_iter != cpp_fn_registry.end())
         {
-            ASSERT(procedureCall->argsExpressions.size() == 2);
-            return CPPBOUND_MESASCRIPT_RaiseTo(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
-        }
-        else if (procedureCall->id == "print")
-        {
-            ASSERT(procedureCall->argsExpressions.size() == 1);
-            return CPPBOUND_MESASCRIPT_Print(InterpretExpression(procedureCall->argsExpressions[0]));
-        }
-        else if (procedureCall->id == "refcount")
-        {
-            ASSERT(procedureCall->argsExpressions.size() == 1);
-            return CPPBOUND_MESASCRIPT_RefCount(InterpretExpression(procedureCall->argsExpressions[0]));
+            auto fn_data = fn_data_iter->second;
+            ASSERT(procedureCall->argsExpressions.size() == fn_data.argc);
+            switch (fn_data.argc)
+            {
+            case 0: 
+            {
+                return fn_data.f0();
+            }
+            case 1: 
+            {
+                TValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
+                return fn_data.f1(arg0);
+            }
+            case 2: 
+            {
+                TValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
+                TValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
+                return fn_data.f2(arg0, arg1);
+            }
+            case 3: 
+            {
+                TValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
+                TValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
+                TValue arg2 = InterpretExpression(procedureCall->argsExpressions[2]);
+                return fn_data.f3(arg0, arg1, arg2);
+            }
+            case 4: 
+            {
+                TValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
+                TValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
+                TValue arg2 = InterpretExpression(procedureCall->argsExpressions[2]);
+                TValue arg3 = InterpretExpression(procedureCall->argsExpressions[3]);
+                return fn_data.f4(arg0, arg1, arg2, arg3);
+            }
+            case 5: 
+            {
+                TValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
+                TValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
+                TValue arg2 = InterpretExpression(procedureCall->argsExpressions[2]);
+                TValue arg3 = InterpretExpression(procedureCall->argsExpressions[3]);
+                TValue arg4 = InterpretExpression(procedureCall->argsExpressions[4]);
+                return fn_data.f5(arg0, arg1, arg2, arg3, arg4);
+            }
+            case 6:
+            {
+                TValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
+                TValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
+                TValue arg2 = InterpretExpression(procedureCall->argsExpressions[2]);
+                TValue arg3 = InterpretExpression(procedureCall->argsExpressions[3]);
+                TValue arg4 = InterpretExpression(procedureCall->argsExpressions[4]);
+                TValue arg5 = InterpretExpression(procedureCall->argsExpressions[5]);
+                return fn_data.f6(arg0, arg1, arg2, arg3, arg4, arg5);
+            }
+            default: ASSERT(false);
+            }
         }
         else
         {
@@ -2181,9 +2173,94 @@ void CallFunction_OneParam(const char* functionIdentifier, TValue arg0)
     InterpretStatement(&procCallNode);
 }
 
+
+TValue CPPBOUND_MESASCRIPT_Print(TValue value)
+{
+    if (value.type == TValue::ValueType::Integer)
+    {
+        printf("%lld\n", value.integerValue);
+    }
+    else if (value.type == TValue::ValueType::Boolean)
+    {
+        printf("%s\n", (value.boolValue ? "true" : "false"));
+    }
+    else if (value.type == TValue::ValueType::Real)
+    {
+        printf("%lf\n", value.realValue);
+    }
+    else if (value.type == TValue::ValueType::GCObject)
+    {
+        if (GetTypeOfGCObject(value.GCReferenceObject) == MesaGCObject::GCObjectType::Table)
+        {
+            printf("printing table\n");
+            for (const auto& pair : AccessMesaScriptTable(value.GCReferenceObject)->table)
+            {
+                if (pair.second.type == TValue::ValueType::Integer)
+                {
+                    printf("    %s : %lld\n", pair.first.c_str(), pair.second.integerValue);
+                }
+                else if (pair.second.type == TValue::ValueType::Boolean)
+                {
+                    printf("    %s : %s\n", pair.first.c_str(), (pair.second.boolValue ? "true" : "false"));
+                }
+                else if (pair.second.type == TValue::ValueType::Real)
+                {
+                    printf("    %s : %lf\n", pair.first.c_str(), pair.second.realValue);
+                }
+                else if (pair.second.type == TValue::ValueType::GCObject)
+                {
+                    printf("    %s : gcobject\n", pair.first.c_str());
+                }
+            }
+        }
+        else if (GetTypeOfGCObject(value.GCReferenceObject) == MesaGCObject::GCObjectType::List)
+        {
+            printf("printing list\n");
+            for (const auto& element : AccessMesaScriptList(value.GCReferenceObject)->list)
+            {
+                if (element.type == TValue::ValueType::Integer)
+                {
+                    printf("    %lld\n", element.integerValue);
+                }
+                else if (element.type == TValue::ValueType::Boolean)
+                {
+                    printf("    %s\n", (element.boolValue ? "true" : "false"));
+                }
+                else if (element.type == TValue::ValueType::Real)
+                {
+                    printf("    %lf\n", element.realValue);
+                }
+                else if (element.type == TValue::ValueType::GCObject)
+                {
+                    printf("    gcobject\n");
+                }
+            }  
+        }
+        else if (GetTypeOfGCObject(value.GCReferenceObject) == MesaGCObject::GCObjectType::String)
+        {
+            printf("%s\n", AccessMesaScriptString(value.GCReferenceObject)->text.c_str());
+        }
+    }
+
+    return TValue();
+}
+
+TValue CPPBOUND_MESASCRIPT_RefCount(TValue gcobj)
+{
+    ASSERT(gcobj.type == TValue::ValueType::GCObject);
+
+    TValue result;
+    result.type = TValue::ValueType::Integer;
+    result.integerValue = (int)GCOBJECTS_DATABASE.at(gcobj.GCReferenceObject)->refCount;
+    return result;
+}
+
 void InitializeLanguageCompilerAndRuntime()
 {
     MemoryLinearInitialize(&__ASTBuffer, 8000000);
+
+    pipl_bind_cpp_fn("print", 1, CPPBOUND_MESASCRIPT_Print);
+    pipl_bind_cpp_fn("refcount", 1, CPPBOUND_MESASCRIPT_RefCount);
 }
 
 // TODO(Kevin): move initialize and setup stuff somewhere else. make sure built-in methods like add get added to global scope not script scope.
