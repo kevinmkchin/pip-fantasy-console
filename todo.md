@@ -115,6 +115,8 @@ Gfx (probably don't make a module out of this)
 
 # Done
 
+- run active/current script
+- single line console quick save load text files
 - replace code editor backend with stb_textedit.h (and some bugfixes from implementing the API)
 - send SDL keyboard inputs directly to editor / code editor for processing.
 - MesaScript change formal program defintion to: program : (procedure_decl | statement) (program)* Basically allow statements at script top-level. Added top-level script execution.

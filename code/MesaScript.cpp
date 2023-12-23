@@ -2271,20 +2271,19 @@ void InitializeLanguageCompilerAndRuntime()
 
     pipl_bind_cpp_fn("print", 1, CPPBOUND_MESASCRIPT_Print);
     pipl_bind_cpp_fn("refcount", 1, CPPBOUND_MESASCRIPT_RefCount);
-}
-
-// TODO(Kevin): move initialize and setup stuff somewhere else. make sure built-in methods like add get added to global scope not script scope.
-void TemporaryRunMesaScriptInterpreterOnFile(const std::string& pathFromWorkingDir)
-{
-    std::string fileStr = ReadFileString(wd_path(pathFromWorkingDir).c_str());
-
-    //printf("%ld", sizeof(MesaScript_Table));
-
-    MesaScript_Table scriptEnv;
 
     std::string mesaScriptSetupCode = "fn add(x, y) { return x + y } fn checkeq(expected, actual) { if (expected == actual) { print('test pass') } else { print('test fail') } }";
+    CompileAndRunMesaScriptCode(mesaScriptSetupCode, &__MSRuntime.globalEnv); // hack to add fns to globalEnv
+}
 
-    CompileAndRunMesaScriptCode(mesaScriptSetupCode, &scriptEnv);
+void SimplyRunScript(const std::string& script)
+{
+    MesaScript_Table scriptEnv;
+    CompileAndRunMesaScriptCode(script, &scriptEnv);
+}
 
-    CompileAndRunMesaScriptCode(fileStr, &scriptEnv);
+void SimplyRunScriptFromFile(const std::string& pathFromWorkingDir)
+{
+    std::string fileStr = ReadFileString(wd_path(pathFromWorkingDir).c_str());
+    SimplyRunScript(fileStr);
 }

@@ -140,12 +140,20 @@ void Temp_LoadScript(std::string pathFromWd)
     }
 }
 
+#include "MesaScript.h"
+void Temp_ExecCurrentScript()
+{
+    auto script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
+    SimplyRunScript(script);
+}
+
 void InitEditorGUI()
 {
     LoadResourcesForEditorGUI();
 
     GiveMeTheConsole()->bind_cmd("savepl", Temp_SaveScript);
     GiveMeTheConsole()->bind_cmd("loadpl", Temp_LoadScript);
+    GiveMeTheConsole()->bind_cmd("runpl", Temp_ExecCurrentScript);
 
     EditorState *activeEditorState = EditorState::ActiveEditorState();
     

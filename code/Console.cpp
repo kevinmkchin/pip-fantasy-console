@@ -167,7 +167,7 @@ void SetupConsoleCommands()
 {
     sNoclipConsole.bind_cmd("editor", StartEditor);
     sNoclipConsole.bind_cmd("elephant", ElephantJPG);
-    sNoclipConsole.bind_cmd("exec", TemporaryRunMesaScriptInterpreterOnFile);
+    sNoclipConsole.bind_cmd("execfile", SimplyRunScriptFromFile);
 
     PrintLog.Message("Boot menu initialized...");
 }
