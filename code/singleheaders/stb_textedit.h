@@ -1291,6 +1291,7 @@ static void stb_text_undo(STB_TEXTEDIT_STRING *str, STB_TexteditState *state)
    }
 
    state->cursor = u.where + u.insert_length;
+   state->select_start = state->select_end = state->cursor; // https://github.com/nothings/stb/pull/1586
 
    s->undo_point--;
    s->redo_point--;
@@ -1342,6 +1343,7 @@ static void stb_text_redo(STB_TEXTEDIT_STRING *str, STB_TexteditState *state)
    }
 
    state->cursor = r.where + r.insert_length;
+   state->select_start = state->select_end = state->cursor; // https://github.com/nothings/stb/pull/1586
 
    s->undo_point++;
    s->redo_point++;

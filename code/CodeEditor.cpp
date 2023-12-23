@@ -113,7 +113,7 @@ STB_TEXTEDIT_CHARTYPE key_to_char(STB_TEXTEDIT_KEYTYPE key)
 #define STB_TEXTEDIT_IMPLEMENTATION
 #include "singleheaders/stb_textedit.h"
 
-void GetCursorData(CodeEditorString code, STB_TexteditState texteditState, int *rowcount, int *row, int *col)
+void GetCursorData(CodeEditorString code, int cursorpos, int *rowcount, int *row, int *col)
 {
     if (code.stringlen > 0)
     {
@@ -127,12 +127,12 @@ void GetCursorData(CodeEditorString code, STB_TexteditState texteditState, int *
     }
 
     StbFindState find;
-    stb_textedit_find_charpos(&find, &code, texteditState.cursor, false);
+    stb_textedit_find_charpos(&find, &code, cursorpos, false);
     int ccol = (int)find.x / FIXED_FONT_WIDTH_HACK;
     int crow = (int)find.y / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK);
-    if (code.stringlen == texteditState.cursor)
+    if (code.stringlen == cursorpos)
     {
-        ccol = (code.stringlen > 0 && code.string[code.stringlen - 1] == '\n') ? 0 : texteditState.cursor - find.prev_first;
+        ccol = (code.stringlen > 0 && code.string[code.stringlen - 1] == '\n') ? 0 : cursorpos - find.prev_first;
         crow = *rowcount - 1;
     }
 
@@ -173,17 +173,18 @@ const int lineNumbersDisplayWidth = 15;
 const int textAnchorOffsetX = lineNumbersDisplayWidth + 8;
 const int textAnchorOffsetY = 13;
 
-void SendMouseClickToCodeEditor(CodeEditorString *code, int x, int y)
+void SendMouseDownToCodeEditor(CodeEditorString *code, int x, int y)
 {
     float x_text = (float)x - textAnchorOffsetX;
     float y_text = (float)y - textAnchorOffsetY;
-    //printf("click: %d, %d\n", (int)x_text, (int)y_text);
     stb_textedit_click(code, &stbCodeEditorState, x_text, y_text);
 }
 
-void SendMouseDragToCodeEditor(CodeEditorString *code, int x, int y)
+void SendMouseMoveToCodeEditor(CodeEditorString *code, int x, int y)
 {
-    // void stb_textedit_drag(STB_TEXTEDIT_STRING *str, STB_TexteditState *state, float x, float y)
+    float x_text = (float)x - textAnchorOffsetX;
+    float y_text = (float)y - textAnchorOffsetY;
+    stb_textedit_drag(code, &stbCodeEditorState, x_text, y_text);
 }
 
 void SendKeyInputToCodeEditor(CodeEditorString *code, STB_TEXTEDIT_KEYTYPE key)
@@ -193,7 +194,7 @@ void SendKeyInputToCodeEditor(CodeEditorString *code, STB_TEXTEDIT_KEYTYPE key)
     if ((key & 0xFF) == 0x09) // '\t'
     {
         int rc, r, c;
-        GetCursorData(*code, stbCodeEditorState, &rc, &r, &c);
+        GetCursorData(*code, stbCodeEditorState.cursor, &rc, &r, &c);
         stb_textedit_key(code, state, 0x20); // ' '
         if (c % 2 == 0) 
             stb_textedit_key(code, state, 0x20);
@@ -201,6 +202,34 @@ void SendKeyInputToCodeEditor(CodeEditorString *code, STB_TEXTEDIT_KEYTYPE key)
     else
     {
         stb_textedit_key(code, state, key);
+    }
+}
+
+static void DrawSelectionHighlightRect(int startCol, int endCol, int row, int zone_x, int zone_y)
+{
+    int highlight_x_text = startCol * FIXED_FONT_WIDTH_HACK;
+    int highlight_y_text = (row - 1) * (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK) + 1;
+    int highlight_x_internal = highlight_x_text + textAnchorOffsetX + zone_x;
+    int highlight_y_internal = highlight_y_text + textAnchorOffsetY + zone_y;
+    int highlight_w = (endCol - startCol) * FIXED_FONT_WIDTH_HACK;
+    int highlight_h = (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK);
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(highlight_x_internal, highlight_y_internal, highlight_w, highlight_h), 3, vec4(0.95f, 0.95f, 0.95f, 0.3f));
+}
+
+static void GetRowStartAndEnd(const CodeEditorString code, int row, int *startIndex, int *endIndex)
+{
+    *startIndex = 0;
+    for (int i = 0; i < code.stringlen; ++i)
+    {
+        char c = code.string[i];
+        if (c == '\n' || c == '\0')
+        {
+            *endIndex = i;
+            if (row == 0 || c == '\0')
+                return;
+            --row;
+            *startIndex = i + 1;
+        }
     }
 }
 
@@ -240,12 +269,15 @@ void DoCodeEditorGUI(CodeEditorString code)
     const int textBeginAnchorY = y + textAnchorOffsetY;
 
     int rowcount, crow, ccol;
-    GetCursorData(code, stbCodeEditorState, &rowcount, &crow, &ccol);
-    // Draw code
+    GetCursorData(code, stbCodeEditorState.cursor, &rowcount, &crow, &ccol);
+
+    // Draw cursor
     if (MesaGUI::IsActive(g_CodeEditorUIID))
     {
         MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX - 1 + ccol * 6, textBeginAnchorY-13 + crow * 12, 1, 16), vec4(1,1,1,1));
     }
+
+    // Draw code
     // I could make each type of text to highlight a different primitive text that is rendered
     // so all keywords are rendered as one set of text batch with one color, all variables rendered as one set with one color, functions, etc. 
     MesaGUI::UIStyle uiss = MesaGUI::GetActiveUIStyleCopy();
@@ -257,16 +289,49 @@ void DoCodeEditorGUI(CodeEditorString code)
         MesaGUI::PopUIStyle();
     }
 
+    // Draw selection highlight
+    int selStart = stbCodeEditorState.select_start;
+    int selEnd = stbCodeEditorState.select_end;
+    if (selStart != selEnd)
+    {
+        if (selStart > selEnd) 
+        {
+            selStart = stbCodeEditorState.select_end;
+            selEnd = stbCodeEditorState.select_start;
+        }
+        int idc, selStartRow, selStartCol, selEndRow, selEndCol;
+        GetCursorData(code, selStart, &idc, &selStartRow, &selStartCol);
+        GetCursorData(code, selEnd, &idc, &selEndRow, &selEndCol);
+        //int highlightedRowCount = selEndRow - selStartRow + 1;
+        if (selStartRow == selEndRow)
+        {
+            DrawSelectionHighlightRect(selStartCol, selEndCol, selStartRow, x, y);
+        }
+        else
+        {
+            int rowstart, rowend;
+            // draw selStartRow
+            GetRowStartAndEnd(code, selStartRow, &rowstart, &rowend);
+            DrawSelectionHighlightRect(selStartCol, rowend - rowstart + 1, selStartRow, x, y);
+            // draw the rows in between
+            for (int i = selStartRow + 1; i < selEndRow; ++i)
+            {
+                GetRowStartAndEnd(code, i, &rowstart, &rowend);
+                DrawSelectionHighlightRect(0, rowend - rowstart + 1, i, x, y);
+            }
+            // draw selEndRow
+            DrawSelectionHighlightRect(0, selEndCol, selEndRow, x, y);
+        }
+    }
+
     // Draw line numbers
     int countOfLineNumToDisplay = rowcount; //GM_min((int)rowcount, h / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK) + 1);
-
     std::string lineNumbersBuf;
     for (int i = 1; i < countOfLineNumToDisplay + 1; ++i)
     {
         int lineNum = 0/* first line num to display*/ + i;
         lineNumbersBuf += std::to_string(lineNum) + '\n';
     }
-
     uiss = MesaGUI::GetActiveUIStyleCopy();
     uiss.textColor = vec4(1.f, 1.f, 1.f, 0.38f);
     MesaGUI::PushUIStyle(uiss);
