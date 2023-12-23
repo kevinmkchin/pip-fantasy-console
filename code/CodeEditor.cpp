@@ -48,7 +48,7 @@ void layout_func(StbTexteditRow *row, CodeEditorString *str, int lineStart)
         }
     }
     row->x0 = 0;
-    row->x1 = FIXED_FONT_WIDTH_HACK * row->num_chars; // need to account for actual size of characters
+    row->x1 = (float)FIXED_FONT_WIDTH_HACK * row->num_chars; // need to account for actual size of characters
     row->baseline_y_delta = FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK;
     row->ymin = -FIXED_FONT_HEIGHT_HACK;
     row->ymax = 0;
@@ -198,7 +198,7 @@ void DoCodeEditorGUI(CodeEditorString code)
     {
         StbFindState lastlineFind;
         stb_textedit_find_charpos(&lastlineFind, &code, code.stringlen - 1, false);
-        rowcount = lastlineFind.y / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK) + 1 + (code.string[code.stringlen - 1] == '\n' ? 1 : 0);
+        rowcount = int(lastlineFind.y) / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK) + 1 + (code.string[code.stringlen - 1] == '\n' ? 1 : 0);
     }
     else
     {
@@ -210,8 +210,8 @@ void DoCodeEditorGUI(CodeEditorString code)
     {
         StbFindState find;
         stb_textedit_find_charpos(&find, &code, stbCodeEditorState.cursor, false);
-        int ccol = find.x / FIXED_FONT_WIDTH_HACK;
-        int crow = find.y / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK);
+        int ccol = (int)find.x / FIXED_FONT_WIDTH_HACK;
+        int crow = (int)find.y / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK);
         if (code.stringlen == stbCodeEditorState.cursor)
         {
             ccol = (code.stringlen > 0 && code.string[code.stringlen - 1] == '\n') ? 0 : stbCodeEditorState.cursor - find.prev_first;
