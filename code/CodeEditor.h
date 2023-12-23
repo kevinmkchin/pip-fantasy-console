@@ -4,6 +4,7 @@
 
 #include "MesaCommon.h"
 #include "MesaMath.h"
+#include "MesaIMGUI.h"
 
 #define STB_TEXTEDIT_KEYTYPE    int
 #define STB_TEXTEDIT_CHARTYPE   char
@@ -38,5 +39,9 @@ struct CodeEditorString
 
 CodeEditorString GiveMeNewCodeEditorString();
 void SetupCodeEditorString(CodeEditorString *code, const char *initString, u32 len);
+void SendMouseClickToCodeEditor(CodeEditorString *code, int x, int y);
+void SendMouseDragToCodeEditor(CodeEditorString *code, int x, int y);
 void SendKeyInputToCodeEditor(CodeEditorString *code, STB_TEXTEDIT_KEYTYPE key);
 void DoCodeEditorGUI(CodeEditorString code);
+
+extern const ui_id g_CodeEditorUIID;

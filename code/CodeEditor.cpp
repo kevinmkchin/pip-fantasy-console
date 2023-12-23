@@ -142,8 +142,6 @@ void GetCursorData(CodeEditorString code, STB_TexteditState texteditState, int *
 
 
 // TODO
-// void stb_textedit_click(STB_TEXTEDIT_STRING *str, STB_TexteditState *state, float x, float y)
-// void stb_textedit_drag(STB_TEXTEDIT_STRING *str, STB_TexteditState *state, float x, float y)
 // int  stb_textedit_cut(STB_TEXTEDIT_STRING *str, STB_TexteditState *state)
 // int  stb_textedit_paste(STB_TEXTEDIT_STRING *str, STB_TexteditState *state, STB_TEXTEDIT_CHARTYPE *text, int len)
 
@@ -170,26 +168,39 @@ void SetupCodeEditorString(CodeEditorString *code, const char *initString, u32 l
     stb_textedit_initialize_state(&stbCodeEditorState, 0);
 }
 
-const static ui_id codeEditorUIID = 0xbc9526f97dff3dec;
+const ui_id g_CodeEditorUIID = 0xbc9526f97dff3dec;
+const int lineNumbersDisplayWidth = 15;
+const int textAnchorOffsetX = lineNumbersDisplayWidth + 8;
+const int textAnchorOffsetY = 13;
+
+void SendMouseClickToCodeEditor(CodeEditorString *code, int x, int y)
+{
+    float x_text = (float)x - textAnchorOffsetX;
+    float y_text = (float)y - textAnchorOffsetY;
+    //printf("click: %d, %d\n", (int)x_text, (int)y_text);
+    stb_textedit_click(code, &stbCodeEditorState, x_text, y_text);
+}
+
+void SendMouseDragToCodeEditor(CodeEditorString *code, int x, int y)
+{
+    // void stb_textedit_drag(STB_TEXTEDIT_STRING *str, STB_TexteditState *state, float x, float y)
+}
 
 void SendKeyInputToCodeEditor(CodeEditorString *code, STB_TEXTEDIT_KEYTYPE key)
 {
     STB_TexteditState *state = &stbCodeEditorState;
 
-    if (MesaGUI::IsActive(codeEditorUIID))
+    if ((key & 0xFF) == 0x09) // '\t'
     {
-        if ((key & 0xFF) == 0x09) // '\t'
-        {
-            int rc, r, c;
-            GetCursorData(*code, stbCodeEditorState, &rc, &r, &c);
-            stb_textedit_key(code, state, 0x20); // ' '
-            if (c % 2 == 0) 
-                stb_textedit_key(code, state, 0x20);
-        }
-        else
-        {
-            stb_textedit_key(code, state, key);
-        }
+        int rc, r, c;
+        GetCursorData(*code, stbCodeEditorState, &rc, &r, &c);
+        stb_textedit_key(code, state, 0x20); // ' '
+        if (c % 2 == 0) 
+            stb_textedit_key(code, state, 0x20);
+    }
+    else
+    {
+        stb_textedit_key(code, state, key);
     }
 }
 
@@ -202,38 +213,36 @@ void DoCodeEditorGUI(CodeEditorString code)
     MesaGUI::UIRect codeEditorRect = MesaGUI::UIRect(x, y, w - 8, h - 8);
 
 
-    if (MesaGUI::IsActive(codeEditorUIID))
+    if (MesaGUI::IsActive(g_CodeEditorUIID))
     {
         if (MesaGUI::Temp_Escape())
         {
             MesaGUI::SetActive(null_ui_id);
         }
     }
-    else if (MesaGUI::IsHovered(codeEditorUIID))
+    else if (MesaGUI::IsHovered(g_CodeEditorUIID))
     {
         if (MesaGUI::MouseWentDown())
         {
-            MesaGUI::SetActive(codeEditorUIID);
+            MesaGUI::SetActive(g_CodeEditorUIID);
         }
     }
 
     if (MesaGUI::MouseInside(codeEditorRect))
     {
-        MesaGUI::SetHovered(codeEditorUIID);
+        MesaGUI::SetHovered(g_CodeEditorUIID);
     }
 
     const int codeEditorRectCornerRadius = 6;
-    MesaGUI::PrimitivePanel(codeEditorRect, codeEditorRectCornerRadius, MesaGUI::IsActive(codeEditorUIID) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
+    MesaGUI::PrimitivePanel(codeEditorRect, codeEditorRectCornerRadius, MesaGUI::IsActive(g_CodeEditorUIID) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
 
-    int lineNumbersDisplayWidth = 15;
-
-    int textBeginAnchorX = x + lineNumbersDisplayWidth + 8;
-    int textBeginAnchorY = y + 13;
+    const int textBeginAnchorX = x + textAnchorOffsetX;
+    const int textBeginAnchorY = y + textAnchorOffsetY;
 
     int rowcount, crow, ccol;
     GetCursorData(code, stbCodeEditorState, &rowcount, &crow, &ccol);
     // Draw code
-    if (MesaGUI::IsActive(codeEditorUIID))
+    if (MesaGUI::IsActive(g_CodeEditorUIID))
     {
         MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX - 1 + ccol * 6, textBeginAnchorY-13 + crow * 12, 1, 16), vec4(1,1,1,1));
     }
