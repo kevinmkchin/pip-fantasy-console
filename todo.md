@@ -1,8 +1,7 @@
 # Quick thoughts
 
 maybe ; starts a line comment? like Lisp and DrRacket. # could also start line comment. What about block comment?
-
-
+rework MesaIMGUI keyboard input handling. 
 
 # Known Bugs
 
@@ -11,17 +10,18 @@ maybe ; starts a line comment? like Lisp and DrRacket. # could also start line c
 
 # Immediate next
 
-- draw rect function
+- code editor: mouse interactions (clicking, dragging to select, is there dragging to move?)
+- code editor: cut, copy, paste, and selection highlighting
+- code editor: ctrl+backspace and ctrl+delete for word deletion
+- code editor: insert mode + indicator (?)
+- code editor: pg up pg down (maybe for functions?)
+
+- gfx api: draw rect function
+- piplang: When exception thrown, print warning and let program continue
 
 # Todo
 
-- piplang: When exception thrown, print warning and let program continue
 - boot sound (SDL_mixer)
-- Code editor improvements
-  - honestly, maybe replace backend with stb_textedit.h
-  - selection, ctrl+c, ctrl+v
-  - click to move cursor
-  - ctrl + shift modifier checks
 - Markdown reader - manual in markdown, toggled with F1
 
 ### Language features
@@ -114,6 +114,9 @@ Gfx (probably don't make a module out of this)
 - DataTypesAndUtility
 
 # Done
+
+- replace code editor backend with stb_textedit.h (and some bugfixes from implementing the API)
+- send SDL keyboard inputs directly to editor / code editor for processing.
 - MesaScript change formal program defintion to: program : (procedure_decl | statement) (program)* Basically allow statements at script top-level. Added top-level script execution.
 * place instances of entity assets in world (sorta)
 * create new entity assets and set sprite and code (sorta)

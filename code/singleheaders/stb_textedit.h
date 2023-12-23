@@ -888,10 +888,16 @@ retry:
             x = row.x0;
             for (i=0; i < row.num_chars; ++i) {
                float dx = STB_TEXTEDIT_GETWIDTH(str, start, i);
-               #ifdef STB_TEXTEDIT_GETWIDTH_NEWLINE
-               if (dx == STB_TEXTEDIT_GETWIDTH_NEWLINE)
-                  break;
-               #endif
+
+               // Kevin fix 2023-12-22: Commenting this useless bit of code with a check for newline char
+               // because otherwise cursor moves to the next next line rather than the next line.
+               //#ifdef STB_TEXTEDIT_GETWIDTH_NEWLINE
+               //if (dx == STB_TEXTEDIT_GETWIDTH_NEWLINE)
+               //   break;
+               //#endif
+               if (STB_TEXTEDIT_GETCHAR(str, start + i) == STB_TEXTEDIT_NEWLINE)
+                   break;
+
                x += dx;
                if (x > goal_x)
                   break;
@@ -935,7 +941,23 @@ retry:
 
          // compute current position of cursor point
          stb_textedit_clamp(str, state);
-         stb_textedit_find_charpos(&find, str, state->cursor, state->single_line);
+
+         // Kevin fix 2023-12-22: incrementing string len by 1 before finding char pos cuz what a fucking headache
+         // For null terminated strings, if the cursor is at the very end, stb_textedit_find_charpos goes into special
+         // case and returns an imaginary next line. I assume this is required for logic elsewhere but it breaks when
+         // trying to move the cursor UP while the cursor is at the very end (i.e. the cursor is pointing to the null
+         // terminator. e.g. "" with cursor 0 means cursor is pointing to the null term, "a\nb" with cursor at 3 means
+         // cursor is pointing to the null term)
+         if (state->cursor == str->stringlen)
+         {
+             str->stringlen += 1;
+             stb_textedit_find_charpos(&find, str, state->cursor, state->single_line);
+             str->stringlen -= 1;
+         }
+         else
+         {
+             stb_textedit_find_charpos(&find, str, state->cursor, state->single_line);
+         }
 
          for (j = 0; j < row_count; ++j) {
             float  x, goal_x = state->has_preferred_x ? state->preferred_x : find.x;
@@ -950,10 +972,14 @@ retry:
             x = row.x0;
             for (i=0; i < row.num_chars; ++i) {
                float dx = STB_TEXTEDIT_GETWIDTH(str, find.prev_first, i);
-               #ifdef STB_TEXTEDIT_GETWIDTH_NEWLINE
-               if (dx == STB_TEXTEDIT_GETWIDTH_NEWLINE)
+
+               //#ifdef STB_TEXTEDIT_GETWIDTH_NEWLINE
+               //if (dx == STB_TEXTEDIT_GETWIDTH_NEWLINE)
+               //   break;
+               //#endif
+               if (STB_TEXTEDIT_GETCHAR(str, find.prev_first + i) == STB_TEXTEDIT_NEWLINE)
                   break;
-               #endif
+
                x += dx;
                if (x > goal_x)
                   break;

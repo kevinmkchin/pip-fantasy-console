@@ -9,7 +9,7 @@ InputSystem Input;
 //////////////////////////////////////////////////////////////////////
 
 /** Global **/
-void InputSystem::ProcessAllSDLInputEvents(const SDL_Event event)
+void InputSystem::ProcessSDLEvent(const SDL_Event event)
 {
     switch (event.type)
     {

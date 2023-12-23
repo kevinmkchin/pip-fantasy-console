@@ -66,7 +66,7 @@ namespace MesaGUI
         fontHandle.font_height_px = glyphH;
         fontHandle.ascender = float(glyphH);
         fontHandle.descender = 0;
-        fontHandle.linegap = 3;
+        fontHandle.linegap = 3; // NOTE(Kevin): 2023-12-22 THIS VALUE IS BEING COPIED HARDCODED INTO CODE EDITOR MAKE SURE TO CHANGE AS WELL
         fontHandle.font_atlas.width = bitmapW;
         fontHandle.font_atlas.height = bitmapH;
 
@@ -641,7 +641,8 @@ namespace MesaGUI
 #endif
 
         char* textBuffer = __reservedTextMemory + __reservedTextMemoryIndexer;
-        int numCharactersWritten = stbsp_sprintf(textBuffer, text);
+        strcpy(textBuffer, text);
+        int numCharactersWritten = strlen(text);
         __reservedTextMemoryIndexer += numCharactersWritten + 1;
 
         TextDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(TextDrawRequest);
@@ -670,7 +671,8 @@ namespace MesaGUI
 #endif
 
         char* textBuffer = __reservedTextMemory + __reservedTextMemoryIndexer;
-        int numCharactersWritten = stbsp_sprintf(textBuffer, text);
+        strcpy(textBuffer, text);
+        int numCharactersWritten = strlen(text);
         __reservedTextMemoryIndexer += numCharactersWritten + 1;
 
         TextDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(TextDrawRequest);
@@ -1327,9 +1329,8 @@ namespace MesaGUI
         return keyboardInputASCIIKeycodeThisFrame.Contains(SDLK_ESCAPE);
     }
 
-    void SDLProcessEvent(const SDL_Event* evt)
+    void ProcessSDLEvent(const SDL_Event event)
     {
-        SDL_Event event = *evt;
         switch (event.type)
         {
             case SDL_MOUSEMOTION: 

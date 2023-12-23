@@ -154,8 +154,10 @@ static void ProcessSDLEvents()
             }
         }
 
-        Input.ProcessAllSDLInputEvents(event);
-        MesaGUI::SDLProcessEvent(&event);
+        // Send SDL events to other systems
+        Input.ProcessSDLEvent(event);
+        if (g_ProgramMode == MesaProgramMode::Editor) EditorSDLProcessEvent(event);
+        MesaGUI::ProcessSDLEvent(event);
     }
 }
 
@@ -220,7 +222,7 @@ int main(int argc, char* argv[])
                 DoBootScreen();
                 break;
             case MesaProgramMode::Editor:
-                DoEditorGUI();
+                EditorDoGUI();
                 break;
             case MesaProgramMode::Game:
                 TemporaryGameLoop();

@@ -48,8 +48,8 @@ set(SOURCE_FILES
     code/EditorState.cpp
     code/Editor.h
     code/Editor.cpp
-    code/Editor_CodeEditor.h
-    code/Editor_CodeEditor.cpp
+    code/CodeEditor.h
+    code/CodeEditor.cpp
     code/MesaScript.h
     code/MesaScript.cpp
     code/Game.h

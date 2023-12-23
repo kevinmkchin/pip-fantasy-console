@@ -44,7 +44,7 @@ std::string OpenFilePrompt(u32 fileTypesCount, COMDLG_FILTERSPEC fileTypes[])
 }
 
 
-static code_editor_state_t s_ActiveCodeEditorState;
+static CodeEditorString s_ActiveCodeEditorState;
 
 static MesaGUI::ALH *entityDesignerTabLayout = NULL;
 static MesaGUI::ALH *entitySelectorLayout = NULL;
