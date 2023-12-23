@@ -6,6 +6,7 @@
 #include "GfxDataTypesAndUtility.h"
 #include "GfxRenderer.h"
 #include "InputSystem.h"
+#include "CodeEditor.h"
 
 const static int s_ToolBarHeight = 26;
 const static vec4 s_EditorColor1 = vec4(RGBHEXTO1(0x414141), 1.f);
@@ -20,6 +21,11 @@ static Gfx::TextureHandle thBu01_active;
 
 static MesaGUI::ALH *editorLayout = NULL;
 static MesaGUI::ALH *mainbarLayout = NULL;
+
+static MesaGUI::ALH *codeEditorTabLayout = NULL;
+
+static CodeEditorString tempCodeEditorStringA;
+
 
 static void LoadResourcesForEditorGUI()
 {
@@ -72,7 +78,7 @@ bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
     return result;
 }
 
-#include "Editor_EntityDesigner.hpp"
+
 #include "Editor_WorldEditor.hpp"
 
 void EditorMainBar()
@@ -116,38 +122,72 @@ void InitEditorGUI()
 
     EditorState *activeEditorState = EditorState::ActiveEditorState();
     
-    activeEditorState->codePage1 = "str = 'test' fn tick() { print(str) }\n\nfn draw() { gfx_sprite(0, 0, 0) gfx_sprite(1, 50, 50) }";
+    //activeEditorState->codePage1 = "abcdef\nghij\nlm\n";
+    //activeEditorState->codePage1 = "ab\ncdef\nhijklm\n";
+    activeEditorState->codePage1 = "";
+    //activeEditorState->codePage1 = "str = 'test' fn tick() { print(str) }\nfn draw() { gfx_sprite(0, 0, 0) gfx_sprite(1, 50, 50) }";
 
-    // activeEditorState->RetrieveEntityAssetById(aid)->code = 
-    //            "fn Update(self) { \n"
-    //            "    print(time['dt'])\n"
-    //            "    if (input['left']) {\n"
-    //            "        self['x'] = self['x'] - 180 * time['dt']\n" 
-    //            "    }\n" 
-    //            "    if (input['right']) {\n"
-    //            "        self['x'] = self['x'] + 180 * time['dt']\n" 
-    //            "    }\n" 
-    //            "    if (input['up']) {\n"
-    //            "        self['y'] = self['y'] + 180 * time['dt']\n" 
-    //            "    }\n" 
-    //            "    if (input['down']) {\n"
-    //            "        self['y'] = self['y'] - 180 * time['dt']\n" 
-    //            "    }\n" 
-    //            "}";
+    //activeEditorState->codePage1 = 
+    //           "fn Update(self) { \n"
+    //           "    print(time['dt'])\n"
+    //           "    if (input['left']) {\n"
+    //           "        self['x'] = self['x'] - 180 * time['dt']\n" 
+    //           "    }\n" 
+    //           "    if (input['right']) {\n"
+    //           "        self['x'] = self['x'] + 180 * time['dt']\n" 
+    //           "    }\n" 
+    //           "    if (input['up']) {\n"
+    //           "        self['y'] = self['y'] + 180 * time['dt']\n" 
+    //           "    }\n" 
+    //           "    if (input['down']) {\n"
+    //           "        self['y'] = self['y'] - 180 * time['dt']\n" 
+    //           "    }\n" 
+    //           "}";
 
-    SetupEntityDesigner();
     SetupWorldDesigner();
 
     editorLayout = MesaGUI::NewALH(true);
     mainbarLayout = MesaGUI::NewALH(-1, -1, -1, s_ToolBarHeight, false);
+    codeEditorTabLayout = MesaGUI::NewALH(false);
 
     editorLayout->Insert(mainbarLayout);
-    editorLayout->Insert(worldEditorTabLayout);
+    editorLayout->Insert(codeEditorTabLayout);
 
-    SetCode(activeEditorState->codePage1);
+    tempCodeEditorStringA = GiveMeNewCodeEditorString();
+    SetupCodeEditorString(&tempCodeEditorStringA, activeEditorState->codePage1.c_str(), (u32)activeEditorState->codePage1.size());
 }
 
-void DoEditorGUI()
+void EditorSDLProcessEvent(const SDL_Event event)
+{
+    switch (event.type)
+    {
+        case SDL_MOUSEBUTTONDOWN:
+        {
+            if (event.button.button == SDL_BUTTON_LEFT)
+            {
+
+            }
+            break;
+        }
+        case SDL_KEYDOWN:
+        {
+            SDL_KeyboardEvent keyevent = event.key;
+            int key = (int)keyevent.keysym.sym;
+            if (keyevent.keysym.mod & KMOD_SHIFT) 
+                key |= STB_TEXTEDIT_K_SHIFT;
+            if (keyevent.keysym.mod & KMOD_CTRL)
+                key |= STB_TEXTEDIT_K_CONTROL;
+            SendKeyInputToCodeEditor(&tempCodeEditorStringA, key);
+            break;
+        }
+    }
+}
+
+void SetCode(std::string codePage1)
+{
+}
+
+void EditorDoGUI()
 {
     static bool doOnce = false;
     if (!doOnce)
@@ -169,12 +209,20 @@ void DoEditorGUI()
         }
         case EditorMode::EntityDesigner: 
         {
-            EntityDesigner();
-            if (EditorButton(38105130915, 54, 4, 50, 19, "save code"))
-            {
-                EditorState::ActiveEditorState()->codePage1 = std::string(s_ActiveCodeEditorState.code_buf, s_ActiveCodeEditorState.code_len);
-                PrintLog.Message("Saved code changes...");
-            }
+            editorLayout->Replace(1, codeEditorTabLayout);
+            MesaGUI::UpdateMainCanvasALH(editorLayout);
+
+            MesaGUI::PrimitivePanel(MesaGUI::UIRect(codeEditorTabLayout), s_EditorColor1);
+            MesaGUI::BeginZone(MesaGUI::UIRect(codeEditorTabLayout));
+            DoCodeEditorGUI(tempCodeEditorStringA);
+            MesaGUI::EndZone();
+
+            // if (EditorButton(38105130915, 54, 4, 50, 19, "save code"))
+            // {
+            //     EditorState::ActiveEditorState()->codePage1 = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
+            //     PrintLog.Message("Saved code changes...");
+            // }
+
             break;
         }
         case EditorMode::WorldDesigner:

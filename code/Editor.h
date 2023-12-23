@@ -1,18 +1,19 @@
 #pragma once
 
+#include <SDL.h>
+#include <vector>
+
 #include "MesaCommon.h"
 #include "MesaMath.h"
 
-#include <vector>
-
-/*
-
-[ tab 1 ][ tab 2 ][ tab 3 ]
-___________________________
-below the line is the code editor
-
-*/
 
 bool Temp_StartGameOrEditorButton();
 
-void DoEditorGUI();
+
+
+
+
+void EditorSDLProcessEvent(const SDL_Event event);
+void EditorDoGUI();
+
+

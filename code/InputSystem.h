@@ -92,7 +92,7 @@ class InputSystem
     // GENERIC CLASSES AND FUNCTIONS BELOW
     //////////////////////////////////////////////////////////////////////
 public:
-    void ProcessAllSDLInputEvents(const SDL_Event event);
+    void ProcessSDLEvent(const SDL_Event event);
     void ResetInputStatesAtEndOfFrame();
 
     bool KeyPressed(SDL_Scancode scancode);

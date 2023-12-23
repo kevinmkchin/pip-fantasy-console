@@ -67,7 +67,7 @@ namespace MesaGUI
 
     void Init();
     void NewFrame();
-    void SDLProcessEvent(const SDL_Event* evt);
+    void ProcessSDLEvent(const SDL_Event evt);
     void Draw();
 
     bool Temp_Escape();
