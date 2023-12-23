@@ -286,11 +286,9 @@ void CallFunction_OneParam(const char* functionIdentifier, TValue arg0);
 
 void InitializeLanguageCompilerAndRuntime();
 
+void SimplyRunScript(const std::string& script);
 
-
-
-void TemporaryRunMesaScriptInterpreterOnFile(const std::string& pathFromWorkingDir);
-
+void SimplyRunScriptFromFile(const std::string& pathFromWorkingDir);
 
 // WRITING CPP BOUND MESASCRIPT FUNCTIONS INTERFACE
 

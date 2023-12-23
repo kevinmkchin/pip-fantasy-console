@@ -216,8 +216,6 @@ int main(int argc, char* argv[])
 
     LoadFantasyConsole();
 
-    TemporaryRunMesaScriptInterpreterOnFile("fib.ms");
-
     while (!g_ProgramShouldShutdown)
     {
         if (Time.UpdateDeltaTime() > 0.1f) { continue; } // if delta time is too large, will cause glitches
