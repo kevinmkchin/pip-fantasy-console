@@ -113,6 +113,33 @@ STB_TEXTEDIT_CHARTYPE key_to_char(STB_TEXTEDIT_KEYTYPE key)
 #define STB_TEXTEDIT_IMPLEMENTATION
 #include "singleheaders/stb_textedit.h"
 
+void GetCursorData(CodeEditorString code, STB_TexteditState texteditState, int *rowcount, int *row, int *col)
+{
+    if (code.stringlen > 0)
+    {
+        StbFindState lastlineFind;
+        stb_textedit_find_charpos(&lastlineFind, &code, code.stringlen - 1, false);
+        *rowcount = int(lastlineFind.y) / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK) + 1 + (code.string[code.stringlen - 1] == '\n' ? 1 : 0);
+    }
+    else
+    {
+        *rowcount = 1;
+    }
+
+    StbFindState find;
+    stb_textedit_find_charpos(&find, &code, texteditState.cursor, false);
+    int ccol = (int)find.x / FIXED_FONT_WIDTH_HACK;
+    int crow = (int)find.y / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK);
+    if (code.stringlen == texteditState.cursor)
+    {
+        ccol = (code.stringlen > 0 && code.string[code.stringlen - 1] == '\n') ? 0 : texteditState.cursor - find.prev_first;
+        crow = *rowcount - 1;
+    }
+
+    *row = crow;
+    *col = ccol;
+}
+
 
 // TODO
 // void stb_textedit_click(STB_TEXTEDIT_STRING *str, STB_TexteditState *state, float x, float y)
@@ -151,7 +178,18 @@ void SendKeyInputToCodeEditor(CodeEditorString *code, STB_TEXTEDIT_KEYTYPE key)
 
     if (MesaGUI::IsActive(codeEditorUIID))
     {
-        stb_textedit_key(code, state, key);
+        if ((key & 0xFF) == 0x09) // '\t'
+        {
+            int rc, r, c;
+            GetCursorData(*code, stbCodeEditorState, &rc, &r, &c);
+            stb_textedit_key(code, state, 0x20); // ' '
+            if (c % 2 == 0) 
+                stb_textedit_key(code, state, 0x20);
+        }
+        else
+        {
+            stb_textedit_key(code, state, key);
+        }
     }
 }
 
@@ -192,31 +230,11 @@ void DoCodeEditorGUI(CodeEditorString code)
     int textBeginAnchorX = x + lineNumbersDisplayWidth + 8;
     int textBeginAnchorY = y + 13;
 
-
-    int rowcount = 0;
-    if (code.stringlen > 0)
-    {
-        StbFindState lastlineFind;
-        stb_textedit_find_charpos(&lastlineFind, &code, code.stringlen - 1, false);
-        rowcount = int(lastlineFind.y) / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK) + 1 + (code.string[code.stringlen - 1] == '\n' ? 1 : 0);
-    }
-    else
-    {
-        rowcount = 1;
-    }
-
+    int rowcount, crow, ccol;
+    GetCursorData(code, stbCodeEditorState, &rowcount, &crow, &ccol);
     // Draw code
     if (MesaGUI::IsActive(codeEditorUIID))
     {
-        StbFindState find;
-        stb_textedit_find_charpos(&find, &code, stbCodeEditorState.cursor, false);
-        int ccol = (int)find.x / FIXED_FONT_WIDTH_HACK;
-        int crow = (int)find.y / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK);
-        if (code.stringlen == stbCodeEditorState.cursor)
-        {
-            ccol = (code.stringlen > 0 && code.string[code.stringlen - 1] == '\n') ? 0 : stbCodeEditorState.cursor - find.prev_first;
-            crow = rowcount - 1;
-        }
         MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX - 1 + ccol * 6, textBeginAnchorY-13 + crow * 12, 1, 16), vec4(1,1,1,1));
     }
     // I could make each type of text to highlight a different primitive text that is rendered

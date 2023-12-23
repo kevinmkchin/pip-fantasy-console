@@ -10,7 +10,6 @@ rework MesaIMGUI keyboard input handling.
 
 # Immediate next
 
-- code editor: tab to spaces
 - code editor: mouse interactions (clicking, dragging to select, is there dragging to move?)
 - code editor: cut, copy, paste, and selection highlighting
 - code editor: ctrl+backspace and ctrl+delete for word deletion
@@ -116,6 +115,7 @@ Gfx (probably don't make a module out of this)
 
 # Done
 
+- code editor: tab to spaces
 - run active/current script
 - single line console quick save load text files
 - replace code editor backend with stb_textedit.h (and some bugfixes from implementing the API)
