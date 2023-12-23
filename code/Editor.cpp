@@ -195,31 +195,61 @@ void InitEditorGUI()
     SetupCodeEditorString(&tempCodeEditorStringA, activeEditorState->codePage1.c_str(), (u32)activeEditorState->codePage1.size());
 }
 
+static ivec2 WindowCoordinateToCodeEditorCoordinate(ivec2 xy_win)
+{
+    ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToInternalCoordinate(xy_win);
+    MesaGUI::BeginZone(MesaGUI::UIRect(codeEditorTabLayout));
+    ivec2 xy_in_zone;
+    MesaGUI::GetXYInZone(&xy_in_zone.x, &xy_in_zone.y);
+    MesaGUI::EndZone();
+    ivec2 xy_codeeditorgui = ivec2(xy_internal.x - xy_in_zone.x, xy_internal.y - xy_in_zone.y);
+    return xy_codeeditorgui;
+}
+
+
 void EditorSDLProcessEvent(const SDL_Event event)
 {
+    static bool leftMouseDown = false;
+
     switch (event.type)
     {
-
         case SDL_MOUSEBUTTONDOWN:
         {
-            if (MesaGUI::IsActive(g_CodeEditorUIID))
+            if (event.button.button == SDL_BUTTON_LEFT)
             {
-                if (event.button.button == SDL_BUTTON_LEFT)
+                leftMouseDown = true;
+
+                if (MesaGUI::IsActive(g_CodeEditorUIID))
                 {
-                    int x_win = event.button.x;
-                    int y_win = event.button.y;
-                    ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToInternalCoordinate(ivec2(x_win, y_win));
-                    MesaGUI::BeginZone(MesaGUI::UIRect(codeEditorTabLayout));
-                    ivec2 xy_in_zone;
-                    MesaGUI::GetXYInZone(&xy_in_zone.x, &xy_in_zone.y);
-                    MesaGUI::EndZone();
-                    ivec2 xy_codeeditorgui = ivec2(xy_internal.x - xy_in_zone.x, xy_internal.y - xy_in_zone.y);
-                    SendMouseClickToCodeEditor(&tempCodeEditorStringA, xy_codeeditorgui.x, xy_codeeditorgui.y);
+                    ivec2 xy_codeeditorgui = WindowCoordinateToCodeEditorCoordinate(ivec2(event.button.x, event.button.y));
+                    SendMouseDownToCodeEditor(&tempCodeEditorStringA, xy_codeeditorgui.x, xy_codeeditorgui.y);
                 }
             }
 
             break;
         }
+
+        case SDL_MOUSEBUTTONUP:
+        {
+            if (event.button.button == SDL_BUTTON_LEFT)
+            {
+                leftMouseDown = false;
+            }
+
+            break;
+        }
+
+        case SDL_MOUSEMOTION:
+        {
+            if (MesaGUI::IsActive(g_CodeEditorUIID) && leftMouseDown)
+            {
+                ivec2 xy_codeeditorgui = WindowCoordinateToCodeEditorCoordinate(ivec2(event.button.x, event.button.y));
+                SendMouseMoveToCodeEditor(&tempCodeEditorStringA, xy_codeeditorgui.x, xy_codeeditorgui.y);
+            }
+
+            break;
+        }
+
         case SDL_KEYDOWN:
         {
             SDL_KeyboardEvent keyevent = event.key;
