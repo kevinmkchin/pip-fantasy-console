@@ -85,7 +85,7 @@ endif()
 if(WIN32)
 
     if(MSVC)
-      add_definitions(/MP)
+      add_definitions(/MP -D_CRT_SECURE_NO_WARNINGS)
       target_compile_options(${PROJECT_NAME} PUBLIC "/W3" "/EHsc" "/we4239")
     endif()
 

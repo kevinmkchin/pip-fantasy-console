@@ -642,7 +642,7 @@ namespace MesaGUI
 
         char* textBuffer = __reservedTextMemory + __reservedTextMemoryIndexer;
         strcpy(textBuffer, text);
-        int numCharactersWritten = strlen(text);
+        int numCharactersWritten = (int)strlen(text);
         __reservedTextMemoryIndexer += numCharactersWritten + 1;
 
         TextDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(TextDrawRequest);
@@ -672,7 +672,7 @@ namespace MesaGUI
 
         char* textBuffer = __reservedTextMemory + __reservedTextMemoryIndexer;
         strcpy(textBuffer, text);
-        int numCharactersWritten = strlen(text);
+        int numCharactersWritten = (int)strlen(text);
         __reservedTextMemoryIndexer += numCharactersWritten + 1;
 
         TextDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(TextDrawRequest);
