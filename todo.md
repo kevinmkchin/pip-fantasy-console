@@ -10,7 +10,7 @@ rework MesaIMGUI keyboard input handling.
 
 # Immediate next
 
-- code editor: mouse interactions (clicking, dragging to select, is there dragging to move?)
+- code editor: mouse interactions (dragging to select, is there dragging to move?)
 - code editor: cut, copy, paste, and selection highlighting
 - code editor: ctrl+backspace and ctrl+delete for word deletion
 - code editor: insert mode + indicator (?)
@@ -21,6 +21,7 @@ rework MesaIMGUI keyboard input handling.
 
 # Todo
 
+- PipLang/MesaScript benchmarks and OPTIMIZATION EPIC (I can optimize LANGUAGE FEATURES before most of Pip API...although Pip API is priority)
 - boot sound (SDL_mixer)
 - Markdown reader - manual in markdown, toggled with F1
 
@@ -115,6 +116,7 @@ Gfx (probably don't make a module out of this)
 
 # Done
 
+- code editor: mouse clicking to move cursor
 - code editor: tab to spaces
 - run active/current script
 - single line console quick save load text files

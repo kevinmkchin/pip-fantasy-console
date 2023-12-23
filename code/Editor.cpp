@@ -140,11 +140,14 @@ void Temp_LoadScript(std::string pathFromWd)
     }
 }
 
+#include "Timer.h"
 #include "MesaScript.h"
 void Temp_ExecCurrentScript()
 {
     auto script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
+    Time.TimeStamp();
     SimplyRunScript(script);
+    printf("runpl took: %f seconds\n", Time.TimeStamp());
 }
 
 void InitEditorGUI()
@@ -196,24 +199,40 @@ void EditorSDLProcessEvent(const SDL_Event event)
 {
     switch (event.type)
     {
+
         case SDL_MOUSEBUTTONDOWN:
         {
-            if (event.button.button == SDL_BUTTON_LEFT)
+            if (MesaGUI::IsActive(g_CodeEditorUIID))
             {
-
+                if (event.button.button == SDL_BUTTON_LEFT)
+                {
+                    int x_win = event.button.x;
+                    int y_win = event.button.y;
+                    ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToInternalCoordinate(ivec2(x_win, y_win));
+                    MesaGUI::BeginZone(MesaGUI::UIRect(codeEditorTabLayout));
+                    ivec2 xy_in_zone;
+                    MesaGUI::GetXYInZone(&xy_in_zone.x, &xy_in_zone.y);
+                    MesaGUI::EndZone();
+                    ivec2 xy_codeeditorgui = ivec2(xy_internal.x - xy_in_zone.x, xy_internal.y - xy_in_zone.y);
+                    SendMouseClickToCodeEditor(&tempCodeEditorStringA, xy_codeeditorgui.x, xy_codeeditorgui.y);
+                }
             }
+
             break;
         }
         case SDL_KEYDOWN:
         {
             SDL_KeyboardEvent keyevent = event.key;
 
-            int key = (int)keyevent.keysym.sym;
-            if (keyevent.keysym.mod & KMOD_SHIFT) 
-                key |= STB_TEXTEDIT_K_SHIFT;
-            if (keyevent.keysym.mod & KMOD_CTRL)
-                key |= STB_TEXTEDIT_K_CONTROL;
-            SendKeyInputToCodeEditor(&tempCodeEditorStringA, key);
+            if (MesaGUI::IsActive(g_CodeEditorUIID))
+            {
+                int key = (int)keyevent.keysym.sym;
+                if (keyevent.keysym.mod & KMOD_SHIFT) 
+                    key |= STB_TEXTEDIT_K_SHIFT;
+                if (keyevent.keysym.mod & KMOD_CTRL)
+                    key |= STB_TEXTEDIT_K_CONTROL;
+                SendKeyInputToCodeEditor(&tempCodeEditorStringA, key);
+            }
 
             break;
         }
