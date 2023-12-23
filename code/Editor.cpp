@@ -1,5 +1,6 @@
 #include "Editor.h"
 
+#include "FileSystem.h"
 #include "PrintLog.h"
 #include "MesaIMGUI.h"
 #include "EditorState.h"
@@ -7,6 +8,7 @@
 #include "GfxRenderer.h"
 #include "InputSystem.h"
 #include "CodeEditor.h"
+#include "Console.h"
 
 const static int s_ToolBarHeight = 26;
 const static vec4 s_EditorColor1 = vec4(RGBHEXTO1(0x414141), 1.f);
@@ -115,10 +117,35 @@ bool Temp_StartGameOrEditorButton()
     return EditorButton(38105130914, 2, 4, 50, 19, "> play");
 }
 
+void Temp_SaveScript(std::string pathFromWd)
+{
+    BinaryFileHandle binfile;
+    binfile.memory = tempCodeEditorStringA.string;
+    binfile.size = tempCodeEditorStringA.stringlen;
+    if (WriteFileBinary(binfile, wd_path(pathFromWd).c_str()))
+    {
+        printf("saved %s\n", wd_path(pathFromWd).c_str());
+    }
+}
+
+void Temp_LoadScript(std::string pathFromWd)
+{
+    BinaryFileHandle binfile;
+    ReadFileBinary(binfile, wd_path(pathFromWd).c_str());
+    if (binfile.memory)
+    {
+        SetupCodeEditorString(&tempCodeEditorStringA, (char *)binfile.memory, binfile.size);
+        FreeFileBinary(binfile);
+        printf("loaded %s\n", wd_path(pathFromWd).c_str());
+    }
+}
 
 void InitEditorGUI()
 {
     LoadResourcesForEditorGUI();
+
+    GiveMeTheConsole()->bind_cmd("savepl", Temp_SaveScript);
+    GiveMeTheConsole()->bind_cmd("loadpl", Temp_LoadScript);
 
     EditorState *activeEditorState = EditorState::ActiveEditorState();
     
@@ -172,19 +199,17 @@ void EditorSDLProcessEvent(const SDL_Event event)
         case SDL_KEYDOWN:
         {
             SDL_KeyboardEvent keyevent = event.key;
+
             int key = (int)keyevent.keysym.sym;
             if (keyevent.keysym.mod & KMOD_SHIFT) 
                 key |= STB_TEXTEDIT_K_SHIFT;
             if (keyevent.keysym.mod & KMOD_CTRL)
                 key |= STB_TEXTEDIT_K_CONTROL;
             SendKeyInputToCodeEditor(&tempCodeEditorStringA, key);
+
             break;
         }
     }
-}
-
-void SetCode(std::string codePage1)
-{
 }
 
 void EditorDoGUI()

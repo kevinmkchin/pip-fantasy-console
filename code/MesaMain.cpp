@@ -88,6 +88,8 @@ static bool InitializeEverything()
 	return true;
 }
 
+static bool consoleActive = false;
+
 static void ProcessSDLEvents()
 {
     SDL_Event event;
@@ -146,9 +148,16 @@ static void ProcessSDLEvents()
                     g_gfx.UpdateBackBufferAndGameSize();
                 }
 
-                if (CurrentProgramMode() == MesaProgramMode::BootScreen) 
+                if (CurrentProgramMode() == MesaProgramMode::Editor && event.key.keysym.sym == SDLK_BACKQUOTE)
+                {
+                    consoleActive = !consoleActive;
+                    continue;
+                }
+
+                if (CurrentProgramMode() == MesaProgramMode::BootScreen || consoleActive) 
                 {
                     SendInputToConsole(event.key);
+                    continue; // console eats all input
                 }
                 break;
             }
@@ -246,6 +255,9 @@ int main(int argc, char* argv[])
         {
             StartEditor();
         }
+
+        if (consoleActive)
+            DoSingleCommandLine();
 
         // DrawProfilerGUI();
         g_gfx.Render();

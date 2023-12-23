@@ -152,7 +152,6 @@ void SendKeyInputToCodeEditor(CodeEditorString *code, STB_TEXTEDIT_KEYTYPE key)
     if (MesaGUI::IsActive(codeEditorUIID))
     {
         stb_textedit_key(code, state, key);
-        printf("cursor: %d\n", stbCodeEditorState.cursor);
     }
 }
 

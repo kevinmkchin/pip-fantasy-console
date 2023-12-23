@@ -26,6 +26,7 @@ struct BitmapHandle : BinaryFileHandle
 */
 void FreeFileBinary(BinaryFileHandle& binary_file_to_free);
 void ReadFileBinary(BinaryFileHandle& mem_to_read_to, const char* file_path);
+bool WriteFileBinary(const BinaryFileHandle& mem_to_write_from, const char* file_path);
 std::string ReadFileString(const char* file_path);
 void FreeImage(BitmapHandle& image_handle);
 void ReadImage(BitmapHandle& image_handle, const char* image_file_path);

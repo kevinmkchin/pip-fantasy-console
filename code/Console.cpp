@@ -1,6 +1,5 @@
 #include "Console.h"
 
-#include "ConsoleBackendNoclip.h"
 
 #include "MesaMain.h"
 #include "MesaIMGUI.h"
@@ -14,6 +13,10 @@ static noclip::console sNoclipConsole;
 static char sConsoleMessagesBuffer[MESSAGES_CHAR_CAPACITY + 1] = { 0 };
 static NiceArray<char, 128> sConsoleCommandInputBuffer;
 
+noclip::console *GiveMeTheConsole()
+{
+    return &sNoclipConsole;
+}
 
 void SendMessageToConsole(const char *msg, size_t len)
 {
@@ -119,28 +122,31 @@ void DoBootScreen()
         MesaGUI::PrimitiveText(40, 40, 9, MesaGUI::TextAlignment::Left, sConsoleMessagesBuffer + zeros);
     }
 
-    if (int(Time.time * 3.6f) % 2 == 0)
+    bool showCursor = int(Time.time * 3.6f) % 2 == 0;
+    if (showCursor)
         sConsoleCommandInputBuffer.PushBack('_');
-    else
-        sConsoleCommandInputBuffer.PushBack(' ');
     if (sConsoleCommandInputBuffer.count > 0)
     {
         MesaGUI::PrimitiveText(40, consoleLayout->h - 60, 9, MesaGUI::TextAlignment::Left, sConsoleCommandInputBuffer.data);
     }
-    sConsoleCommandInputBuffer.PopBack();
+    if (showCursor)
+        sConsoleCommandInputBuffer.PopBack();
 }
 
-// void DoSingleCommandLine()
-// {
-//     MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, consoleLayout->w, 13), s_ConsoleBlack);
+void DoSingleCommandLine()
+{
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, 4000, 15), s_ConsoleBlack);
 
-//     sConsoleCommandInputBuffer.PushBack('_');
-//     if (sConsoleCommandInputBuffer.count > 0)
-//     {
-//         MesaGUI::PrimitiveText(4, 11, 9, MesaGUI::TextAlignment::Left, sConsoleCommandInputBuffer.data);
-//     }
-//     sConsoleCommandInputBuffer.PopBack();
-// }
+    bool showCursor = int(Time.time * 3.6f) % 2 == 0;
+    if (showCursor)
+        sConsoleCommandInputBuffer.PushBack('_');
+    if (sConsoleCommandInputBuffer.count > 0 )
+    {
+        MesaGUI::PrimitiveText(4, 13, 9, MesaGUI::TextAlignment::Left, sConsoleCommandInputBuffer.data);
+    }
+    if (showCursor)
+        sConsoleCommandInputBuffer.PopBack();
+}
 
 #include "MesaMain.h"
 #include "MesaScript.h"

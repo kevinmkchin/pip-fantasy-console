@@ -10,9 +10,12 @@
 */
 void FreeFileBinary(BinaryFileHandle& binary_file_to_free)
 {
-    free(binary_file_to_free.memory);
-    binary_file_to_free.memory = nullptr;
-    binary_file_to_free.size = 0;
+    if (binary_file_to_free.memory)
+    {
+        free(binary_file_to_free.memory);
+        binary_file_to_free.memory = nullptr;
+        binary_file_to_free.size = 0;
+    }
 }
 
 /** Allocates memory, stores the binary file data in memory, makes binary_file_handle_t.memory
@@ -39,6 +42,25 @@ void ReadFileBinary(BinaryFileHandle& mem_to_read_to, const char* file_path)
         printf("Failed to read %s! File doesn't exist.\n", file_path);
         return;
     }
+}
+
+bool WriteFileBinary(const BinaryFileHandle& bin, const char* file_path)
+{
+    if (bin.memory == NULL)
+    {
+        printf("WARNING: Binary File Handle does not point to any memory. Cancelled write to file operation.\n");
+        return false;
+    }
+
+    SDL_RWops* bin_w = SDL_RWFromFile(file_path, "wb");
+    if(bin_w)
+    {
+        SDL_RWwrite(bin_w, bin.memory, bin.size, 1);
+        SDL_RWclose(bin_w);
+        return true;
+    }
+
+    return false;
 }
 
 /** Returns the string content of a file as an std::string */
