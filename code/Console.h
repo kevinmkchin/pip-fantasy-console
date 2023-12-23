@@ -2,6 +2,8 @@
 
 #include <SDL.h>
 
+#include "ConsoleBackendNoclip.h"
+
 #include "MesaCommon.h"
 #include "MesaMath.h"
 
@@ -13,7 +15,8 @@ void SendInputToConsole(SDL_KeyboardEvent& keyevent);
 
 void SetupConsoleCommands();
 
+noclip::console *GiveMeTheConsole();
 
 /* -- Front ends -- */
 void DoBootScreen();
-//void DoSingleCommandLine();
+void DoSingleCommandLine();
