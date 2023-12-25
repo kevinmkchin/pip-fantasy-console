@@ -59,7 +59,7 @@ fn GetCombinedAgeAfterNScopes(n, z)
 
 accumulateAge = 0;
 i = 0
-n = 1000
+n = 10000
 while (i < n){
   z = MakeZooAfterNScopes(5)
   combinedAge = GetCombinedAgeAfterNScopes(2, z);

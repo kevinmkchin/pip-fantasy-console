@@ -15,7 +15,7 @@ fn fib(n)
   }
 }
 
-fib(20)
+fib(24)
 
 `
   even just removing fncalls = fncalls + 1 almost halves the execution time because fncalls is at base of scopes.
