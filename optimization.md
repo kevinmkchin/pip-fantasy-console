@@ -11,6 +11,11 @@ IncrementRefGCObjs does transiency check against entire stack. Transiency checks
 Remove lots of redundant safety checks. Just let accesses be unsafe and handle exception if thrown. 
 
 
+# Optimizations Done
+KeyExists limited to current and top level scope only instead of checking the entire stack
+AccessAtKey And ReplaceAtKey limited to current and top level scope only
+
+
 # Interpreter structure
 
 InterpretExpression

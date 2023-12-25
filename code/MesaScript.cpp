@@ -25,48 +25,40 @@ std::unordered_map<i64, MesaGCObject*> GCOBJECTS_DATABASE;
 
 struct MesaScript_ScriptEnvironment
 {
-    bool KeyExists(const std::string &key)
-    {
-        for (int back = int(scopes.size()) - 1; back >= 0; --back)
-        {
-            MesaScript_Table &scope = *scopes.at(back);
-            if (scope.Contains(key))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool KeyExistsInCurrentScope(const std::string &key)
+    bool KeyExistsInAccessibleScopes(const std::string &key)
     {
         // Note(Kevin): 2023-12-21 "current" scope I guess should be current function scope plus scope[0] for the script wide scope
         return scopes.back()->Contains(key) || scopes.at(0)->Contains(key);
     }
 
-    TValue AccessAtKey(const std::string &key)
+    bool KeyExistsTopLevel(const std::string &key)
     {
-        for (int back = int(scopes.size()) - 1; back >= 0; --back)
-        {
-            MesaScript_Table &scope = *scopes.at(back);
-            if (scope.Contains(key))
-            {
-                TValue retval = scope.AccessMapEntry(key);
-                return retval;
-            }
-        }
-        return TValue();
+        return scopes.at(0)->Contains(key);
     }
 
-    void ReplaceAtKey(const std::string &key, const TValue value)
+    // Note(Kevin): This shouldn't perform any Contains checks. Just throw exception if doesn't exist.
+    TValue AccessAtKeyInAccessibleScopes(const std::string &key)
     {
-        for (int back = int(scopes.size()) - 1; back >= 0; --back)
+        if (scopes.back()->Contains(key))
         {
-            MesaScript_Table &scope = *scopes.at(back);
-            if (scope.Contains(key))
-            {
-                scope.ReplaceMapEntryAtKey(key, value);
-            }
+            return scopes.back()->AccessMapEntry(key);
+        }
+        else
+        {
+            return scopes.at(0)->AccessMapEntry(key);
+        }
+    }
+
+    // Note(Kevin): This shouldn't perform any Contains checks. Just throw exception if doesn't exist.
+    void ReplaceAtKeyInAccessibleScopes(const std::string &key, const TValue value)
+    {
+        if (scopes.back()->Contains(key))
+        {
+            return scopes.back()->ReplaceMapEntryAtKey(key, value);
+        }
+        else
+        {
+            return scopes.at(0)->ReplaceMapEntryAtKey(key, value);
         }
     }
 
@@ -1095,9 +1087,10 @@ PID Parser::procedure_decl()
     functionVariable.procedureId = createdProcedureId;
     functionVariable.type = TValue::ValueType::Function;
 
-    if (__MSRuntime.activeEnv.KeyExists(procedureNameToken.text))
+    if (__MSRuntime.activeEnv.KeyExistsTopLevel(procedureNameToken.text))
     {
-        __MSRuntime.activeEnv.ReplaceAtKey(procedureNameToken.text, functionVariable);
+        // Maybe throw warning since it overwrites previously declared identifier in the top level
+        __MSRuntime.activeEnv.ReplaceAtKeyInAccessibleScopes(procedureNameToken.text, functionVariable);
     }
     else
     {
@@ -1764,9 +1757,9 @@ InterpretExpression(ASTNode* ast)
         case ASTNodeType::VARIABLE:
         {
             auto v = static_cast<ASTVariable*>(ast);
-            if (__MSRuntime.activeEnv.KeyExistsInCurrentScope(v->id))
+            if (__MSRuntime.activeEnv.KeyExistsInAccessibleScopes(v->id))
             {
-                result = __MSRuntime.activeEnv.AccessAtKey(v->id);
+                result = __MSRuntime.activeEnv.AccessAtKeyInAccessibleScopes(v->id);
             }
             else if (__MSRuntime.globalEnv.Contains(v->id))
             {
@@ -1790,9 +1783,9 @@ InterpretExpression(ASTNode* ast)
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
             i64 gcObjectId = 0;
-            if (__MSRuntime.activeEnv.KeyExistsInCurrentScope(listOrMapVariableKey))
+            if (__MSRuntime.activeEnv.KeyExistsInAccessibleScopes(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = __MSRuntime.activeEnv.AccessAtKey(listOrMapVariableKey);
+                TValue listOrMapGCObj = __MSRuntime.activeEnv.AccessAtKeyInAccessibleScopes(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
@@ -1935,9 +1928,9 @@ InterpretStatement(ASTNode* statement)
 
             ASSERT(v->id->GetType() == ASTNodeType::VARIABLE);
             std::string key = static_cast<ASTVariable*>(v->id)->id;
-            if (__MSRuntime.activeEnv.KeyExistsInCurrentScope(key))
+            if (__MSRuntime.activeEnv.KeyExistsInAccessibleScopes(key))
             {
-                __MSRuntime.activeEnv.ReplaceAtKey(key, result);
+                __MSRuntime.activeEnv.ReplaceAtKeyInAccessibleScopes(key, result);
             }
             else if (__MSRuntime.globalEnv.Contains(key))
             {
@@ -1958,9 +1951,9 @@ InterpretStatement(ASTNode* statement)
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
 
             i64 gcObjectId = 0;
-            if (__MSRuntime.activeEnv.KeyExistsInCurrentScope(listOrMapVariableKey))
+            if (__MSRuntime.activeEnv.KeyExistsInAccessibleScopes(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = __MSRuntime.activeEnv.AccessAtKey(listOrMapVariableKey);
+                TValue listOrMapGCObj = __MSRuntime.activeEnv.AccessAtKeyInAccessibleScopes(listOrMapVariableKey);
                 ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
@@ -2112,9 +2105,9 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
     PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM::INTERPRET_PROCEDURE_CALL);
 
     TValue procedureVariable;
-    if (__MSRuntime.activeEnv.KeyExists(procedureCall->id))
+    if (__MSRuntime.activeEnv.KeyExistsTopLevel(procedureCall->id))
     {
-        procedureVariable = __MSRuntime.activeEnv.AccessAtKey(procedureCall->id);
+        procedureVariable = __MSRuntime.activeEnv.AccessAtKeyInAccessibleScopes(procedureCall->id);
     }
     else if (__MSRuntime.globalEnv.Contains(procedureCall->id))
     {

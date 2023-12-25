@@ -62,6 +62,7 @@ set(SOURCE_FILES
 
 set(OTHER_FILES_FOR_IDE
     todo.md
+    optimization.md
 )
 
 file(GLOB DOCUMENTATION_MARKDOWNS true code/manual/*.md)
