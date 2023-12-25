@@ -150,6 +150,7 @@ void Temp_ExecCurrentScript()
 
     auto script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
     RunProfilerOnScript(script, profilerOutput);
+    PrintLog.Message(profilerOutput.str());
 }
 
 char dateAndTimeBuffer[80];

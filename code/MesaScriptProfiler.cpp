@@ -7,6 +7,8 @@
 
 #define PLPROFILER_INTERPRETER              0
 
+#define PLPROFILER_BINOP_RELOP              4
+
 #define PLPROFILER_HASHING                  8
 #define PLPROFILER_TRANSIENCY_HANDLING      9
 #define PLPROFILER_PRINT                    10
@@ -97,6 +99,7 @@ static void PLStopProfiling(std::ostream& profilerOutput)
     profilerOutput << "Category\t\t\tDuration\tRatio" << std::endl;
     profilerOutput << "unordered_map hashing" << "\t" << measurements[PLPROFILER_HASHING] << "\t" << measurements[PLPROFILER_HASHING] / totalDuration * 100.0 << "%" << std::endl;
     profilerOutput << "Transiency handling" << "\t" << measurements[PLPROFILER_TRANSIENCY_HANDLING] << "\t" << measurements[PLPROFILER_TRANSIENCY_HANDLING] / totalDuration * 100.0 << "%" << std::endl;
+    profilerOutput << "BinOp / RelOp" << "\t" << measurements[PLPROFILER_BINOP_RELOP] << "\t" << measurements[PLPROFILER_BINOP_RELOP] / totalDuration * 100.0 << "%" << std::endl;
     profilerOutput << "print()" << "\t\t\t" << measurements[PLPROFILER_PRINT] << "\t" << measurements[PLPROFILER_PRINT] / totalDuration * 100.0 << "%" << std::endl;
     profilerOutput << std::endl;
 

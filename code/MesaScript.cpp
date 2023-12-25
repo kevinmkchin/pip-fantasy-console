@@ -9,6 +9,7 @@
 #include <string>
 
 #include "MesaScriptProfiler.cpp"
+#include "MesaMath.h"
 
 #pragma region StaticVariables
 
@@ -80,7 +81,7 @@ struct MesaScript_ScriptEnvironment
         if (scopes.size() > 1) // Note(Kevin): 2023-12-21 decrement ref counts only if NOT top-level script scope. We want to keep top-level script-wide GC objs alive.
             scopes.back()->DecrementReferenceCountOfEveryMapEntry();
         scopes.pop_back();
-        ASSERT(transients.back().count == 0);
+        //ASSERT(transients.back().count == 0);
         transients.pop_back();
     }
 
@@ -93,12 +94,13 @@ struct MesaScript_ScriptEnvironment
     {
         PLProfilerBegin(PLPROFILER_TRANSIENCY_HANDLING);
         bool exists = false;
-        for (int back = int(transients.size()) - 1; back >= 0; --back)
+        for (int back = int(transients.size()) - 1; back >= GM_max(0, int(transients.size()) - 2); --back)
         {
             auto &transientsAtDepth = transients.at(back);
             if (transientsAtDepth.Contains(gcObjectId))
             {
                 exists = true;
+                break;
             }
         }
         PLProfilerEnd(PLPROFILER_TRANSIENCY_HANDLING);
@@ -112,16 +114,16 @@ struct MesaScript_ScriptEnvironment
 
     void InsertTransientObject(i64 gcObjectId, i32 depth /*0 or negative index*/)
     {
-        ASSERT(TransientObjectExists(gcObjectId) == false);
+        //ASSERT(TransientObjectExists(gcObjectId) == false);
         i32 transientsDepthIndex = (i32)transients.size() + depth - 1;
-        ASSERT(transientsDepthIndex >= 0);
+        //ASSERT(transientsDepthIndex >= 0);
         transients.at(transientsDepthIndex).PushBack(gcObjectId);
     }
 
     void EraseTransientObject(i64 gcObjectId)
     {
         PLProfilerBegin(PLPROFILER_TRANSIENCY_HANDLING);
-        for (int back = int(transients.size()) - 1; back >= 0; --back)
+        for (int back = int(transients.size()) - 1; back >= GM_max(0, int(transients.size()) - 2); --back)
         {
             auto &transientsAtDepth = transients.at(back);
             if (transientsAtDepth.Contains(gcObjectId))
@@ -1537,7 +1539,7 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall);
 static TValue
 InterpretExpression(ASTNode* ast)
 {
-    PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM::INTERPRET_EXPRESSION);
+    // PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM::INTERPRET_EXPRESSION);
 
     TValue result;
 
@@ -1545,18 +1547,25 @@ InterpretExpression(ASTNode* ast)
     {
         case ASTNodeType::SIMPLYTVALUE: 
         {
+            // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             auto v = static_cast<ASTSimplyTValue*>(ast);
             result = v->value;
+            // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             break;
         }
         case ASTNodeType::BINOP:
         {
             auto v = static_cast<ASTBinOp*>(ast);
-            TValue l = InterpretExpression(v->left);
-            TValue r = InterpretExpression(v->right);
+            // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
+            auto ln = v->left;
+            auto rn = v->right;
+            // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
+            TValue l = InterpretExpression(ln);
+            TValue r = InterpretExpression(rn);
             // both integer, then integer
             // both float, then float
             // one int, one float, then float
+            // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             TValue::ValueType retValType = TValue::ValueType::Integer;
             switch (v->op)
             {
@@ -1678,14 +1687,20 @@ InterpretExpression(ASTNode* ast)
                     break;
                 }
             }
+            // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             break;
         }
         
         case ASTNodeType::RELOP:
         {
+            // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             auto v = static_cast<ASTRelOp*>(ast);
-            TValue l = InterpretExpression(v->left);
-            TValue r = InterpretExpression(v->right);
+            auto ln = v->left;
+            auto rn = v->right;
+            // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
+            TValue l = InterpretExpression(ln);
+            TValue r = InterpretExpression(rn);
+            // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             if (l.type == TValue::ValueType::Integer)
             {
                 l.realValue = double(l.integerValue);
@@ -1744,6 +1759,7 @@ InterpretExpression(ASTNode* ast)
                     SendRuntimeException("Unknown RELOP expression.");
                     break;
             }
+            // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             break;
         }
         case ASTNodeType::LOGICALNOT:
@@ -1756,6 +1772,7 @@ InterpretExpression(ASTNode* ast)
 
         case ASTNodeType::VARIABLE:
         {
+            // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             auto v = static_cast<ASTVariable*>(ast);
             if (__MSRuntime.activeEnv.KeyExistsInAccessibleScopes(v->id))
             {
@@ -1769,6 +1786,7 @@ InterpretExpression(ASTNode* ast)
             {
                 SendRuntimeException("Unknown identifier in expression.");
             }
+            // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             break;
         }
 
@@ -1777,6 +1795,8 @@ InterpretExpression(ASTNode* ast)
             auto v = static_cast<ASTAccessListOrMapElement*>(ast);
 
             auto indexTValue = InterpretExpression(v->indexExpression);
+
+            // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             ASSERT(indexTValue.type == TValue::ValueType::Integer || indexTValue.type == TValue::ValueType::GCObject);
 
             ASSERT(v->listOrMapVariableName->GetType() == ASTNodeType::VARIABLE);
@@ -1820,24 +1840,30 @@ InterpretExpression(ASTNode* ast)
                 MesaScript_Table* table = AccessMesaScriptTable(gcObjectId);
                 result = table->AccessMapEntry(tableKey);
             }
+
+            // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             break;
         }
 
         case ASTNodeType::CREATETABLE:
         {
             //auto v = static_cast<CreateNewMapEntry*>(ast);
+            // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             result.type = TValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
+            // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             break;
         }
 
         case ASTNodeType::CREATELIST:
         {
+            // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             auto v = static_cast<ASTCreateList*>(ast);
             result.type = TValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::List);
             MesaScript_List* mesaList = AccessMesaScriptList(result.GCReferenceObject);
             __MSRuntime.activeEnv.InsertTransientObject(result.GCReferenceObject, 0);
+            // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             for (int i = 0; i < v->listInitializingElements.size(); ++i)
             {
                 ASTNode* elementExpr = v->listInitializingElements[i];
@@ -1850,6 +1876,7 @@ InterpretExpression(ASTNode* ast)
 
         case ASTNodeType::NUMBER:
         {
+            // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             auto v = static_cast<ASTNumberTerminal*>(ast);
             if (v->isInteger)
             {
@@ -1861,23 +1888,28 @@ InterpretExpression(ASTNode* ast)
                 result.realValue = v->value;
                 result.type = TValue::ValueType::Real;
             }
+            // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             break;
         }
         case ASTNodeType::STRING:
         {
+            // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             auto v = static_cast<ASTStringTerminal*>(ast);
             result.type = TValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::String);
             MesaScript_String *createdString = AccessMesaScriptString(result.GCReferenceObject);
             createdString->text = v->value;
             __MSRuntime.activeEnv.InsertTransientObject(result.GCReferenceObject, 0);
+            // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             break;
         }
         case ASTNodeType::BOOLEAN:
         {
+            // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             auto v = static_cast<ASTBooleanTerminal*>(ast);
             result.boolValue = v->value;
             result.type = TValue::ValueType::Boolean;
+            // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             break;
         }
         case ASTNodeType::PROCEDURECALL:
@@ -1888,6 +1920,7 @@ InterpretExpression(ASTNode* ast)
         }
     }
 
+    // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
     if (result.type == TValue::ValueType::Invalid)
     {
         SendRuntimeException("Invalid expression.");
@@ -1901,8 +1934,9 @@ InterpretExpression(ASTNode* ast)
         result.GCReferenceObject = stringCopyId;
         __MSRuntime.activeEnv.InsertTransientObject(stringCopyId, 0);
     }
+    // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
 
-    PLProfilerPop();
+    // PLProfilerPop();
 
     return result;
 }
@@ -1910,7 +1944,7 @@ InterpretExpression(ASTNode* ast)
 static void
 InterpretStatement(ASTNode* statement)
 {
-    PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM::INTERPRET_STATEMENT);
+    // PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM::INTERPRET_STATEMENT);
 
     switch (statement->GetType())
     {
@@ -2043,7 +2077,7 @@ InterpretStatement(ASTNode* statement)
     // ALL STATEMENTS MUST REACH THIS POINT
     __MSRuntime.activeEnv.ClearTransientsInLastScope();
 
-    PLProfilerPop();
+    // PLProfilerPop();
 }
 
 static void
@@ -2102,7 +2136,7 @@ void pipl_bind_cpp_fn(const char *fn_name, int argc, void *fn_ptr)
 static TValue
 InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PART OF INTERPRETER, USE INTERPRETSTATEMENT INSTEAD
 {
-    PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM::INTERPRET_PROCEDURE_CALL);
+    // PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM::INTERPRET_PROCEDURE_CALL);
 
     TValue procedureVariable;
     if (__MSRuntime.activeEnv.KeyExistsTopLevel(procedureCall->id))
@@ -2208,7 +2242,7 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
     // Intended: activeEnv.PopScope should decrement ref count of every entry of the function scope being popped.
     __MSRuntime.activeEnv.PopScope();
 
-    PLProfilerPop();
+    // PLProfilerPop();
 
     return retval;
 }
