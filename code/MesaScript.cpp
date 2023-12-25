@@ -41,19 +41,6 @@ struct MesaScript_ScriptEnvironment
         return scopes.back()->Contains(key) || scopes.at(0)->Contains(key);
     }
 
-    bool TransientObjectExists(i64 gcObjectId)
-    {
-        for (int back = int(transients.size()) - 1; back >= 0; --back)
-        {
-            auto &transientsAtDepth = transients.at(back);
-            if (transientsAtDepth.Contains(gcObjectId))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     TValue AccessAtKey(const std::string &key)
     {
         for (int back = int(scopes.size()) - 1; back >= 0; --back)
@@ -61,11 +48,10 @@ struct MesaScript_ScriptEnvironment
             MesaScript_Table &scope = *scopes.at(back);
             if (scope.Contains(key))
             {
-                return scope.AccessMapEntry(key);
+                TValue retval = scope.AccessMapEntry(key);
+                return retval;
             }
         }
-
-        //SendRuntimeException("Provided identifier does not exist in MesaScript_ScriptEnvironment");
         return TValue();
     }
 
@@ -108,6 +94,24 @@ struct MesaScript_ScriptEnvironment
         return scopes.size();
     }
 
+    bool TransientObjectExists(i64 gcObjectId)
+    {
+        for (int back = int(transients.size()) - 1; back >= 0; --back)
+        {
+            auto &transientsAtDepth = transients.at(back);
+            if (transientsAtDepth.Contains(gcObjectId))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool TransientObjectExistsInActiveScope(i64 gcObjectId)
+    {
+        return transients.back().Contains(gcObjectId);
+    }
+
     void InsertTransientObject(i64 gcObjectId, i32 depth /*0 or negative index*/)
     {
         ASSERT(TransientObjectExists(gcObjectId) == false);
@@ -128,13 +132,13 @@ struct MesaScript_ScriptEnvironment
         }
     }
 
-    void ClearTransientsInTopLevelScope()
+    void ClearTransientsInLastScope()
     {
-        auto &topLevelTransients = transients.back();
-        for (int i = 0; i < topLevelTransients.count;)
+        auto &lastScopeTransients = transients.back();
+        for (int i = 0; i < lastScopeTransients.count;)
         {
-            i64 gcobjid = topLevelTransients.At(i);
-            topLevelTransients.EraseAt(i);
+            i64 gcobjid = lastScopeTransients.At(i);
+            lastScopeTransients.EraseAt(i);
             ReleaseReferenceGCObject(gcobjid);
         }
     }
@@ -198,6 +202,7 @@ enum class TokenType
 
     If,
     Else,
+    While,
 
     Return,
     EndOfLine,
@@ -356,6 +361,23 @@ void MesaScript_List::DecrementReferenceCountOfEveryListEntry()
             ReleaseReferenceGCObject(v.GCReferenceObject);
         }
     }
+}
+
+bool MesaScript_Table::Contains(const std::string &key)
+{
+    PLProfilerEnter(PLPROFILER_HASHING);
+    auto elemIterator = table.find(key);
+    bool v = elemIterator != table.end();
+    PLProfilerExit(PLPROFILER_HASHING);
+    return v;
+}
+
+TValue MesaScript_Table::AccessMapEntry(const std::string &key)
+{
+    PLProfilerEnter(PLPROFILER_HASHING);
+    TValue value = table.at(key);
+    PLProfilerExit(PLPROFILER_HASHING);
+    return value;
 }
 
 void MesaScript_Table::CreateNewMapEntry(const std::string& key, const TValue value)
@@ -619,7 +641,11 @@ std::vector<Token> Lexer(const std::string& code)
             }
             else if (word == "fn")
             {
-                retval.push_back({ TokenType::FunctionDecl,code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
+                retval.push_back({ TokenType::FunctionDecl, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
+            }
+            else if (word == "while")
+            {
+                retval.push_back({ TokenType::While, code.substr(tokenStartIndex, currentIndex - tokenStartIndex), tokenStartIndex, currentLine });
             }
             else // otherwise, word is function call or identifier
             {
@@ -643,6 +669,7 @@ std::vector<Token> Lexer(const std::string& code)
                 case ']': { tokenType = TokenType::RSqBrack; } break;
                 case ',': { tokenType = TokenType::Comma; } break;
                 case '\n': { ++currentLine; continue; /*tokenType = TokenType::EndOfLine;*/ } break;
+                case '\r': { continue; /*tokenType = TokenType::EndOfLine;*/ } break;
                 case ';': { continue; } break;
                 default:{
                     SendLexerError("error: unrecognized character in Lexer\n");
@@ -785,7 +812,7 @@ public:
 class ASTWhile : public ASTNode
 {
 public:
-    ASTWhile();
+    ASTWhile(ASTNode *condition, ASTNode *body);
 
     ASTNode* condition;
     ASTNode* body;
@@ -909,6 +936,12 @@ ASTProcedureCall::ASTProcedureCall(const std::string& id)
 ASTReturn::ASTReturn(ASTNode* expr)
     : ASTNode(ASTNodeType::RETURN)
     , expr(expr)
+{}
+
+ASTWhile::ASTWhile(ASTNode *condition, ASTNode *body)
+    : ASTNode(ASTNodeType::WHILE)
+    , condition(condition)
+    , body(body)
 {}
 
 ASTNumberTerminal::ASTNumberTerminal(double num, bool integer)
@@ -1192,6 +1225,16 @@ ASTNode* Parser::statement()
         auto node =
                 new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTBranch), alignof(ASTBranch)))
                         ASTBranch(condition, ifCase, elseCase);
+        return node;
+    }
+    else if (currentToken.type == TokenType::While)
+    {
+        eat(TokenType::While);
+        ASTNode *condition = cond_or();
+        ASTNode *body = statement_list();
+
+        auto node = new (MemoryLinearAllocate(&__ASTBuffer, sizeof(ASTWhile), alignof(ASTWhile))) ASTWhile(condition, body);
+
         return node;
     }
 
@@ -1945,6 +1988,14 @@ InterpretStatement(ASTNode* statement)
             returnValue = result;
             returnValueSetFlag = true;
             returnRequestedFlag = true;
+            // 2023-12-24: Transient GCOBJ does not get captured when we pass it along via RETURN
+            // so I must move the transient id a level above. Moving the InsertTransientObj call here.
+            if (result.type == TValue::ValueType::GCObject)
+            {
+                if (__MSRuntime.activeEnv.TransientObjectExistsInActiveScope(result.GCReferenceObject))
+                    __MSRuntime.activeEnv.EraseTransientObject(result.GCReferenceObject);
+                __MSRuntime.activeEnv.InsertTransientObject(result.GCReferenceObject, -1);
+            }
         } break;
 
         case ASTNodeType::BRANCH: {
@@ -1956,10 +2007,21 @@ InterpretStatement(ASTNode* statement)
             else if (v->else_body)
                 InterpretStatementList(v->else_body);
         } break;
+
+        case ASTNodeType::WHILE: {
+            auto v = static_cast<ASTWhile*>(statement);
+
+            auto condition = InterpretExpression(v->condition);
+            ASSERT(condition.type == TValue::ValueType::Boolean);
+            for (; condition.boolValue; condition = InterpretExpression(v->condition))
+            {
+                InterpretStatementList(v->body);
+            }
+        } break;
     }
 
     // ALL STATEMENTS MUST REACH THIS POINT
-    __MSRuntime.activeEnv.ClearTransientsInTopLevelScope();
+    __MSRuntime.activeEnv.ClearTransientsInLastScope();
 }
 
 static void
@@ -2018,9 +2080,6 @@ void pipl_bind_cpp_fn(const char *fn_name, int argc, void *fn_ptr)
 static TValue
 InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PART OF INTERPRETER, USE INTERPRETSTATEMENT INSTEAD
 {
-    // If ProcedureCall is C++ bound function, then call that.
-    // TValue result = cpp_fn(InterpretExpression(procedureCall->argsExpressions[0]), InterpretExpression(procedureCall->argsExpressions[1]));
-
     TValue procedureVariable;
     if (__MSRuntime.activeEnv.KeyExists(procedureCall->id))
     {
@@ -2116,15 +2175,8 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
 
     InterpretStatementList(procedureDefinition.body);
 
-    if (returnValueSetFlag) 
-    {
+    if (returnValueSetFlag)
         retval = returnValue;
-
-        if (returnValue.type == TValue::ValueType::GCObject)
-        {
-            __MSRuntime.activeEnv.InsertTransientObject(returnValue.GCReferenceObject, -1);
-        }
-    }
 
     returnRequestedFlag = false;
     returnValueSetFlag = false;

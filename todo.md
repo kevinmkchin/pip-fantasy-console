@@ -115,6 +115,7 @@ Gfx (probably don't make a module out of this)
 
 # Done
 
+- Fixed bug with "return 'string' or return MakeZoo()" where the transient object gets destroyed before being made transient at one scope higher.
 - code editor: draw selection highlighting
 - code editor: mouse dragging for selection
 - code editor: mouse clicking to move cursor
