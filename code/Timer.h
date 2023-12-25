@@ -10,11 +10,13 @@ public:
     /** Returns the time elapsed in seconds since the last timestamp call. */
     float TimeStamp();
 
+    double TimeSinceProgramStartInSeconds();
+
 public:
     // Global accessor for delta time. Could be in whatever unit you want, but I like seconds.
     float deltaTime;
 
-    // Time since epoch
+    // Time since epoch (TODO(Kevin): wtf?)
     float time;
 
     // Time since program start

@@ -3,9 +3,12 @@
 #include "MesaCommon.h"
 #include "MemoryAllocator.h"
 #include "FileSystem.h"
+#include "Timer.h"
 
 #include <cmath>
 #include <string>
+
+#include "MesaScriptProfiler.cpp"
 
 #pragma region StaticVariables
 
@@ -2238,6 +2241,7 @@ void CallFunction_OneParam(const char* functionIdentifier, TValue arg0)
 
 TValue CPPBOUND_MESASCRIPT_Print(TValue value)
 {
+    PLProfilerEnter(PLPROFILER_PRINT);
     if (value.type == TValue::ValueType::Integer)
     {
         printf("%lld\n", value.integerValue);
@@ -2259,19 +2263,19 @@ TValue CPPBOUND_MESASCRIPT_Print(TValue value)
             {
                 if (pair.second.type == TValue::ValueType::Integer)
                 {
-                    printf("    %s : %lld\n", pair.first.c_str(), pair.second.integerValue);
+                    printf("\t%s : %lld\n", pair.first.c_str(), pair.second.integerValue);
                 }
                 else if (pair.second.type == TValue::ValueType::Boolean)
                 {
-                    printf("    %s : %s\n", pair.first.c_str(), (pair.second.boolValue ? "true" : "false"));
+                    printf("\t%s : %s\n", pair.first.c_str(), (pair.second.boolValue ? "true" : "false"));
                 }
                 else if (pair.second.type == TValue::ValueType::Real)
                 {
-                    printf("    %s : %lf\n", pair.first.c_str(), pair.second.realValue);
+                    printf("\t%s : %lf\n", pair.first.c_str(), pair.second.realValue);
                 }
                 else if (pair.second.type == TValue::ValueType::GCObject)
                 {
-                    printf("    %s : gcobject\n", pair.first.c_str());
+                    printf("\t%s : gcobject\n", pair.first.c_str());
                 }
             }
         }
@@ -2282,19 +2286,19 @@ TValue CPPBOUND_MESASCRIPT_Print(TValue value)
             {
                 if (element.type == TValue::ValueType::Integer)
                 {
-                    printf("    %lld\n", element.integerValue);
+                    printf("\t%lld\n", element.integerValue);
                 }
                 else if (element.type == TValue::ValueType::Boolean)
                 {
-                    printf("    %s\n", (element.boolValue ? "true" : "false"));
+                    printf("\t%s\n", (element.boolValue ? "true" : "false"));
                 }
                 else if (element.type == TValue::ValueType::Real)
                 {
-                    printf("    %lf\n", element.realValue);
+                    printf("\t%lf\n", element.realValue);
                 }
                 else if (element.type == TValue::ValueType::GCObject)
                 {
-                    printf("    gcobject\n");
+                    printf("\tgcobject\n");
                 }
             }  
         }
@@ -2304,6 +2308,7 @@ TValue CPPBOUND_MESASCRIPT_Print(TValue value)
         }
     }
 
+    PLProfilerExit(PLPROFILER_PRINT);
     return TValue();
 }
 
@@ -2326,6 +2331,25 @@ void InitializeLanguageCompilerAndRuntime()
 
     std::string mesaScriptSetupCode = "fn add(x, y) { return x + y } fn checkeq(expected, actual) { if (expected == actual) { print('test pass') } else { print('test fail') } }";
     CompileAndRunMesaScriptCode(mesaScriptSetupCode, &__MSRuntime.globalEnv); // hack to add fns to globalEnv
+}
+
+void RunProfilerOnScript(const std::string& script, std::ostringstream& profilerOutput)
+{
+    // parsing
+    MesaScript_Table scriptEnv;
+    __MSRuntime.activeEnv.PushScope(&scriptEnv);
+    std::vector<Token> tokens = Lexer(script.c_str());
+    auto parser = Parser(tokens);
+    parser.parse();
+
+    PLStartProfiling();
+    for (auto& scriptTopLevelStatement : parser.scriptExecutionQueue)
+    {
+        InterpretStatement(scriptTopLevelStatement);
+    }
+    PLStopProfiling(profilerOutput);
+
+    __MSRuntime.activeEnv.PopScope();
 }
 
 void SimplyRunScript(const std::string& script)

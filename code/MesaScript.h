@@ -5,6 +5,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <sstream>
 
 /*
  * stuff can be one of :
@@ -245,17 +246,10 @@ struct MesaScript_Table
         : base(MesaGCObject::GCObjectType::Table)
     {}
 
-    bool Contains(const std::string& key)
-    {
-        auto elemIterator = table.find(key);
-        return elemIterator != table.end();
-    }
+    bool Contains(const std::string& key);
 
     /// Simply returns the value at key. Does not increment reference count.
-    TValue AccessMapEntry(const std::string& key)
-    {
-        return table.at(key);
-    }
+    TValue AccessMapEntry(const std::string& key);
 
     /// Create a new key value pair entry. Increments reference count.
     void CreateNewMapEntry(const std::string& key, const TValue value);
@@ -287,6 +281,7 @@ void CallFunction_OneParam(const char* functionIdentifier, TValue arg0);
 
 void InitializeLanguageCompilerAndRuntime();
 
+void RunProfilerOnScript(const std::string& script, std::ostringstream& profilerOutput);
 void SimplyRunScript(const std::string& script);
 
 void SimplyRunScriptFromFile(const std::string& pathFromWorkingDir);

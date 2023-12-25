@@ -142,21 +142,57 @@ void Temp_LoadScript(std::string pathFromWd)
 
 #include "Timer.h"
 #include "MesaScript.h"
+#include <sstream>
+#include <chrono>
 void Temp_ExecCurrentScript()
 {
+    std::ostringstream profilerOutput;
+
     auto script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
-    Time.TimeStamp();
-    SimplyRunScript(script);
-    printf("runpl took: %f seconds\n", Time.TimeStamp());
+    RunProfilerOnScript(script, profilerOutput);
+}
+
+void PipLangBenchmark()
+{
+    time_t t = time(0);
+    struct tm *now = localtime(&t);
+    char buffer[80];
+    strftime(buffer, 80, "%Y-%m-%d-%H-%M-%S", now);
+
+    std::ostringstream profilerOutput;
+
+    profilerOutput << "Running PipLang benchmarks " << buffer << std::endl << std::endl;
+
+    Temp_LoadScript("benchmarks/fib.pl");
+    profilerOutput << "fib.pl" << std::endl;
+    auto script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
+    RunProfilerOnScript(script, profilerOutput);
+
+    Temp_LoadScript("benchmarks/zoo.pl");
+    profilerOutput << "zoo.pl" << std::endl;
+    script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
+    RunProfilerOnScript(script, profilerOutput);
+
+    BinaryFileHandle file;
+    std::string outputcopy = profilerOutput.str();
+    file.memory = (void*)outputcopy.c_str();
+    file.size = (u32)outputcopy.size();
+
+    std::string outputPath = wd_path("benchmarks/" + std::string(buffer) + std::string(".txt"));
+    if (WriteFileBinary(file, outputPath.c_str()))
+    {
+        printf("saved benchmark results to %s\n", outputPath.c_str());
+    }
 }
 
 void InitEditorGUI()
 {
     LoadResourcesForEditorGUI();
 
-    GiveMeTheConsole()->bind_cmd("savepl", Temp_SaveScript);
-    GiveMeTheConsole()->bind_cmd("loadpl", Temp_LoadScript);
-    GiveMeTheConsole()->bind_cmd("runpl", Temp_ExecCurrentScript);
+    GiveMeTheConsole()->bind_cmd("save", Temp_SaveScript);
+    GiveMeTheConsole()->bind_cmd("open", Temp_LoadScript);
+    GiveMeTheConsole()->bind_cmd("run", Temp_ExecCurrentScript);
+    GiveMeTheConsole()->bind_cmd("benchmark", PipLangBenchmark);
 
     EditorState *activeEditorState = EditorState::ActiveEditorState();
     

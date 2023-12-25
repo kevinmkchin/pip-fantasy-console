@@ -6,13 +6,17 @@ Timer Time;
 
 using Clock = std::chrono::high_resolution_clock;
 
+static std::chrono::time_point<std::chrono::high_resolution_clock> programStartTime;
+
 Timer::Timer()
         : deltaTime(-1.f)
         , time(0.f)
         , timeSinceStart(0.f)
         , timeScale(1.f)
         , unscaledDeltaTime(-1.f)
-{}
+{
+    programStartTime = Clock::now();
+}
 
 float Timer::UpdateDeltaTime()
 {
@@ -41,3 +45,8 @@ float Timer::TimeStamp()
     return difference;
 }
 
+double Timer::TimeSinceProgramStartInSeconds()
+{
+    auto now = Clock::now();
+    return std::chrono::duration<double>(now - programStartTime).count();
+}
