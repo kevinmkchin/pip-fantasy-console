@@ -116,7 +116,8 @@ IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 // statement : PRINT cond_or
 // statement : procedure_call
 // statement : IF cond_or statement_list /*todo (ELIF statement_list)* */ (ELSE statement_list)?
-// todo : WHILE cond_or statement_list
+// statement : WHILE cond_or statement_list
+// todo : FOR LPAREN statement? cond_or? statement? RPAREN statement_list
 
 // cond_expr : expr ((< | > | <= | =>) expr)?
 
