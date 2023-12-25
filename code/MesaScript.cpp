@@ -99,15 +99,18 @@ struct MesaScript_ScriptEnvironment
 
     bool TransientObjectExists(i64 gcObjectId)
     {
+        PLProfilerBegin(PLPROFILER_TRANSIENCY_HANDLING);
+        bool exists = false;
         for (int back = int(transients.size()) - 1; back >= 0; --back)
         {
             auto &transientsAtDepth = transients.at(back);
             if (transientsAtDepth.Contains(gcObjectId))
             {
-                return true;
+                exists = true;
             }
         }
-        return false;
+        PLProfilerEnd(PLPROFILER_TRANSIENCY_HANDLING);
+        return exists;
     }
 
     bool TransientObjectExistsInActiveScope(i64 gcObjectId)
@@ -125,6 +128,7 @@ struct MesaScript_ScriptEnvironment
 
     void EraseTransientObject(i64 gcObjectId)
     {
+        PLProfilerBegin(PLPROFILER_TRANSIENCY_HANDLING);
         for (int back = int(transients.size()) - 1; back >= 0; --back)
         {
             auto &transientsAtDepth = transients.at(back);
@@ -133,10 +137,12 @@ struct MesaScript_ScriptEnvironment
                 transientsAtDepth.EraseFirstOf(gcObjectId);
             }
         }
+        PLProfilerEnd(PLPROFILER_TRANSIENCY_HANDLING);
     }
 
     void ClearTransientsInLastScope()
     {
+        PLProfilerBegin(PLPROFILER_TRANSIENCY_HANDLING);
         auto &lastScopeTransients = transients.back();
         for (int i = 0; i < lastScopeTransients.count;)
         {
@@ -144,6 +150,7 @@ struct MesaScript_ScriptEnvironment
             lastScopeTransients.EraseAt(i);
             ReleaseReferenceGCObject(gcobjid);
         }
+        PLProfilerEnd(PLPROFILER_TRANSIENCY_HANDLING);
     }
 
 private:
@@ -264,7 +271,9 @@ MesaScript_String* AccessMesaScriptString(i64 gcObjectId)
 
 void IncrementReferenceGCObject(i64 gcObjectId)
 {
+    PLProfilerBegin(PLPROFILER_HASHING);
     MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
+    PLProfilerEnd(PLPROFILER_HASHING);
     gcobj->refCount++;
 
     if (__MSRuntime.activeEnv.TransientObjectExists(gcObjectId))
@@ -276,7 +285,9 @@ void IncrementReferenceGCObject(i64 gcObjectId)
 
 void ReleaseReferenceGCObject(i64 gcObjectId)
 {
+    PLProfilerBegin(PLPROFILER_HASHING);
     MesaGCObject* gcobj = GCOBJECTS_DATABASE.at(gcObjectId);
+    PLProfilerEnd(PLPROFILER_HASHING);
     gcobj->refCount--;
     if (gcobj->refCount <= 0)
     {
@@ -294,7 +305,9 @@ void ReleaseReferenceGCObject(i64 gcObjectId)
         }
 
         delete gcobj;
+        PLProfilerBegin(PLPROFILER_HASHING);
         GCOBJECTS_DATABASE.erase(gcObjectId);
+        PLProfilerEnd(PLPROFILER_HASHING);
     }
 }
 
@@ -368,18 +381,18 @@ void MesaScript_List::DecrementReferenceCountOfEveryListEntry()
 
 bool MesaScript_Table::Contains(const std::string &key)
 {
-    PLProfilerEnter(PLPROFILER_HASHING);
+    PLProfilerBegin(PLPROFILER_HASHING);
     auto elemIterator = table.find(key);
     bool v = elemIterator != table.end();
-    PLProfilerExit(PLPROFILER_HASHING);
+    PLProfilerEnd(PLPROFILER_HASHING);
     return v;
 }
 
 TValue MesaScript_Table::AccessMapEntry(const std::string &key)
 {
-    PLProfilerEnter(PLPROFILER_HASHING);
+    PLProfilerBegin(PLPROFILER_HASHING);
     TValue value = table.at(key);
-    PLProfilerExit(PLPROFILER_HASHING);
+    PLProfilerEnd(PLPROFILER_HASHING);
     return value;
 }
 
@@ -389,13 +402,16 @@ void MesaScript_Table::CreateNewMapEntry(const std::string& key, const TValue va
     {
         IncrementReferenceGCObject(value.GCReferenceObject);
     }
-
+    PLProfilerBegin(PLPROFILER_HASHING);
     table.emplace(key, value);
+    PLProfilerEnd(PLPROFILER_HASHING);
 }
 
 void MesaScript_Table::ReplaceMapEntryAtKey(const std::string& key, const TValue value)
 {
+    PLProfilerBegin(PLPROFILER_HASHING);
     TValue existingValue = table.at(key);
+    PLProfilerEnd(PLPROFILER_HASHING);
     if (existingValue.type == TValue::ValueType::GCObject)
     {
         if (value.type == TValue::ValueType::GCObject && existingValue.GCReferenceObject == value.GCReferenceObject)
@@ -413,7 +429,9 @@ void MesaScript_Table::ReplaceMapEntryAtKey(const std::string& key, const TValue
         IncrementReferenceGCObject(value.GCReferenceObject);        
     }
 
+    PLProfilerBegin(PLPROFILER_HASHING);
     table.at(key) = value;
+    PLProfilerEnd(PLPROFILER_HASHING);
 }
 
 void MesaScript_Table::DecrementReferenceCountOfEveryMapEntry()
@@ -1526,6 +1544,8 @@ InterpretProcedureCall(ASTProcedureCall* procedureCall);
 static TValue
 InterpretExpression(ASTNode* ast)
 {
+    PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM::INTERPRET_EXPRESSION);
+
     TValue result;
 
     switch(ast->GetType())
@@ -1889,12 +1909,16 @@ InterpretExpression(ASTNode* ast)
         __MSRuntime.activeEnv.InsertTransientObject(stringCopyId, 0);
     }
 
+    PLProfilerPop();
+
     return result;
 }
 
 static void
 InterpretStatement(ASTNode* statement)
 {
+    PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM::INTERPRET_STATEMENT);
+
     switch (statement->GetType())
     {
         case ASTNodeType::PROCEDURECALL: {
@@ -2025,6 +2049,8 @@ InterpretStatement(ASTNode* statement)
 
     // ALL STATEMENTS MUST REACH THIS POINT
     __MSRuntime.activeEnv.ClearTransientsInLastScope();
+
+    PLProfilerPop();
 }
 
 static void
@@ -2083,6 +2109,8 @@ void pipl_bind_cpp_fn(const char *fn_name, int argc, void *fn_ptr)
 static TValue
 InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PART OF INTERPRETER, USE INTERPRETSTATEMENT INSTEAD
 {
+    PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM::INTERPRET_PROCEDURE_CALL);
+
     TValue procedureVariable;
     if (__MSRuntime.activeEnv.KeyExists(procedureCall->id))
     {
@@ -2187,6 +2215,8 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
     // Intended: activeEnv.PopScope should decrement ref count of every entry of the function scope being popped.
     __MSRuntime.activeEnv.PopScope();
 
+    PLProfilerPop();
+
     return retval;
 }
 
@@ -2241,7 +2271,7 @@ void CallFunction_OneParam(const char* functionIdentifier, TValue arg0)
 
 TValue CPPBOUND_MESASCRIPT_Print(TValue value)
 {
-    PLProfilerEnter(PLPROFILER_PRINT);
+    PLProfilerBegin(PLPROFILER_PRINT);
     if (value.type == TValue::ValueType::Integer)
     {
         printf("%lld\n", value.integerValue);
@@ -2308,7 +2338,7 @@ TValue CPPBOUND_MESASCRIPT_Print(TValue value)
         }
     }
 
-    PLProfilerExit(PLPROFILER_PRINT);
+    PLProfilerEnd(PLPROFILER_PRINT);
     return TValue();
 }
 
