@@ -1,0 +1,28 @@
+Running PipLang benchmarks 2023-12-25-16-23-45
+
+fib.pl
+--- Results ---
+Total duration: 3.85084
+Category			Duration	Ratio
+unordered_map hashing	1.81073	47.0216%
+Transiency handling	0.0190522	0.494754%
+print()			0	0%
+
+System			Duration	Ratio
+InterpretExpression	1.49815	38.9044%
+InterpretStatement	0.916404	23.7975%
+InterpretProcedureCall	1.43629	37.298%
+
+zoo.pl
+--- Results ---
+Total duration: 3.97586
+Category			Duration	Ratio
+unordered_map hashing	1.21495	30.5581%
+Transiency handling	0.361505	9.09249%
+print()			9.92e-05	0.00249505%
+
+System			Duration	Ratio
+InterpretExpression	1.54815	38.9387%
+InterpretStatement	1.47772	37.1674%
+InterpretProcedureCall	0.94999	23.8939%
+

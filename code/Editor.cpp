@@ -152,16 +152,17 @@ void Temp_ExecCurrentScript()
     RunProfilerOnScript(script, profilerOutput);
 }
 
-void PipLangBenchmark()
+char dateAndTimeBuffer[80];
+
+std::ostringstream PipLangBenchmarkInternal()
 {
     time_t t = time(0);
     struct tm *now = localtime(&t);
-    char buffer[80];
-    strftime(buffer, 80, "%Y-%m-%d-%H-%M-%S", now);
+    strftime(dateAndTimeBuffer, 80, "%Y-%m-%d-%H-%M-%S", now);
 
     std::ostringstream profilerOutput;
 
-    profilerOutput << "Running PipLang benchmarks " << buffer << std::endl << std::endl;
+    profilerOutput << "Running PipLang benchmarks " << dateAndTimeBuffer << std::endl << std::endl;
 
     Temp_LoadScript("benchmarks/fib.pl");
     profilerOutput << "fib.pl" << std::endl;
@@ -173,16 +174,30 @@ void PipLangBenchmark()
     script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
     RunProfilerOnScript(script, profilerOutput);
 
+    return profilerOutput;
+}
+
+void PipLangBenchmark()
+{
+    auto profilerOutput = PipLangBenchmarkInternal();
+
     BinaryFileHandle file;
     std::string outputcopy = profilerOutput.str();
-    file.memory = (void*)outputcopy.c_str();
+    file.memory = (void *)outputcopy.c_str();
     file.size = (u32)outputcopy.size();
 
-    std::string outputPath = wd_path("benchmarks/" + std::string(buffer) + std::string(".txt"));
+    std::string outputPath = wd_path("benchmarks/" + std::string(dateAndTimeBuffer) + std::string(".txt"));
     if (WriteFileBinary(file, outputPath.c_str()))
     {
         printf("saved benchmark results to %s\n", outputPath.c_str());
     }
+}
+
+void PipLangBenchmarkToConsole()
+{
+    auto profilerOutput = PipLangBenchmarkInternal();
+
+    PrintLog.Message(profilerOutput.str());
 }
 
 void InitEditorGUI()
@@ -193,6 +208,10 @@ void InitEditorGUI()
     GiveMeTheConsole()->bind_cmd("open", Temp_LoadScript);
     GiveMeTheConsole()->bind_cmd("run", Temp_ExecCurrentScript);
     GiveMeTheConsole()->bind_cmd("benchmark", PipLangBenchmark);
+    GiveMeTheConsole()->bind_cmd("benchmark_to_console", PipLangBenchmarkToConsole);
+
+
+
 
     EditorState *activeEditorState = EditorState::ActiveEditorState();
     
