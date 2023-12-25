@@ -1,5 +1,14 @@
 # Quick thoughts
 
+        case ASTNodeType::CREATETABLE:
+        {
+            //auto v = static_cast<CreateNewMapEntry*>(ast);
+            result.type = TValue::ValueType::GCObject;
+            result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
+            break;
+        }
+needs to return transient as well i think
+
 maybe ; starts a line comment? like Lisp and DrRacket. # could also start line comment. What about block comment?
 rework MesaIMGUI keyboard input handling. 
 
@@ -20,6 +29,7 @@ rework MesaIMGUI keyboard input handling.
 # Todo
 
 - PipLang/MesaScript benchmarks and OPTIMIZATION EPIC (I can optimize LANGUAGE FEATURES before most of Pip API...although Pip API is priority)
+- code editor: SCROLLING
 - boot sound (SDL_mixer)
 - Markdown reader - manual in markdown, toggled with F1
 - code editor: pg up pg down (maybe for functions?)
