@@ -544,7 +544,7 @@ std::vector<Token> Lexer(const std::string& code)
             }
             ++currentIndex;
         }
-        else if (lookAhead == '~') // line comments
+        else if (lookAhead == '~' || lookAhead == ';') // line comments
         {
             ++currentIndex;
             while (currentIndex < (code.length() - 1) && code.at(currentIndex) != '\n')
@@ -685,7 +685,6 @@ std::vector<Token> Lexer(const std::string& code)
                 case ',': { tokenType = TokenType::Comma; } break;
                 case '\n': { ++currentLine; continue; /*tokenType = TokenType::EndOfLine;*/ } break;
                 case '\r': { continue; /*tokenType = TokenType::EndOfLine;*/ } break;
-                case ';': { continue; } break;
                 default:{
                     SendLexerError("error: unrecognized character in Lexer\n");
                     continue;

@@ -1,17 +1,5 @@
 # Quick thoughts
 
-        case ASTNodeType::CREATETABLE:
-        {
-            //auto v = static_cast<CreateNewMapEntry*>(ast);
-            result.type = TValue::ValueType::GCObject;
-            result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
-            break;
-        }
-needs to return transient as well i think
-
-maybe ; starts a line comment? like Lisp and DrRacket. # could also start line comment. What about block comment?
-rework MesaIMGUI keyboard input handling. 
-
 # Known Bugs
 
 - GUI fresh ID is not great...will be buggy when number of elements change dynamically
@@ -19,7 +7,7 @@ rework MesaIMGUI keyboard input handling.
 
 # Immediate next
 
-- code editor: cut, copy, paste, and selection highlighting
+- code editor: cut, copy, paste
 - code editor: ctrl+backspace and ctrl+delete for word deletion
 - code editor: insert mode + indicator (?)
 
@@ -28,11 +16,13 @@ rework MesaIMGUI keyboard input handling.
 
 # Todo
 
-- PipLang/MesaScript benchmarks and OPTIMIZATION EPIC (I can optimize LANGUAGE FEATURES before most of Pip API...although Pip API is priority)
+- The PipLang VM Epic...
+
 - code editor: SCROLLING
 - boot sound (SDL_mixer)
 - Markdown reader - manual in markdown, toggled with F1
 - code editor: pg up pg down (maybe for functions?)
+- code editor: ctrl+f
 
 ### Language features
 - Script modulus %
@@ -96,6 +86,7 @@ Low priority Items:
 - MesaIMGUI overlapping elements or buttons
 - SDL_SCANCODE independent input key enums (or maybe unnecessary...)
 - (fuck off until later) vertext rewrite for better usability better API
+- rework MesaIMGUI keyboard input handling. 
 
 ### Language features
 - replace all std data structs with alternate optimized implementations in C?
