@@ -1,0 +1,12 @@
+Running PipLang benchmarks 2023-12-25-14-59-15
+
+fib.pl
+Total duration: 3.03232
+Spent 54.8408% of execution time in MesaScript_Table.Access and Contains
+Spent 0% of execution time in print()
+
+zoo.pl
+Total duration: 2.67341
+Spent 25.4534% of execution time in MesaScript_Table.Access and Contains
+Spent 0.00752221% of execution time in print()
+
