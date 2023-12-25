@@ -54,6 +54,10 @@ static void PLStartProfiling()
         __profiler_InterpreterSystemMeasurements[i] = 0.0;
     }
     lastTimeStamp = 0.0;
+    while (!__profiler_interpreterStack.empty())
+    {
+        __profiler_interpreterStack.pop();
+    }
 }
 
 static void PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM enteredSystem)
