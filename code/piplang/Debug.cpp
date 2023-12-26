@@ -4,7 +4,15 @@
 
 void PrintTValue(TValue value)
 {
-    printf("%g", value.real);
+    switch (value.type)
+    {
+        case TValue::BOOLEAN:
+            printf(AS_BOOL(value) ? "True" : "False");
+            break;
+        case TValue::REAL:
+            printf("%g", AS_NUMBER(value));
+            break;
+    }
 }
 
 int Debug_SimpleInstruction(const char *name, int offset)
@@ -66,6 +74,18 @@ int DisassembleInstruction(Chunk *chunk, int offset)
         return Debug_SimpleInstruction("MULTIPLY", offset);
     case OpCode::DIVIDE:
         return Debug_SimpleInstruction("DIVIDE", offset);
+    case OpCode::TRUE:
+        return Debug_SimpleInstruction("TRUE", offset);
+    case OpCode::FALSE:
+        return Debug_SimpleInstruction("FALSE", offset);
+    case OpCode::LOGICAL_NOT:
+        return Debug_SimpleInstruction("LOGICAL_NOT", offset);
+    case OpCode::RELOP_EQUAL:
+        return Debug_SimpleInstruction("RELOP_EQUAL", offset);
+    case OpCode::RELOP_GREATER:
+        return Debug_SimpleInstruction("RELOP_GREATER", offset);
+    case OpCode::RELOP_LESSER:
+        return Debug_SimpleInstruction("RELOP_LESSER", offset);
     default:
         printf("Unknown opcode %d\n", instruction);
         return offset + 1;

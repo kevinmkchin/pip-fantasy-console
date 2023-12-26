@@ -1,12 +1,12 @@
 #include "VM.h"
 
 #include <stdio.h>
+#include <stdarg.h>
 
 #include "Debug.h"
 #include "Chunk.h"
 #include "Scanner.h"
 #include "Compiler.h"
-
 
 /// VM
 
@@ -39,6 +39,11 @@ TValue Stack_Pop()
     return *vm.sp;
 }
 
+TValue Stack_Peek(int distance)
+{
+    return vm.sp[-1 - distance];
+}
+
 void InitVM()
 {
     Stack_Reset();
@@ -49,18 +54,53 @@ void FreeVM()
 
 }
 
+static void RuntimeError(const char *format, ...)
+{
+    size_t instruction = vm.ip - vm.chunk->bytecode->data() - 1;
+    int line = vm.chunk->linenumbers->at(instruction);
+    fprintf(stderr, "[line %d] Runtime error: ", line);
+
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+    fputs("\n", stderr);
+
+    Stack_Reset();
+}
+
+static bool IsFalsey(TValue v)
+{
+    return !AS_BOOL(v);
+}
+
+static bool IsEqual(TValue l, TValue r)
+{
+    if (l.type != r.type) 
+        return false;
+
+    switch (l.type) 
+    {
+        case TValue::BOOLEAN: return AS_BOOL(l) == AS_BOOL(r);
+        case TValue::REAL:    return AS_NUMBER(l) == AS_NUMBER(r);
+    }
+}
+
 static InterpretResult Run()
 {
 #define VM_READ_BYTE() (*vm.ip++) // read byte and move pointer along
 #define VM_READ_CONSTANT() (vm.chunk->constants->at(VM_READ_BYTE()))
 #define VM_READ_CONSTANT_LONG() (vm.chunk->constants->at(VM_READ_BYTE() << 16 | VM_READ_BYTE() << 8 | VM_READ_BYTE()))
-#define VM_BINARY_OP(op) \
+#define VM_BINARY_OP(resultValueConstructor, op) \
     do { \
-      double r = Stack_Pop().real; \
-      double l = Stack_Pop().real; \
-      TValue v; \
-      v.real = l op r; \
-      Stack_Push(v); \
+        if (!IS_NUMBER(Stack_Peek(0)) || !IS_NUMBER(Stack_Peek(1))) \
+        { \
+            RuntimeError("Operands to BINOP must be number values."); \
+            return InterpretResult::RUNTIME_ERROR; \
+        } \
+        double r = Stack_Pop().real; \
+        double l = Stack_Pop().real; \
+        Stack_Push(resultValueConstructor(l op r)); \
     } while (false)
 
 
@@ -82,39 +122,47 @@ static InterpretResult Run()
         {
 
             case OpCode::RETURN:
-            {
                 PrintTValue(Stack_Pop());
                 printf("\n");
                 return InterpretResult::OK;
-            }
 
             case OpCode::CONSTANT:
-            {
-                TValue constant = VM_READ_CONSTANT();
-                Stack_Push(constant);
+                Stack_Push(VM_READ_CONSTANT());
                 break;
-            }
 
             case OpCode::CONSTANT_LONG:
-            {
-                TValue constant = VM_READ_CONSTANT_LONG();
-                Stack_Push(constant);
+                Stack_Push(VM_READ_CONSTANT_LONG());
                 break;
-            }
 
             case OpCode::NEGATE:
-            {
-                TValue v = Stack_Pop();
-                v.real = -v.real;
-                Stack_Push(v);
+                if (!IS_NUMBER(Stack_Peek(0)))
+                {
+                    RuntimeError("Operand to NEGATE op must be a number value.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                Stack_Push(TValue::Number(-AS_NUMBER(Stack_Pop())));
                 break;
-            }
 
-            case OpCode::ADD: VM_BINARY_OP(+); break;
-            case OpCode::SUBTRACT: VM_BINARY_OP(-); break;
-            case OpCode::MULTIPLY: VM_BINARY_OP(*); break;
-            case OpCode::DIVIDE: VM_BINARY_OP(/); break;
+            case OpCode::ADD: VM_BINARY_OP(NUMBER_VAL, +); break;
+            case OpCode::SUBTRACT: VM_BINARY_OP(NUMBER_VAL, -); break;
+            case OpCode::MULTIPLY: VM_BINARY_OP(NUMBER_VAL, *); break;
+            case OpCode::DIVIDE: VM_BINARY_OP(NUMBER_VAL, /); break;
 
+            case OpCode::TRUE: Stack_Push(BOOL_VAL(true)); break;
+            case OpCode::FALSE: Stack_Push(BOOL_VAL(false)); break;
+            case OpCode::LOGICAL_NOT:
+                if (!IS_BOOL(Stack_Peek(0)))
+                {
+                    RuntimeError("Operand to LOGICAL NOT op must be a boolean value.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                Stack_Push(BOOL_VAL(IsFalsey(Stack_Pop())));
+                break;
+            case OpCode::RELOP_EQUAL:
+                Stack_Push(BOOL_VAL(IsEqual(Stack_Pop(), Stack_Pop())));
+                break;
+            case OpCode::RELOP_GREATER: VM_BINARY_OP(BOOL_VAL, >); break;
+            case OpCode::RELOP_LESSER: VM_BINARY_OP(BOOL_VAL, <); break;
         }
     }
 

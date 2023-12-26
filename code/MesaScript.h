@@ -153,8 +153,8 @@ struct TValue
 {
     enum class ValueType
     {
-        Invalid,
-        Integer,
+        Invalid, // pointless
+        Integer, // just use real
         Real,
         Boolean,
         Function,
