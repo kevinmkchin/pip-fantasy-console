@@ -210,8 +210,13 @@ static void LoadFantasyConsole()
     g_gfx.UpdateBackBufferAndGameSize();
 }
 
+#include "PipLang.h"
+
 int main(int argc, char* argv[])
 {
+    PipLangRunSomeThings();
+    printf("\n\n");
+
 	InitializeEverything();
 
     LoadFantasyConsole();
