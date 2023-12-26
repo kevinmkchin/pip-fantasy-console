@@ -59,8 +59,16 @@ set(SOURCE_FILES
     code/PipAPI.h
     code/PipAPI.cpp
 
-    code/PipLang.h
-    code/PipLang.cpp
+    code/piplang/VM.h
+    code/piplang/VM.cpp
+    code/piplang/Scanner.h
+    code/piplang/Scanner.cpp
+    code/piplang/Compiler.h
+    code/piplang/Compiler.cpp
+    code/piplang/Chunk.h
+    code/piplang/Chunk.cpp
+    code/piplang/Debug.h
+    code/piplang/Debug.cpp
 )
 
 set(OTHER_FILES_FOR_IDE

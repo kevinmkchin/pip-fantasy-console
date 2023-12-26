@@ -145,7 +145,7 @@ void Temp_LoadScript(std::string pathFromWd)
 #include <sstream>
 #include <chrono>
 
-#include "PipLang.h"
+#include "piplang/VM.h"
 
 void Temp_ExecCurrentScript()
 {
