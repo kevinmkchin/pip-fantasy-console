@@ -1,4 +1,4 @@
-`
+/*
 LIST:
 access element with a non negative integer like so:
     fruits[0]
@@ -29,10 +29,10 @@ del d['k2']
 print(d)
 # {'k1': 1, 'k3': 3}
 
-`
+*/
 
 
-`
+/*
 fn passByRef(loi)
 {
     loi[0] = loi[0] * 11 
@@ -46,21 +46,21 @@ fn caller()
 }
 
 caller()
-`
+*/
 
-`
+/*
 fn GetPlayer()
 {
     player = {}
     player["x"] = 32
     return player
 }
-`
+*/
 _player = {}
 _player["x"] = 32
 fn PrintPlayer()
 {
-    ~_player = GetPlayer()
+    ;_player = GetPlayer()
     print(_player["x"])
 }
 
@@ -92,8 +92,8 @@ fn test()
   li[1] = {}
   li[3] = 1000
 
-  ~ b = a[1]
-  ~ b[1] = 4
+  ; b = a[1]
+  ; b[1] = 4
 
   print("printing string and table here:")
   print(str)
@@ -104,8 +104,8 @@ fn test()
   print("printing list here:")
   print(li)
 
-  ~print(b == a)
-  ~print(b.x == a.x)
+  ;print(b == a)
+  ;print(b.x == a.x)
   dosmth(a)
 
   print(a["69"])
@@ -116,7 +116,7 @@ test()
 
 
 
-~Find the n-th Fibonacci number
+;Find the n-th Fibonacci number
 fn fib (n) 
 {
   if (n < 2) {
@@ -129,7 +129,7 @@ checkeq(55, fib(10))
 checkeq(3, fib(4))
 checkeq(14, add(add(4, 2), 8))
 
-~Find the factorial of n
+;Find the factorial of n
 fn fact(n)
 {
     if (n == 0) { return 1 }
@@ -146,9 +146,9 @@ fn StringIsPassedByValueTest()
     someList = [ str, str, str ]
     someMap = {}
     someMap["someIndex"] = str
-    ~at this point, there are 5 strings, and str still only has one refcount
+    ;at this point, there are 5 strings, and str still only has one refcount
 
-    checkeq(refcount(str), 0) ~refcount returns 0 because it checks the refcount of a str copy
+    checkeq(refcount(str), 0) ;refcount returns 0 because it checks the refcount of a str copy
 }
 StringIsPassedByValueTest();
 
@@ -189,8 +189,8 @@ checkeq(100000.0/100000, 1)
 checkeq((2.71/9.5) - 0.285263 < 0.0001 and (2.71/9.5) - 0.285263 > -0.0001, true)
 
 
-` BRAINSTORMING INTEGRATION:
-~ the user could create levels in sprites (one sprite per layer) where color determines tile
+/* BRAINSTORMING INTEGRATION:
+; the user could create levels in sprites (one sprite per layer) where color determines tile
 
 fn mesa_init ()
 {
@@ -215,4 +215,4 @@ fn mesa_draw()
     // draw player
     // draw enemies
 }
-`
+*/

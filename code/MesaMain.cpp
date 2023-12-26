@@ -214,9 +214,6 @@ static void LoadFantasyConsole()
 
 int main(int argc, char* argv[])
 {
-    PipLangRunSomeThings();
-    printf("\n\n");
-
 	InitializeEverything();
 
     LoadFantasyConsole();

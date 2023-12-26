@@ -3,6 +3,14 @@
 #include "MesaCommon.h"
 
 
-void PipLangRunSomeThings();
+
+enum class InterpretResult
+{
+    OK,
+    COMPILE_ERROR,
+    RUNTIME_ERROR
+};
+
+InterpretResult Interpret(const char *source);
 
 
