@@ -144,13 +144,18 @@ void Temp_LoadScript(std::string pathFromWd)
 #include "MesaScript.h"
 #include <sstream>
 #include <chrono>
+
+#include "PipLang.h"
+
 void Temp_ExecCurrentScript()
 {
-    std::ostringstream profilerOutput;
+    //std::ostringstream profilerOutput;
 
     auto script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
-    RunProfilerOnScript(script, profilerOutput);
-    PrintLog.Message(profilerOutput.str());
+    Interpret(script.c_str());
+
+    //RunProfilerOnScript(script, profilerOutput);
+    //PrintLog.Message(profilerOutput.str());
 }
 
 char dateAndTimeBuffer[80];
