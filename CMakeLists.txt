@@ -58,6 +58,9 @@ set(SOURCE_FILES
     code/Space.cpp
     code/PipAPI.h
     code/PipAPI.cpp
+
+    code/PipLang.h
+    code/PipLang.cpp
 )
 
 set(OTHER_FILES_FOR_IDE
