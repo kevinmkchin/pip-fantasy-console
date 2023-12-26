@@ -15,7 +15,7 @@ enum class Precedence : u8
     OR,         // or
     AND,        // and
     EQUALITY,   // == !=
-    RELOP,      // < > <= >=
+    COMPARISON, // < > <= >=
     TERM,       // + -
     FACTOR,     // * /
     UNARY,      // ! -
@@ -49,7 +49,7 @@ static void ErrorAt(Token *token, const char *message)
     if (parser.panicMode) return;
     parser.panicMode = true;
 
-    fprintf(stderr, "[line %d] Error", token->line);
+    fprintf(stderr, "[line %d] Compile error", token->line);
 
     if (token->type == TokenType::END_OF_FILE)
     {
@@ -113,6 +113,11 @@ static void EmitByte(u8 byte)
     WriteChunk(CurrentChunk(), byte, parser.previous.line);
 }
 
+static void EmitByte(OpCode op)
+{
+    EmitByte((u8)op);
+}
+
 static void EmitConstant(TValue value)
 {
     WriteConstant(CurrentChunk(), value, parser.previous.line);
@@ -126,7 +131,7 @@ static void EmitBytes(u8 byte1, u8 byte2)
 
 static void EmitReturn()
 {
-    EmitByte((u8)OpCode::RETURN);
+    EmitByte(OpCode::RETURN);
 }
 
 static void EndCompiler()
@@ -144,8 +149,7 @@ static void EndCompiler()
 static void ParseNumber()
 {
     double value = strtod(parser.previous.start, NULL);
-    TValue v;
-    v.real = value;
+    TValue v = TValue::Number(value);
     EmitConstant(v);
 }
 
@@ -168,7 +172,8 @@ static void ParseUnary()
 
     switch (operatorType)
     {
-        case TokenType::MINUS: EmitByte((u8)OpCode::NEGATE); break;
+        case TokenType::BANG:  EmitByte(OpCode::LOGICAL_NOT); break;
+        case TokenType::MINUS: EmitByte(OpCode::NEGATE); break;
     }
 }
 
@@ -180,51 +185,90 @@ static void ParseBinOp()
 
     switch (operatorType)
     {
-        case TokenType::PLUS:           EmitByte((u8)OpCode::ADD); break;
-        case TokenType::MINUS:          EmitByte((u8)OpCode::SUBTRACT); break;
-        case TokenType::ASTERISK:       EmitByte((u8)OpCode::MULTIPLY); break;
-        case TokenType::FORWARDSLASH:   EmitByte((u8)OpCode::DIVIDE); break;
+        case TokenType::PLUS:           EmitByte(OpCode::ADD); break;
+        case TokenType::MINUS:          EmitByte(OpCode::SUBTRACT); break;
+        case TokenType::ASTERISK:       EmitByte(OpCode::MULTIPLY); break;
+        case TokenType::FORWARDSLASH:   EmitByte(OpCode::DIVIDE); break;
     }
 }
 
+static void ParseRelOp()
+{
+    TokenType operatorType = parser.previous.type;
+    ParsePrecedence((Precedence)((u8)GetParseRule(operatorType)->infixprecedence + 1));
+
+    switch (operatorType)
+    {
+        case TokenType::BANG_EQUAL:
+            EmitByte(OpCode::RELOP_EQUAL);
+            EmitByte(OpCode::LOGICAL_NOT);
+            break;
+        case TokenType::EQUAL_EQUAL:
+            EmitByte(OpCode::RELOP_EQUAL);
+            break;
+        case TokenType::GREATER:
+            EmitByte(OpCode::RELOP_GREATER);
+            break;
+        case TokenType::LESS:
+            EmitByte(OpCode::RELOP_LESSER);
+            break;
+        case TokenType::GREATER_EQUAL:
+            EmitByte(OpCode::RELOP_LESSER);
+            EmitByte(OpCode::LOGICAL_NOT);
+            break;
+        case TokenType::LESS_EQUAL:
+            EmitByte(OpCode::RELOP_GREATER);
+            EmitByte(OpCode::LOGICAL_NOT);
+            break;
+    }
+}
+
+static void ParseLiteral()
+{
+    switch (parser.previous.type) 
+    {
+        case TokenType::TRUE: EmitByte((u8)OpCode::TRUE); break;
+        case TokenType::FALSE: EmitByte((u8)OpCode::FALSE); break;
+    }
+}
 
 ParseRule rules[(u8)TokenType::END_OF_FILE];
 
 void SetupParsingRules()
 {
-    rules[(u8)TokenType::LESS]              = {          NULL,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::LESS_EQUAL]        = {          NULL,         NULL, Precedence::NONE };        
-    rules[(u8)TokenType::GREATER]           = {          NULL,         NULL, Precedence::NONE };    
-    rules[(u8)TokenType::GREATER_EQUAL]     = {          NULL,         NULL, Precedence::NONE };        
+    rules[(u8)TokenType::LESS]              = {          NULL,   ParseRelOp, Precedence::COMPARISON };
+    rules[(u8)TokenType::LESS_EQUAL]        = {          NULL,   ParseRelOp, Precedence::COMPARISON };
+    rules[(u8)TokenType::GREATER]           = {          NULL,   ParseRelOp, Precedence::COMPARISON };
+    rules[(u8)TokenType::GREATER_EQUAL]     = {          NULL,   ParseRelOp, Precedence::COMPARISON };
     rules[(u8)TokenType::EQUAL]             = {          NULL,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::BANG_EQUAL]        = {          NULL,         NULL, Precedence::NONE };        
-    rules[(u8)TokenType::EQUAL_EQUAL]       = {          NULL,         NULL, Precedence::NONE };        
-    rules[(u8)TokenType::BANG]              = {          NULL,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::LSQBRACK]          = {          NULL,         NULL, Precedence::NONE };    
-    rules[(u8)TokenType::RSQBRACK]          = {          NULL,         NULL, Precedence::NONE };    
-    rules[(u8)TokenType::LPAREN]            = { ParseGrouping,         NULL, Precedence::NONE };    
-    rules[(u8)TokenType::RPAREN]            = {          NULL,         NULL, Precedence::NONE };    
-    rules[(u8)TokenType::LBRACE]            = {          NULL,         NULL, Precedence::NONE };    
-    rules[(u8)TokenType::RBRACE]            = {          NULL,         NULL, Precedence::NONE };    
+    rules[(u8)TokenType::BANG_EQUAL]        = {          NULL,   ParseRelOp, Precedence::EQUALITY };
+    rules[(u8)TokenType::EQUAL_EQUAL]       = {          NULL,   ParseRelOp, Precedence::EQUALITY };
+    rules[(u8)TokenType::BANG]              = {    ParseUnary,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::LSQBRACK]          = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::RSQBRACK]          = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::LPAREN]            = { ParseGrouping,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::RPAREN]            = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::LBRACE]            = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::RBRACE]            = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::COMMA]             = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::PLUS]              = {          NULL,   ParseBinOp, Precedence::TERM };
     rules[(u8)TokenType::MINUS]             = {    ParseUnary,   ParseBinOp, Precedence::TERM };
-    rules[(u8)TokenType::ASTERISK]          = {          NULL,   ParseBinOp, Precedence::FACTOR };    
-    rules[(u8)TokenType::FORWARDSLASH]      = {          NULL,   ParseBinOp, Precedence::FACTOR };   
+    rules[(u8)TokenType::ASTERISK]          = {          NULL,   ParseBinOp, Precedence::FACTOR };
+    rules[(u8)TokenType::FORWARDSLASH]      = {          NULL,   ParseBinOp, Precedence::FACTOR };
     
-    rules[(u8)TokenType::NUMBER_LITERAL]    = {   ParseNumber,         NULL, Precedence::NONE };            
-    rules[(u8)TokenType::STRING_LITERAL]    = {          NULL,         NULL, Precedence::NONE };            
-    rules[(u8)TokenType::IDENTIFIER]        = {          NULL,         NULL, Precedence::NONE }; 
+    rules[(u8)TokenType::NUMBER_LITERAL]    = {   ParseNumber,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::STRING_LITERAL]    = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::IDENTIFIER]        = {          NULL,         NULL, Precedence::NONE };
     
-    rules[(u8)TokenType::TRUE]              = {          NULL,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::FALSE]             = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::TRUE]              = {  ParseLiteral,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::FALSE]             = {  ParseLiteral,         NULL, Precedence::NONE };
     rules[(u8)TokenType::AND]               = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::OR]                = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::FN]                = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::IF]                = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::ELSE]              = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::WHILE]             = {          NULL,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::RETURN]            = {          NULL,         NULL, Precedence::NONE };  
+    rules[(u8)TokenType::RETURN]            = {          NULL,         NULL, Precedence::NONE };
     
     rules[(u8)TokenType::ERROR]             = {          NULL,         NULL, Precedence::NONE };
 };
