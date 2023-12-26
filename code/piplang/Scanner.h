@@ -1,6 +1,8 @@
 #pragma once
 
-enum TokenType
+#include "../MesaCommon.h"
+
+enum class TokenType : u8
 {
     LESS,
     LESS_EQUAL,

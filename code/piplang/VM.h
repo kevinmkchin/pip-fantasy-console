@@ -8,6 +8,6 @@ enum class InterpretResult
     RUNTIME_ERROR
 };
 
-InterpretResult Interpret(const char *source);
+InterpretResult PipLangVM_RunScript(const char *source);
 
 
