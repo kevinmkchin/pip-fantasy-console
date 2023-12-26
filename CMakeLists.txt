@@ -61,6 +61,7 @@ set(SOURCE_FILES
 
     code/piplang/VM.h
     code/piplang/VM.cpp
+    code/piplang/PipLangCommon.h
     code/piplang/Scanner.h
     code/piplang/Scanner.cpp
     code/piplang/Compiler.h

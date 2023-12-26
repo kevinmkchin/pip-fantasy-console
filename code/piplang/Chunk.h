@@ -1,28 +1,8 @@
 #pragma once
 
-#include "../MesaCommon.h"
+#include "PipLangCommon.h"
 #include <vector>
 
-
-enum class OpCode : u8
-{
-    RETURN,
-    CONSTANT,
-    CONSTANT_LONG,
-    NEGATE,
-    ADD,
-    SUBTRACT,
-    MULTIPLY,
-    DIVIDE
-};
-
-struct TValue
-{
-    union
-    {
-        double real;
-    };
-};
 
 struct Chunk
 {

@@ -152,7 +152,7 @@ void Temp_ExecCurrentScript()
     //std::ostringstream profilerOutput;
 
     auto script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
-    Interpret(script.c_str());
+    PipLangVM_RunScript(script.c_str());
 
     //RunProfilerOnScript(script, profilerOutput);
     //PrintLog.Message(profilerOutput.str());

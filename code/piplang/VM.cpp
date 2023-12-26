@@ -49,8 +49,6 @@ void FreeVM()
 
 }
 
-#define DEBUG_TRACE_EXECUTION
-
 static InterpretResult Run()
 {
 #define VM_READ_BYTE() (*vm.ip++) // read byte and move pointer along
@@ -148,6 +146,14 @@ InterpretResult Interpret(const char *source)
     return result;
 }
 
+InterpretResult PipLangVM_RunScript(const char *source)
+{
+    InitVM();
+
+    return Interpret(source);
+
+    FreeVM();
+}
 
 //void PipLangRunSomeThings()
 //{
