@@ -21,10 +21,15 @@ void WriteChunk(Chunk *chunk, u8 byte, int line)
     chunk->bytecode->push_back(byte);
 }
 
-void WriteConstant(Chunk *chunk, TValue value, int line)
+u32 AddConstant(Chunk *chunk, TValue value)
 {
     chunk->constants->push_back(value);
-    u32 cindex = (u32)chunk->constants->size() - 1;
+    return (u32)chunk->constants->size() - 1;
+}
+
+void WriteConstant(Chunk *chunk, TValue value, int line)
+{
+    u32 cindex = AddConstant(chunk, value);
     if (cindex >= 256)
     {
         WriteChunk(chunk, (u8)OpCode::CONSTANT_LONG, line);

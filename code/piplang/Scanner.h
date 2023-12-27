@@ -19,6 +19,7 @@ enum class TokenType : u8
     LBRACE,
     RBRACE,
     COMMA,
+    DOT,
     PLUS,
     MINUS,
     ASTERISK,
@@ -37,6 +38,7 @@ enum class TokenType : u8
     ELSE,
     WHILE,
     RETURN,
+    MUT,
 
     ERROR,
     END_OF_FILE

@@ -13,4 +13,5 @@ struct Chunk
 void InitChunk(Chunk *chunk);
 void FreeChunk(Chunk *chunk);
 void WriteChunk(Chunk *chunk, u8 byte, int line);
+u32 AddConstant(Chunk *chunk, TValue value);
 void WriteConstant(Chunk *chunk, TValue value, int line);

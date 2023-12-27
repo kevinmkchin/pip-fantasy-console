@@ -112,7 +112,10 @@ IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 
 // statement_list : LBRACE statement* RBRACE
 
-// statement : IDENTIFIER (LSQBRACK expr RSQBRACK)? ASSIGN table_or_list_or_cond_or
+// declaration : IDENTIFIER (LSQBRACK expr RSQBRACK)? ASSIGN table_or_list_or_cond_or
+// declaration : statement
+
+// statement : 
 // statement : RETURN cond_or
 // statement : PRINT cond_or
 // statement : procedure_call

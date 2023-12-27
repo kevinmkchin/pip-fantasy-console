@@ -39,11 +39,13 @@ void InitVM()
 {
     Stack_Reset();
     InitHashMap(&vm.interned_strings);
+    InitHashMap(&vm.globals);
 }
 
 void FreeVM()
 {
     FreeHashMap(&vm.interned_strings);
+    FreeHashMap(&vm.globals);
 }
 
 static void RuntimeError(const char *format, ...)
@@ -128,8 +130,6 @@ static InterpretResult Run()
         {
 
             case OpCode::RETURN:
-                PrintTValue(Stack_Pop());
-                printf("\n");
                 return InterpretResult::OK;
 
             case OpCode::CONSTANT:
@@ -140,7 +140,44 @@ static InterpretResult Run()
                 Stack_Push(VM_READ_CONSTANT_LONG());
                 break;
 
+            case OpCode::POP: Stack_Pop(); break; // TODO(Kevin): destroy transient?
+
+            case OpCode::DEFINE_GLOBAL:
+            {
+                RCString *name = RCOBJ_AS_STRING(VM_READ_CONSTANT_LONG());
+                HashMapSet(&vm.globals, name, Stack_Peek(0));
+                Stack_Pop();
+                break;
+            }
+
+            case OpCode::GET_GLOBAL:
+            {
+                RCString *name = RCOBJ_AS_STRING(VM_READ_CONSTANT_LONG());
+                TValue value;
+                if (!HashMapGet(&vm.globals, name, &value))
+                {
+                    RuntimeError("Undefined variable '%s'.", name->text.c_str());
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                Stack_Push(value);
+                break;
+            }
+
+            case OpCode::SET_GLOBAL:
+            {
+                RCString *name = RCOBJ_AS_STRING(VM_READ_CONSTANT_LONG());
+                if (HashMapSet(&vm.globals, name, Stack_Peek(0)))
+                {
+                    HashMapDelete(&vm.globals, name);
+                    RuntimeError("Undefined variable '%s'.", name->text.c_str());
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                Stack_Pop();
+                break;
+            }
+
             case OpCode::NEGATE:
+            {
                 if (!IS_NUMBER(Stack_Peek(0)))
                 {
                     RuntimeError("Operand to NEGATE op must be a number value.");
@@ -148,8 +185,9 @@ static InterpretResult Run()
                 }
                 Stack_Push(TValue::Number(-AS_NUMBER(Stack_Pop())));
                 break;
-
+            }
             case OpCode::ADD: 
+            {
                 if (RCOBJ_IS_STRING(Stack_Peek(0)) && RCOBJ_IS_STRING(Stack_Peek(1)))
                 {
                     ConcatenateStrings();
@@ -166,6 +204,7 @@ static InterpretResult Run()
                     return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
+            }
             case OpCode::SUBTRACT: VM_BINARY_OP(NUMBER_VAL, -); break;
             case OpCode::MULTIPLY: VM_BINARY_OP(NUMBER_VAL, *); break;
             case OpCode::DIVIDE: VM_BINARY_OP(NUMBER_VAL, /); break;

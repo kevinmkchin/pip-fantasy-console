@@ -6,8 +6,8 @@
 #include <vector>
 
 
-#define DEBUG_TRACE_EXECUTION
 #define DEBUG_PRINT_CODE
+#define DEBUG_TRACE_EXECUTION
 
 struct RCObject;
 
@@ -27,6 +27,10 @@ enum class OpCode : u8
     RELOP_EQUAL,
     RELOP_GREATER,
     RELOP_LESSER,
+    POP,
+    DEFINE_GLOBAL,
+    GET_GLOBAL,
+    SET_GLOBAL
 };
 
 struct TValue

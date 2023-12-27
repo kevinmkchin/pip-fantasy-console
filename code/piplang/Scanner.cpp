@@ -155,6 +155,7 @@ static TokenType IdentifierType()
     if (word == "else") return TokenType::ELSE;
     if (word == "while") return TokenType::WHILE;
     if (word == "fn") return TokenType::FN;
+    if (word == "mut") return TokenType::MUT;
     if (word == "return") return TokenType::RETURN;
 
     return TokenType::IDENTIFIER;
@@ -187,7 +188,7 @@ Token ScanToken()
     case '[': return MakeToken(TokenType::LSQBRACK);
     case ']': return MakeToken(TokenType::RSQBRACK);
     case ',': return MakeToken(TokenType::COMMA);
-        //case '.': return MakeToken(TokenType::DOT);
+    case '.': return MakeToken(TokenType::DOT);
     case '-': return MakeToken(TokenType::MINUS);
     case '+': return MakeToken(TokenType::PLUS);
     case '/': return MakeToken(TokenType::FORWARDSLASH);
