@@ -282,22 +282,61 @@ static void BoolLiteral()
 }
 
 static u32 lastIdentifierConstantAdded = 0;
+static int lastLocalIndexResolved = -1;
 static void IdentifierConstant(Token *name)
 {
     lastIdentifierConstantAdded = AddConstant(CurrentChunk(), RCOBJ_VAL((RCObject *)CopyString(name->start, name->length)));
 }
 
+static bool IdentifiersEqual(Token *a, Token *b)
+{
+    if (a->length != b->length) return false;
+    return memcmp(a->start, b->start, a->length) == 0;
+}
+
+static int ResolveLocal(Compiler *compiler, Token *name)
+{
+    // Requires: statements have stack effect of zero (it does not increase or decrease stack size).
+    // Except for when local variables are initialized. This ensures that the n-th local variable will
+    // be located exactly at stack[n].
+    for (int i = compiler->localCount - 1; i >= 0; --i)
+    {
+        Local *local = &compiler->locals[i];
+        if (IdentifiersEqual(name, &local->name))
+        {
+            if (local->depth == -1)
+            {
+                Error("Can't read local variable in its own initializer");
+            }
+            return i;
+        }
+    }
+    return -1;
+}
+
 static void NamedVariable(Token name)
 {
-    IdentifierConstant(&name);
+    //IdentifierConstant(&name);
+
+    lastLocalIndexResolved = ResolveLocal(current, &name);
 
     if (!Check(TokenType::EQUAL))
     {
-        u32 arg = lastIdentifierConstantAdded;
-        EmitByte(OpCode::GET_GLOBAL);
-        EmitByte((u8)(arg >> 16));
-        EmitByte((u8)(arg >> 8));
-        EmitByte((u8)(arg));
+        if (lastLocalIndexResolved != -1)
+        {
+            u8 arg = (u8)lastLocalIndexResolved;
+            EmitByte(OpCode::GET_LOCAL);
+            EmitByte(arg);
+        }
+        else
+        {
+            IdentifierConstant(&name);
+            u32 arg = lastIdentifierConstantAdded;
+            EmitByte(OpCode::GET_GLOBAL);
+            EmitByte((u8)(arg >> 16));
+            EmitByte((u8)(arg >> 8));
+            EmitByte((u8)(arg));
+        }
     }
 }
 
@@ -315,7 +354,7 @@ static void Dot()
     if (!Check(TokenType::EQUAL))
     {
         //u32 arg = lastIdentifierConstantAdded;
-        //EmitByte(OpCode::GET_GLOBAL);
+        //EmitByte(OpCode::GET_MAP_ENTRY);
         //EmitByte((u8)(arg >> 16));
         //EmitByte((u8)(arg >> 8));
         //EmitByte((u8)(arg));
@@ -349,6 +388,19 @@ static void BeginScope()
 static void EndScope()
 {
     current->scopeDepth--;
+
+    while (current->localCount > 0 &&
+           current->locals[current->localCount - 1].depth > current->scopeDepth)
+    {
+        /* TODO 
+        When multiple local variables go out of scope at once, you get a series of OP_POP instructions that get interpreted one at a time. 
+        A simple optimization you could add is a specialized OP_POPN instruction that takes an operand for the number of slots to pop and 
+        pops them all at once.
+        */
+        EmitByte(OpCode::POP);
+        current->localCount--;
+    }
+    // TODO could handle transiency here as well
 }
 
 static void Statement()
@@ -364,13 +416,24 @@ static void Statement()
         Expression();
         if (Match(TokenType::EQUAL))
         {
-            u32 arg = lastIdentifierConstantAdded;
-            Expression();
+            if (lastLocalIndexResolved != -1)
+            {
+                u8 arg = (u8)lastLocalIndexResolved;
+                Expression();
 
-            EmitByte(OpCode::SET_GLOBAL);
-            EmitByte((u8)(arg >> 16));
-            EmitByte((u8)(arg >> 8));
-            EmitByte((u8)(arg));
+                EmitByte(OpCode::SET_LOCAL);
+                EmitByte(arg);
+            }
+            else
+            {
+                u32 arg = lastIdentifierConstantAdded;
+                Expression();
+
+                EmitByte(OpCode::SET_GLOBAL);
+                EmitByte((u8)(arg >> 16));
+                EmitByte((u8)(arg >> 8));
+                EmitByte((u8)(arg));
+            }
         }
         else
         {
@@ -379,14 +442,62 @@ static void Statement()
     }
 }
 
+// Add local variable to the compiler's list of variables for the current scope
+static void AddLocal(Token name)
+{
+    if (current->localCount == 256)
+    {
+        Error("Functions can only declare 256 local variables. Too many local variables in function.");
+        return;
+    }
+
+    Local *local = &current->locals[current->localCount++];
+    local->name = name;
+    local->depth = -1;
+}
+
+// Record the existence of a local variable
+static void DeclareLocalVariable()
+{
+    if (current->scopeDepth == 0) return;
+
+    Token *name = &parser.previous;
+
+    for (int i = current->localCount - 1; i >= 0; --i)
+    {
+        Local *local = &current->locals[i];
+        if (local->depth != -1 && local->depth < current->scopeDepth)
+            break;
+        if (IdentifiersEqual(name, &local->name))
+            Error("Already a variable with this name in this scope.");
+    }
+
+    AddLocal(*name);
+}
+
 static void ParseVariable(const char * errormsg)
 {
     Eat(TokenType::IDENTIFIER, errormsg);
+
+    DeclareLocalVariable();
+    if (current->scopeDepth > 0) return;
+
     IdentifierConstant(&parser.previous);
+}
+
+static void MarkLocalAsInitialized()
+{
+    current->locals[current->localCount - 1].depth = current->scopeDepth;
 }
 
 static void DefineVariable(u32 global)
 {
+    if (current->scopeDepth > 0)
+    {
+        MarkLocalAsInitialized();
+        return;
+    }
+
     // TODO(Kevin): Optimize by using LONG op if first 24 bits are non zero or just use u8 and limit max global varibles to 256
     EmitByte(OpCode::DEFINE_GLOBAL);
     EmitByte((u8)(global >> 16));

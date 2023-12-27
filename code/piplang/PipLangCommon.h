@@ -30,7 +30,9 @@ enum class OpCode : u8
     POP,
     DEFINE_GLOBAL,
     GET_GLOBAL,
-    SET_GLOBAL
+    SET_GLOBAL,
+    GET_LOCAL,
+    SET_LOCAL
 };
 
 struct TValue
