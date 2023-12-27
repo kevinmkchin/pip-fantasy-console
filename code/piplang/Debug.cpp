@@ -1,6 +1,17 @@
 #include "Debug.h"
 
 #include "Chunk.h"
+#include "Object.h"
+
+void PrintRCObject(TValue value)
+{
+    switch (RCOBJ_TYPE(value))
+    {
+        case RCObject::STRING:
+            printf("%s", RCOBJ_AS_STRING(value)->text.c_str());
+            break;
+    }
+}
 
 void PrintTValue(TValue value)
 {
@@ -11,6 +22,9 @@ void PrintTValue(TValue value)
             break;
         case TValue::REAL:
             printf("%g", AS_NUMBER(value));
+            break;
+        case TValue::RCOBJ:
+            PrintRCObject(value); 
             break;
     }
 }
@@ -74,9 +88,9 @@ int DisassembleInstruction(Chunk *chunk, int offset)
         return Debug_SimpleInstruction("MULTIPLY", offset);
     case OpCode::DIVIDE:
         return Debug_SimpleInstruction("DIVIDE", offset);
-    case OpCode::TRUE:
+    case OpCode::OP_TRUE:
         return Debug_SimpleInstruction("TRUE", offset);
-    case OpCode::FALSE:
+    case OpCode::OP_FALSE:
         return Debug_SimpleInstruction("FALSE", offset);
     case OpCode::LOGICAL_NOT:
         return Debug_SimpleInstruction("LOGICAL_NOT", offset);

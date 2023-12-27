@@ -149,7 +149,7 @@ IDENTIFIER["IDENTIFIER"] == IDENTIFIER.IDENTIFIER
 typedef size_t PID;
 #define PID_MAX 256
 
-struct TValue
+struct MesaTValue
 {
     enum class ValueType
     {
@@ -208,23 +208,23 @@ struct MesaScript_List
 {
     MesaGCObject base;
 
-    std::vector<TValue> list;
+    std::vector<MesaTValue> list;
 
     MesaScript_List()
         : base(MesaGCObject::GCObjectType::List)
     {}
 
     /// Simply returns the value at index. Does not increment reference count.
-    TValue AccessListEntry(const i64 index)
+    MesaTValue AccessListEntry(const i64 index)
     {
         return list.at(index);
     }
 
     /// Append value to end of list. Increments reference count.
-    void Append(const TValue value);
+    void Append(const MesaTValue value);
 
     /// Replace the value at the given index.
-    void ReplaceListEntryAtIndex(const i64 index, const TValue value);
+    void ReplaceListEntryAtIndex(const i64 index, const MesaTValue value);
 
     /// Should only be called before deletion.
     void DecrementReferenceCountOfEveryListEntry();
@@ -240,7 +240,7 @@ struct MesaScript_Table
 {
     MesaGCObject base;
 
-    std::unordered_map<std::string, TValue> table;
+    std::unordered_map<std::string, MesaTValue> table;
 
     MesaScript_Table()
         : base(MesaGCObject::GCObjectType::Table)
@@ -249,13 +249,13 @@ struct MesaScript_Table
     bool Contains(const std::string& key);
 
     /// Simply returns the value at key. Does not increment reference count.
-    TValue AccessMapEntry(const std::string& key);
+    MesaTValue AccessMapEntry(const std::string& key);
 
     /// Create a new key value pair entry. Increments reference count.
-    void CreateNewMapEntry(const std::string& key, const TValue value);
+    void CreateNewMapEntry(const std::string& key, const MesaTValue value);
 
     /// Assign new value to existing entry perform proper reference counting.
-    void ReplaceMapEntryAtKey(const std::string& key, const TValue value);
+    void ReplaceMapEntryAtKey(const std::string& key, const MesaTValue value);
 
     /// Should only be called before deletion.
     void DecrementReferenceCountOfEveryMapEntry();
@@ -277,7 +277,7 @@ void SetEnvironmentScope(MesaScript_Table *scriptScope);
 void ClearEnvironmentScope();
 
 void CallFunction_Parameterless(const char* functionIdentifier);
-void CallFunction_OneParam(const char* functionIdentifier, TValue arg0);
+void CallFunction_OneParam(const char* functionIdentifier, MesaTValue arg0);
 
 void InitializeLanguageCompilerAndRuntime();
 

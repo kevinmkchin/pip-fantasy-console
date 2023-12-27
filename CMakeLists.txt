@@ -68,6 +68,8 @@ set(SOURCE_FILES
     code/piplang/Compiler.cpp
     code/piplang/Chunk.h
     code/piplang/Chunk.cpp
+    code/piplang/Object.h
+    code/piplang/Object.cpp
     code/piplang/Debug.h
     code/piplang/Debug.cpp
 )

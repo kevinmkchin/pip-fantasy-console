@@ -21,17 +21,17 @@ void TemporaryGameInit()
         doOnce = true; // TODO(Kevin): do something more robust like what should actually happen to these singletons on restart?
 
         MesaScript_Table *input = EmplaceMapInGlobalScope("input");
-        TValue left;
-        left.type = TValue::ValueType::Boolean;
+        MesaTValue left;
+        left.type = MesaTValue::ValueType::Boolean;
         left.boolValue = false;
-        TValue right;
-        right.type = TValue::ValueType::Boolean;
+        MesaTValue right;
+        right.type = MesaTValue::ValueType::Boolean;
         right.boolValue = false;
-        TValue up;
-        up.type = TValue::ValueType::Boolean;
+        MesaTValue up;
+        up.type = MesaTValue::ValueType::Boolean;
         up.boolValue = false;
-        TValue down;
-        down.type = TValue::ValueType::Boolean;
+        MesaTValue down;
+        down.type = MesaTValue::ValueType::Boolean;
         down.boolValue = false;
         input->CreateNewMapEntry("left", left);
         input->CreateNewMapEntry("right", right);
@@ -39,12 +39,12 @@ void TemporaryGameInit()
         input->CreateNewMapEntry("down", down);
 
         MesaScript_Table *time = EmplaceMapInGlobalScope("time");
-        TValue deltaTime;
-        deltaTime.type = TValue::ValueType::Real;
+        MesaTValue deltaTime;
+        deltaTime.type = MesaTValue::ValueType::Real;
         deltaTime.realValue = Time.deltaTime;
         time->CreateNewMapEntry("dt", deltaTime);
-        TValue timeSinceStart;
-        timeSinceStart.type = TValue::ValueType::Real;
+        MesaTValue timeSinceStart;
+        timeSinceStart.type = MesaTValue::ValueType::Real;
         timeSinceStart.realValue = Time.timeSinceStart;
         time->CreateNewMapEntry("timeSinceStart", timeSinceStart);
     }
@@ -154,16 +154,16 @@ void TemporaryGameLoop()
 // bool Collide(EntityInstance a, EntityInstance b)
 // {
 //     MesaScript_Table *aMap = AccessMesaScriptTable(a.selfMapId);
-//     TValue xtv = aMap->AccessMapEntry("x");
-//     TValue ytv = aMap->AccessMapEntry("y");
-//     float ax = float(xtv.type == TValue::ValueType::Integer ? xtv.integerValue : xtv.realValue);
-//     float ay = float(ytv.type == TValue::ValueType::Integer ? ytv.integerValue : ytv.realValue);
+//     MesaTValue xtv = aMap->AccessMapEntry("x");
+//     MesaTValue ytv = aMap->AccessMapEntry("y");
+//     float ax = float(xtv.type == MesaTValue::ValueType::Integer ? xtv.integerValue : xtv.realValue);
+//     float ay = float(ytv.type == MesaTValue::ValueType::Integer ? ytv.integerValue : ytv.realValue);
 
 //     MesaScript_Table *bMap = AccessMesaScriptTable(b.selfMapId);
 //     xtv = bMap->AccessMapEntry("x");
 //     ytv = bMap->AccessMapEntry("y");
-//     float bx = float(xtv.type == TValue::ValueType::Integer ? xtv.integerValue : xtv.realValue);
-//     float by = float(ytv.type == TValue::ValueType::Integer ? ytv.integerValue : ytv.realValue);
+//     float bx = float(xtv.type == MesaTValue::ValueType::Integer ? xtv.integerValue : xtv.realValue);
+//     float by = float(ytv.type == MesaTValue::ValueType::Integer ? ytv.integerValue : ytv.realValue);
 
 //     vec2 min1;
 //     min1.x = ax;//collider1.collider_position.x + ((float) -collider1.collision_neg.x);
@@ -213,8 +213,8 @@ void TemporaryGameLoop()
     //     EntityInstance entity = activeSpace.aliveUpdateAndDraw.at(i);
 
     //     SetEnvironmentScope(entity.assetScriptScope);
-    //     TValue self;
-    //     self.type = TValue::ValueType::GCObject;
+    //     MesaTValue self;
+    //     self.type = MesaTValue::ValueType::GCObject;
     //     self.GCReferenceObject = entity.selfMapId;
     //     CallFunction_OneParam("Update", self);
     //     ClearEnvironmentScope();
@@ -234,8 +234,8 @@ void TemporaryGameLoop()
     //             // a.OnCollide(b)
     //             // b.OnCollide(a)
     //             SetEnvironmentScope(a.assetScriptScope);
-    //             TValue self;
-    //             self.type = TValue::ValueType::GCObject;
+    //             MesaTValue self;
+    //             self.type = MesaTValue::ValueType::GCObject;
     //             self.GCReferenceObject = a.selfMapId;
     //             CallFunction_OneParam("OnCollide", self);
     //             ClearEnvironmentScope();
@@ -268,8 +268,8 @@ void TemporaryGameLoop()
 
     //     e.selfMapId = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
 
-    //     TValue tvalueInteger;
-    //     tvalueInteger.type = TValue::ValueType::Integer;
+    //     MesaTValue tvalueInteger;
+    //     tvalueInteger.type = MesaTValue::ValueType::Integer;
     //     tvalueInteger.integerValue = inst.spaceX;
     //     AccessMesaScriptTable(e.selfMapId)->CreateNewMapEntry("x", tvalueInteger);
     //     tvalueInteger.integerValue = inst.spaceY;

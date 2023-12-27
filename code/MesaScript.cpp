@@ -38,7 +38,7 @@ struct MesaScript_ScriptEnvironment
     }
 
     // Note(Kevin): This shouldn't perform any Contains checks. Just throw exception if doesn't exist.
-    TValue AccessAtKeyInAccessibleScopes(const std::string &key)
+    MesaTValue AccessAtKeyInAccessibleScopes(const std::string &key)
     {
         if (scopes.back()->Contains(key))
         {
@@ -51,7 +51,7 @@ struct MesaScript_ScriptEnvironment
     }
 
     // Note(Kevin): This shouldn't perform any Contains checks. Just throw exception if doesn't exist.
-    void ReplaceAtKeyInAccessibleScopes(const std::string &key, const TValue value)
+    void ReplaceAtKeyInAccessibleScopes(const std::string &key, const MesaTValue value)
     {
         if (scopes.back()->Contains(key))
         {
@@ -63,7 +63,7 @@ struct MesaScript_ScriptEnvironment
         }
     }
 
-    void EmplaceNewElement(std::string key, TValue value)
+    void EmplaceNewElement(std::string key, MesaTValue value)
     {
         scopes.back()->CreateNewMapEntry(key, value);
     }
@@ -160,7 +160,7 @@ struct MesaScriptRuntimeObject
 static MesaScriptRuntimeObject __MSRuntime;
 static MemoryLinearBuffer      __ASTBuffer;
 
-static TValue returnValue;
+static MesaTValue returnValue;
 static bool returnValueSetFlag = false;
 static bool returnRequestedFlag = false;
 
@@ -328,9 +328,9 @@ i64 RequestNewGCObject(MesaGCObject::GCObjectType gcObjectType)
     return gcobj->selfId;
 }
 
-void MesaScript_List::Append(const TValue value)
+void MesaScript_List::Append(const MesaTValue value)
 {
-    if (value.type == TValue::ValueType::GCObject)
+    if (value.type == MesaTValue::ValueType::GCObject)
     {
         IncrementReferenceGCObject(value.GCReferenceObject);
     }
@@ -338,12 +338,12 @@ void MesaScript_List::Append(const TValue value)
     list.push_back(value);
 }
 
-void MesaScript_List::ReplaceListEntryAtIndex(const i64 index, const TValue value)
+void MesaScript_List::ReplaceListEntryAtIndex(const i64 index, const MesaTValue value)
 {
-    TValue existingValue = list.at(index);
-    if (existingValue.type == TValue::ValueType::GCObject)
+    MesaTValue existingValue = list.at(index);
+    if (existingValue.type == MesaTValue::ValueType::GCObject)
     {
-        if (value.type == TValue::ValueType::GCObject && existingValue.GCReferenceObject == value.GCReferenceObject)
+        if (value.type == MesaTValue::ValueType::GCObject && existingValue.GCReferenceObject == value.GCReferenceObject)
         {
             return;
         }
@@ -353,7 +353,7 @@ void MesaScript_List::ReplaceListEntryAtIndex(const i64 index, const TValue valu
         }
     }
 
-    if (value.type == TValue::ValueType::GCObject)
+    if (value.type == MesaTValue::ValueType::GCObject)
     {
         IncrementReferenceGCObject(value.GCReferenceObject);        
     }
@@ -365,8 +365,8 @@ void MesaScript_List::DecrementReferenceCountOfEveryListEntry()
 {
     for (int i = 0, size = (int)list.size(); i < size; ++i)
     {
-        TValue v = list.at(i);
-        if (v.type == TValue::ValueType::GCObject)
+        MesaTValue v = list.at(i);
+        if (v.type == MesaTValue::ValueType::GCObject)
         {
             ReleaseReferenceGCObject(v.GCReferenceObject);
         }
@@ -382,17 +382,17 @@ bool MesaScript_Table::Contains(const std::string &key)
     return v;
 }
 
-TValue MesaScript_Table::AccessMapEntry(const std::string &key)
+MesaTValue MesaScript_Table::AccessMapEntry(const std::string &key)
 {
     PLProfilerBegin(PLPROFILER_HASHING);
-    TValue value = table.at(key);
+    MesaTValue value = table.at(key);
     PLProfilerEnd(PLPROFILER_HASHING);
     return value;
 }
 
-void MesaScript_Table::CreateNewMapEntry(const std::string& key, const TValue value)
+void MesaScript_Table::CreateNewMapEntry(const std::string& key, const MesaTValue value)
 {
-    if (value.type == TValue::ValueType::GCObject)
+    if (value.type == MesaTValue::ValueType::GCObject)
     {
         IncrementReferenceGCObject(value.GCReferenceObject);
     }
@@ -401,14 +401,14 @@ void MesaScript_Table::CreateNewMapEntry(const std::string& key, const TValue va
     PLProfilerEnd(PLPROFILER_HASHING);
 }
 
-void MesaScript_Table::ReplaceMapEntryAtKey(const std::string& key, const TValue value)
+void MesaScript_Table::ReplaceMapEntryAtKey(const std::string& key, const MesaTValue value)
 {
     PLProfilerBegin(PLPROFILER_HASHING);
-    TValue existingValue = table.at(key);
+    MesaTValue existingValue = table.at(key);
     PLProfilerEnd(PLPROFILER_HASHING);
-    if (existingValue.type == TValue::ValueType::GCObject)
+    if (existingValue.type == MesaTValue::ValueType::GCObject)
     {
-        if (value.type == TValue::ValueType::GCObject && existingValue.GCReferenceObject == value.GCReferenceObject)
+        if (value.type == MesaTValue::ValueType::GCObject && existingValue.GCReferenceObject == value.GCReferenceObject)
         {
             return;
         }
@@ -418,7 +418,7 @@ void MesaScript_Table::ReplaceMapEntryAtKey(const std::string& key, const TValue
         }
     }
 
-    if (value.type == TValue::ValueType::GCObject)
+    if (value.type == MesaTValue::ValueType::GCObject)
     {
         IncrementReferenceGCObject(value.GCReferenceObject);        
     }
@@ -432,8 +432,8 @@ void MesaScript_Table::DecrementReferenceCountOfEveryMapEntry()
 {
     for (const auto& pair : table)
     {
-        TValue v = pair.second;
-        if (v.type == TValue::ValueType::GCObject)
+        MesaTValue v = pair.second;
+        if (v.type == MesaTValue::ValueType::GCObject)
         {
             ReleaseReferenceGCObject(v.GCReferenceObject);
         }
@@ -447,8 +447,8 @@ int ActiveScopeDepthIndex()
 
 MesaScript_Table* EmplaceMapInGlobalScope(const std::string& id)
 {
-    TValue v;
-    v.type = TValue::ValueType::GCObject;
+    MesaTValue v;
+    v.type = MesaTValue::ValueType::GCObject;
     v.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
     __MSRuntime.globalEnv.CreateNewMapEntry(id, v);
     return (MesaScript_Table*) GCOBJECTS_DATABASE.at(v.GCReferenceObject);
@@ -456,7 +456,7 @@ MesaScript_Table* EmplaceMapInGlobalScope(const std::string& id)
 
 MesaScript_Table* AccessMapInGlobalScope(const std::string& id)
 {
-    TValue v = __MSRuntime.globalEnv.AccessMapEntry(id);
+    MesaTValue v = __MSRuntime.globalEnv.AccessMapEntry(id);
     return (MesaScript_Table*) GCOBJECTS_DATABASE.at(v.GCReferenceObject);
 }
 
@@ -860,9 +860,9 @@ public:
 class ASTSimplyTValue : public ASTNode
 {
 public:
-    ASTSimplyTValue(TValue v);
+    ASTSimplyTValue(MesaTValue v);
 
-    TValue value;
+    MesaTValue value;
 };
 
 enum class BinOp
@@ -1000,7 +1000,7 @@ ASTBranch::ASTBranch(ASTNode* condition, ASTNode* if_case, ASTNode* else_case)
         , else_body(else_case)
 {}
 
-ASTSimplyTValue::ASTSimplyTValue(TValue v)
+ASTSimplyTValue::ASTSimplyTValue(MesaTValue v)
     : ASTNode(ASTNodeType::SIMPLYTVALUE)
     , value(v)
 {}
@@ -1084,9 +1084,9 @@ PID Parser::procedure_decl()
 
     PROCEDURES_DATABASE.At((unsigned int)createdProcedureId).body = statement_list();
 
-    TValue functionVariable;
+    MesaTValue functionVariable;
     functionVariable.procedureId = createdProcedureId;
-    functionVariable.type = TValue::ValueType::Function;
+    functionVariable.type = MesaTValue::ValueType::Function;
 
     if (__MSRuntime.activeEnv.KeyExistsTopLevel(procedureNameToken.text))
     {
@@ -1532,15 +1532,15 @@ void Parser::eat(TokenType tpe)
 static void
 InterpretStatementList(ASTNode* statements);
 
-static TValue
+static MesaTValue
 InterpretProcedureCall(ASTProcedureCall* procedureCall);
 
-static TValue
+static MesaTValue
 InterpretExpression(ASTNode* ast)
 {
     // PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM::INTERPRET_EXPRESSION);
 
-    TValue result;
+    MesaTValue result;
 
     switch(ast->GetType())
     {
@@ -1559,36 +1559,36 @@ InterpretExpression(ASTNode* ast)
             auto ln = v->left;
             auto rn = v->right;
             // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
-            TValue l = InterpretExpression(ln);
-            TValue r = InterpretExpression(rn);
+            MesaTValue l = InterpretExpression(ln);
+            MesaTValue r = InterpretExpression(rn);
             // both integer, then integer
             // both float, then float
             // one int, one float, then float
             // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
-            TValue::ValueType retValType = TValue::ValueType::Integer;
+            MesaTValue::ValueType retValType = MesaTValue::ValueType::Integer;
             switch (v->op)
             {
                 case BinOp::Add:
                 {
-                    if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
+                    if (l.type == MesaTValue::ValueType::Integer && r.type == MesaTValue::ValueType::Integer)
                     {
                         result.integerValue = l.integerValue + r.integerValue;
-                        result.type = TValue::ValueType::Integer;
+                        result.type = MesaTValue::ValueType::Integer;
                     }
-                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
+                    else if (l.type == MesaTValue::ValueType::Real && r.type == MesaTValue::ValueType::Real)
                     {
                         result.realValue = l.realValue + r.realValue;
-                        result.type = TValue::ValueType::Real;
+                        result.type = MesaTValue::ValueType::Real;
                     }
-                    else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
+                    else if (l.type == MesaTValue::ValueType::Integer && r.type == MesaTValue::ValueType::Real)
                     {
                         result.realValue = l.integerValue + r.realValue;
-                        result.type = TValue::ValueType::Real;
+                        result.type = MesaTValue::ValueType::Real;
                     }
-                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
+                    else if (l.type == MesaTValue::ValueType::Real && r.type == MesaTValue::ValueType::Integer)
                     {
                         result.realValue = l.realValue + r.integerValue;
-                        result.type = TValue::ValueType::Real;
+                        result.type = MesaTValue::ValueType::Real;
                     }
                     else
                     {
@@ -1598,25 +1598,25 @@ InterpretExpression(ASTNode* ast)
                 }
                 case BinOp::Sub:
                 {
-                    if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
+                    if (l.type == MesaTValue::ValueType::Integer && r.type == MesaTValue::ValueType::Integer)
                     {
                         result.integerValue = l.integerValue - r.integerValue;
-                        result.type = TValue::ValueType::Integer;
+                        result.type = MesaTValue::ValueType::Integer;
                     }
-                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
+                    else if (l.type == MesaTValue::ValueType::Real && r.type == MesaTValue::ValueType::Real)
                     {
                         result.realValue = l.realValue - r.realValue;
-                        result.type = TValue::ValueType::Real;
+                        result.type = MesaTValue::ValueType::Real;
                     }
-                    else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
+                    else if (l.type == MesaTValue::ValueType::Integer && r.type == MesaTValue::ValueType::Real)
                     {
                         result.realValue = l.integerValue - r.realValue;
-                        result.type = TValue::ValueType::Real;
+                        result.type = MesaTValue::ValueType::Real;
                     }
-                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
+                    else if (l.type == MesaTValue::ValueType::Real && r.type == MesaTValue::ValueType::Integer)
                     {
                         result.realValue = l.realValue - r.integerValue;
-                        result.type = TValue::ValueType::Real;
+                        result.type = MesaTValue::ValueType::Real;
                     }
                     else
                     {
@@ -1626,25 +1626,25 @@ InterpretExpression(ASTNode* ast)
                 }
                 case BinOp::Mul:
                 {
-                    if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
+                    if (l.type == MesaTValue::ValueType::Integer && r.type == MesaTValue::ValueType::Integer)
                     {
                         result.integerValue = l.integerValue * r.integerValue;
-                        result.type = TValue::ValueType::Integer;
+                        result.type = MesaTValue::ValueType::Integer;
                     }
-                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
+                    else if (l.type == MesaTValue::ValueType::Real && r.type == MesaTValue::ValueType::Real)
                     {
                         result.realValue = l.realValue * r.realValue;
-                        result.type = TValue::ValueType::Real;
+                        result.type = MesaTValue::ValueType::Real;
                     }
-                    else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
+                    else if (l.type == MesaTValue::ValueType::Integer && r.type == MesaTValue::ValueType::Real)
                     {
                         result.realValue = l.integerValue * r.realValue;
-                        result.type = TValue::ValueType::Real;
+                        result.type = MesaTValue::ValueType::Real;
                     }
-                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
+                    else if (l.type == MesaTValue::ValueType::Real && r.type == MesaTValue::ValueType::Integer)
                     {
                         result.realValue = l.realValue * r.integerValue;
-                        result.type = TValue::ValueType::Real;
+                        result.type = MesaTValue::ValueType::Real;
                     }
                     else
                     {
@@ -1654,25 +1654,25 @@ InterpretExpression(ASTNode* ast)
                 }
                 case BinOp::Div:
                 {
-                    if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Integer)
+                    if (l.type == MesaTValue::ValueType::Integer && r.type == MesaTValue::ValueType::Integer)
                     {
                         result.integerValue = l.integerValue / r.integerValue;
-                        result.type = TValue::ValueType::Integer;
+                        result.type = MesaTValue::ValueType::Integer;
                     }
-                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Real)
+                    else if (l.type == MesaTValue::ValueType::Real && r.type == MesaTValue::ValueType::Real)
                     {
                         result.realValue = l.realValue / r.realValue;
-                        result.type = TValue::ValueType::Real;
+                        result.type = MesaTValue::ValueType::Real;
                     }
-                    else if (l.type == TValue::ValueType::Integer && r.type == TValue::ValueType::Real)
+                    else if (l.type == MesaTValue::ValueType::Integer && r.type == MesaTValue::ValueType::Real)
                     {
                         result.realValue = l.integerValue / r.realValue;
-                        result.type = TValue::ValueType::Real;
+                        result.type = MesaTValue::ValueType::Real;
                     }
-                    else if (l.type == TValue::ValueType::Real && r.type == TValue::ValueType::Integer)
+                    else if (l.type == MesaTValue::ValueType::Real && r.type == MesaTValue::ValueType::Integer)
                     {
                         result.realValue = l.realValue / r.integerValue;
-                        result.type = TValue::ValueType::Real;
+                        result.type = MesaTValue::ValueType::Real;
                     }
                     else
                     {
@@ -1697,62 +1697,62 @@ InterpretExpression(ASTNode* ast)
             auto ln = v->left;
             auto rn = v->right;
             // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
-            TValue l = InterpretExpression(ln);
-            TValue r = InterpretExpression(rn);
+            MesaTValue l = InterpretExpression(ln);
+            MesaTValue r = InterpretExpression(rn);
             // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
-            if (l.type == TValue::ValueType::Integer)
+            if (l.type == MesaTValue::ValueType::Integer)
             {
                 l.realValue = double(l.integerValue);
-                l.type = TValue::ValueType::Real;
+                l.type = MesaTValue::ValueType::Real;
             }
-            else if (l.type == TValue::ValueType::Boolean)
+            else if (l.type == MesaTValue::ValueType::Boolean)
             {
                 l.realValue = l.boolValue ? 1.0 : 0.0;
-                l.type = TValue::ValueType::Real;
+                l.type = MesaTValue::ValueType::Real;
             }
-            if (r.type == TValue::ValueType::Integer)
+            if (r.type == MesaTValue::ValueType::Integer)
             {
                 r.realValue = double(r.integerValue);
-                r.type = TValue::ValueType::Real;
+                r.type = MesaTValue::ValueType::Real;
             }
-            else if (r.type == TValue::ValueType::Boolean)
+            else if (r.type == MesaTValue::ValueType::Boolean)
             {
                 r.realValue = r.boolValue ? 1.0 : 0.0;
-                r.type = TValue::ValueType::Real;
+                r.type = MesaTValue::ValueType::Real;
             }
             switch (v->op)
             {
                 case RelOp::LT:
                     result.boolValue = l.realValue < r.realValue;
-                    result.type = TValue::ValueType::Boolean;
+                    result.type = MesaTValue::ValueType::Boolean;
                     break; 
                 case RelOp::LE:
                     result.boolValue = l.realValue <= r.realValue;
-                    result.type = TValue::ValueType::Boolean;
+                    result.type = MesaTValue::ValueType::Boolean;
                     break;
                 case RelOp::GT:
                     result.boolValue = l.realValue > r.realValue;
-                    result.type = TValue::ValueType::Boolean;
+                    result.type = MesaTValue::ValueType::Boolean;
                     break;
                 case RelOp::GE:
                     result.boolValue = l.realValue >= r.realValue;
-                    result.type = TValue::ValueType::Boolean;
+                    result.type = MesaTValue::ValueType::Boolean;
                     break;
                 case RelOp::EQ:
                     result.boolValue = l.realValue == r.realValue;
-                    result.type = TValue::ValueType::Boolean;
+                    result.type = MesaTValue::ValueType::Boolean;
                     break;
                 case RelOp::NEQ:
                     result.boolValue = l.realValue != r.realValue;
-                    result.type = TValue::ValueType::Boolean;
+                    result.type = MesaTValue::ValueType::Boolean;
                     break;
                 case RelOp::AND:
                     result.boolValue = (l.realValue != 0.0 && r.realValue != 0.0);
-                    result.type = TValue::ValueType::Boolean;
+                    result.type = MesaTValue::ValueType::Boolean;
                     break;
                 case RelOp::OR:
                     result.boolValue = (l.realValue != 0.0 || r.realValue != 0.0);
-                    result.type = TValue::ValueType::Boolean;
+                    result.type = MesaTValue::ValueType::Boolean;
                     break;
                 default:
                     SendRuntimeException("Unknown RELOP expression.");
@@ -1796,7 +1796,7 @@ InterpretExpression(ASTNode* ast)
             auto indexTValue = InterpretExpression(v->indexExpression);
 
             // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
-            ASSERT(indexTValue.type == TValue::ValueType::Integer || indexTValue.type == TValue::ValueType::GCObject);
+            ASSERT(indexTValue.type == MesaTValue::ValueType::Integer || indexTValue.type == MesaTValue::ValueType::GCObject);
 
             ASSERT(v->listOrMapVariableName->GetType() == ASTNodeType::VARIABLE);
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
@@ -1804,14 +1804,14 @@ InterpretExpression(ASTNode* ast)
             i64 gcObjectId = 0;
             if (__MSRuntime.activeEnv.KeyExistsInAccessibleScopes(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = __MSRuntime.activeEnv.AccessAtKeyInAccessibleScopes(listOrMapVariableKey);
-                ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
+                MesaTValue listOrMapGCObj = __MSRuntime.activeEnv.AccessAtKeyInAccessibleScopes(listOrMapVariableKey);
+                ASSERT(listOrMapGCObj.type == MesaTValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
             else if (__MSRuntime.globalEnv.Contains(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = __MSRuntime.globalEnv.AccessMapEntry(listOrMapVariableKey);
-                ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
+                MesaTValue listOrMapGCObj = __MSRuntime.globalEnv.AccessMapEntry(listOrMapVariableKey);
+                ASSERT(listOrMapGCObj.type == MesaTValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
             else
@@ -1824,7 +1824,7 @@ InterpretExpression(ASTNode* ast)
             ASSERT(dataStructureType == MesaGCObject::GCObjectType::List || dataStructureType == MesaGCObject::GCObjectType::Table);
             if (dataStructureType == MesaGCObject::GCObjectType::List)
             {
-                ASSERT(indexTValue.type == TValue::ValueType::Integer);
+                ASSERT(indexTValue.type == MesaTValue::ValueType::Integer);
                 const i64 listIndex = indexTValue.integerValue;
                 // todo assert integer is non negative, valid, etc.
                 MesaScript_List* list = AccessMesaScriptList(gcObjectId);
@@ -1832,7 +1832,7 @@ InterpretExpression(ASTNode* ast)
             }
             else
             {
-                ASSERT(indexTValue.type == TValue::ValueType::GCObject);
+                ASSERT(indexTValue.type == MesaTValue::ValueType::GCObject);
                 ASSERT(GetTypeOfGCObject(indexTValue.GCReferenceObject) == MesaGCObject::GCObjectType::String);
                 const std::string& tableKey = AccessMesaScriptString(indexTValue.GCReferenceObject)->text;
 
@@ -1848,7 +1848,7 @@ InterpretExpression(ASTNode* ast)
         {
             //auto v = static_cast<CreateNewMapEntry*>(ast);
             // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
-            result.type = TValue::ValueType::GCObject;
+            result.type = MesaTValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::Table);
             // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             break;
@@ -1858,7 +1858,7 @@ InterpretExpression(ASTNode* ast)
         {
             // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             auto v = static_cast<ASTCreateList*>(ast);
-            result.type = TValue::ValueType::GCObject;
+            result.type = MesaTValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::List);
             MesaScript_List* mesaList = AccessMesaScriptList(result.GCReferenceObject);
             __MSRuntime.activeEnv.InsertTransientObject(result.GCReferenceObject, 0);
@@ -1866,7 +1866,7 @@ InterpretExpression(ASTNode* ast)
             for (int i = 0; i < v->listInitializingElements.size(); ++i)
             {
                 ASTNode* elementExpr = v->listInitializingElements[i];
-                TValue elementValue = InterpretExpression(elementExpr);
+                MesaTValue elementValue = InterpretExpression(elementExpr);
                 // Return value gets captured here too
                 mesaList->Append(elementValue);
             }
@@ -1880,12 +1880,12 @@ InterpretExpression(ASTNode* ast)
             if (v->isInteger)
             {
                 result.integerValue = i64(v->value);
-                result.type = TValue::ValueType::Integer;
+                result.type = MesaTValue::ValueType::Integer;
             }
             else
             {
                 result.realValue = v->value;
-                result.type = TValue::ValueType::Real;
+                result.type = MesaTValue::ValueType::Real;
             }
             // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             break;
@@ -1894,7 +1894,7 @@ InterpretExpression(ASTNode* ast)
         {
             // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             auto v = static_cast<ASTStringTerminal*>(ast);
-            result.type = TValue::ValueType::GCObject;
+            result.type = MesaTValue::ValueType::GCObject;
             result.GCReferenceObject = RequestNewGCObject(MesaGCObject::GCObjectType::String);
             MesaScript_String *createdString = AccessMesaScriptString(result.GCReferenceObject);
             createdString->text = v->value;
@@ -1907,7 +1907,7 @@ InterpretExpression(ASTNode* ast)
             // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
             auto v = static_cast<ASTBooleanTerminal*>(ast);
             result.boolValue = v->value;
-            result.type = TValue::ValueType::Boolean;
+            result.type = MesaTValue::ValueType::Boolean;
             // PLProfilerEnd(PLPROFILER_BINOP_RELOP);
             break;
         }
@@ -1920,11 +1920,11 @@ InterpretExpression(ASTNode* ast)
     }
 
     // PLProfilerBegin(PLPROFILER_BINOP_RELOP);
-    if (result.type == TValue::ValueType::Invalid)
+    if (result.type == MesaTValue::ValueType::Invalid)
     {
         SendRuntimeException("Invalid expression.");
     }
-    else if (result.type == TValue::ValueType::GCObject
+    else if (result.type == MesaTValue::ValueType::GCObject
         && GetTypeOfGCObject(result.GCReferenceObject) == MesaGCObject::GCObjectType::String
         && !__MSRuntime.activeEnv.TransientObjectExists(result.GCReferenceObject))
     {
@@ -1978,7 +1978,7 @@ InterpretStatement(ASTNode* statement)
             auto v = static_cast<ASTAssignListOrMapElement*>(statement);
 
             auto indexTValue = InterpretExpression(v->indexExpression);
-            ASSERT(indexTValue.type == TValue::ValueType::Integer || indexTValue.type == TValue::ValueType::GCObject);
+            ASSERT(indexTValue.type == MesaTValue::ValueType::Integer || indexTValue.type == MesaTValue::ValueType::GCObject);
 
             ASSERT(v->listOrMapVariableName->GetType() == ASTNodeType::VARIABLE);
             std::string listOrMapVariableKey = static_cast<ASTVariable*>(v->listOrMapVariableName)->id;
@@ -1986,14 +1986,14 @@ InterpretStatement(ASTNode* statement)
             i64 gcObjectId = 0;
             if (__MSRuntime.activeEnv.KeyExistsInAccessibleScopes(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = __MSRuntime.activeEnv.AccessAtKeyInAccessibleScopes(listOrMapVariableKey);
-                ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
+                MesaTValue listOrMapGCObj = __MSRuntime.activeEnv.AccessAtKeyInAccessibleScopes(listOrMapVariableKey);
+                ASSERT(listOrMapGCObj.type == MesaTValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
             else if (__MSRuntime.globalEnv.Contains(listOrMapVariableKey))
             {
-                TValue listOrMapGCObj = __MSRuntime.globalEnv.AccessMapEntry(listOrMapVariableKey);
-                ASSERT(listOrMapGCObj.type == TValue::ValueType::GCObject);
+                MesaTValue listOrMapGCObj = __MSRuntime.globalEnv.AccessMapEntry(listOrMapVariableKey);
+                ASSERT(listOrMapGCObj.type == MesaTValue::ValueType::GCObject);
                 gcObjectId = listOrMapGCObj.GCReferenceObject;
             }
             else
@@ -2008,7 +2008,7 @@ InterpretStatement(ASTNode* statement)
             ASSERT(dataStructureType == MesaGCObject::GCObjectType::List || dataStructureType == MesaGCObject::GCObjectType::Table);
             if(dataStructureType == MesaGCObject::GCObjectType::List)
             {
-                ASSERT(indexTValue.type == TValue::ValueType::Integer);
+                ASSERT(indexTValue.type == MesaTValue::ValueType::Integer);
                 const i64 listIndex = indexTValue.integerValue;
                 // todo assert integer is non negative, valid, etc.
                 
@@ -2018,7 +2018,7 @@ InterpretStatement(ASTNode* statement)
             }
             else
             {
-                ASSERT(indexTValue.type == TValue::ValueType::GCObject);
+                ASSERT(indexTValue.type == MesaTValue::ValueType::GCObject);
                 ASSERT(GetTypeOfGCObject(indexTValue.GCReferenceObject) == MesaGCObject::GCObjectType::String);
                 const std::string& tableKey = AccessMesaScriptString(indexTValue.GCReferenceObject)->text;
 
@@ -2037,13 +2037,13 @@ InterpretStatement(ASTNode* statement)
 
         case ASTNodeType::RETURN: {
             auto v = static_cast<ASTReturn*>(statement);
-            TValue result = InterpretExpression(v->expr);
+            MesaTValue result = InterpretExpression(v->expr);
             returnValue = result;
             returnValueSetFlag = true;
             returnRequestedFlag = true;
             // 2023-12-24: Transient GCOBJ does not get captured when we pass it along via RETURN
             // so I must move the transient id a level above. Moving the InsertTransientObj call here.
-            if (result.type == TValue::ValueType::GCObject)
+            if (result.type == MesaTValue::ValueType::GCObject)
             {
                 if (__MSRuntime.activeEnv.TransientObjectExistsInActiveScope(result.GCReferenceObject))
                     __MSRuntime.activeEnv.EraseTransientObject(result.GCReferenceObject);
@@ -2054,7 +2054,7 @@ InterpretStatement(ASTNode* statement)
         case ASTNodeType::BRANCH: {
             auto v = static_cast<ASTBranch*>(statement);
             auto condition = InterpretExpression(v->condition);
-            ASSERT(condition.type == TValue::ValueType::Boolean);
+            ASSERT(condition.type == MesaTValue::ValueType::Boolean);
             if (condition.boolValue)
                 InterpretStatementList(v->if_body);
             else if (v->else_body)
@@ -2065,7 +2065,7 @@ InterpretStatement(ASTNode* statement)
             auto v = static_cast<ASTWhile*>(statement);
 
             auto condition = InterpretExpression(v->condition);
-            ASSERT(condition.type == TValue::ValueType::Boolean);
+            ASSERT(condition.type == MesaTValue::ValueType::Boolean);
             for (; condition.boolValue; condition = InterpretExpression(v->condition))
             {
                 InterpretStatementList(v->body);
@@ -2092,13 +2092,13 @@ InterpretStatementList(ASTNode* statements)
 }
 
 
-typedef TValue (*cpp_bound_fn_no_param_t)();
-typedef TValue (*cpp_bound_fn_one_param_t)(TValue);
-typedef TValue (*cpp_bound_fn_two_param_t)(TValue, TValue);
-typedef TValue (*cpp_bound_fn_three_param_t)(TValue, TValue, TValue);
-typedef TValue (*cpp_bound_fn_four_param_t)(TValue, TValue, TValue, TValue);
-typedef TValue (*cpp_bound_fn_five_param_t)(TValue, TValue, TValue, TValue, TValue);
-typedef TValue (*cpp_bound_fn_six_param_t)(TValue, TValue, TValue, TValue, TValue, TValue);
+typedef MesaTValue (*cpp_bound_fn_no_param_t)();
+typedef MesaTValue (*cpp_bound_fn_one_param_t)(MesaTValue);
+typedef MesaTValue (*cpp_bound_fn_two_param_t)(MesaTValue, MesaTValue);
+typedef MesaTValue (*cpp_bound_fn_three_param_t)(MesaTValue, MesaTValue, MesaTValue);
+typedef MesaTValue (*cpp_bound_fn_four_param_t)(MesaTValue, MesaTValue, MesaTValue, MesaTValue);
+typedef MesaTValue (*cpp_bound_fn_five_param_t)(MesaTValue, MesaTValue, MesaTValue, MesaTValue, MesaTValue);
+typedef MesaTValue (*cpp_bound_fn_six_param_t)(MesaTValue, MesaTValue, MesaTValue, MesaTValue, MesaTValue, MesaTValue);
 
 struct cpp_bound_fn_data
 {
@@ -2132,12 +2132,12 @@ void pipl_bind_cpp_fn(const char *fn_name, int argc, void *fn_ptr)
     cpp_fn_registry.insert({ fn_name, fn_data });
 }
 
-static TValue
+static MesaTValue
 InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PART OF INTERPRETER, USE INTERPRETSTATEMENT INSTEAD
 {
     // PLProfilerPush(PLPROFILER_INTERPRETER_SYSTEM::INTERPRET_PROCEDURE_CALL);
 
-    TValue procedureVariable;
+    MesaTValue procedureVariable;
     if (__MSRuntime.activeEnv.KeyExistsTopLevel(procedureCall->id))
     {
         procedureVariable = __MSRuntime.activeEnv.AccessAtKeyInAccessibleScopes(procedureCall->id);
@@ -2161,47 +2161,47 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
             }
             case 1: 
             {
-                TValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
+                MesaTValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
                 return fn_data.f1(arg0);
             }
             case 2: 
             {
-                TValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
-                TValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
+                MesaTValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
+                MesaTValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
                 return fn_data.f2(arg0, arg1);
             }
             case 3: 
             {
-                TValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
-                TValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
-                TValue arg2 = InterpretExpression(procedureCall->argsExpressions[2]);
+                MesaTValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
+                MesaTValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
+                MesaTValue arg2 = InterpretExpression(procedureCall->argsExpressions[2]);
                 return fn_data.f3(arg0, arg1, arg2);
             }
             case 4: 
             {
-                TValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
-                TValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
-                TValue arg2 = InterpretExpression(procedureCall->argsExpressions[2]);
-                TValue arg3 = InterpretExpression(procedureCall->argsExpressions[3]);
+                MesaTValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
+                MesaTValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
+                MesaTValue arg2 = InterpretExpression(procedureCall->argsExpressions[2]);
+                MesaTValue arg3 = InterpretExpression(procedureCall->argsExpressions[3]);
                 return fn_data.f4(arg0, arg1, arg2, arg3);
             }
             case 5: 
             {
-                TValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
-                TValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
-                TValue arg2 = InterpretExpression(procedureCall->argsExpressions[2]);
-                TValue arg3 = InterpretExpression(procedureCall->argsExpressions[3]);
-                TValue arg4 = InterpretExpression(procedureCall->argsExpressions[4]);
+                MesaTValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
+                MesaTValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
+                MesaTValue arg2 = InterpretExpression(procedureCall->argsExpressions[2]);
+                MesaTValue arg3 = InterpretExpression(procedureCall->argsExpressions[3]);
+                MesaTValue arg4 = InterpretExpression(procedureCall->argsExpressions[4]);
                 return fn_data.f5(arg0, arg1, arg2, arg3, arg4);
             }
             case 6:
             {
-                TValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
-                TValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
-                TValue arg2 = InterpretExpression(procedureCall->argsExpressions[2]);
-                TValue arg3 = InterpretExpression(procedureCall->argsExpressions[3]);
-                TValue arg4 = InterpretExpression(procedureCall->argsExpressions[4]);
-                TValue arg5 = InterpretExpression(procedureCall->argsExpressions[5]);
+                MesaTValue arg0 = InterpretExpression(procedureCall->argsExpressions[0]);
+                MesaTValue arg1 = InterpretExpression(procedureCall->argsExpressions[1]);
+                MesaTValue arg2 = InterpretExpression(procedureCall->argsExpressions[2]);
+                MesaTValue arg3 = InterpretExpression(procedureCall->argsExpressions[3]);
+                MesaTValue arg4 = InterpretExpression(procedureCall->argsExpressions[4]);
+                MesaTValue arg5 = InterpretExpression(procedureCall->argsExpressions[5]);
                 return fn_data.f6(arg0, arg1, arg2, arg3, arg4, arg5);
             }
             default: ASSERT(false);
@@ -2221,12 +2221,12 @@ InterpretProcedureCall(ASTProcedureCall *procedureCall) // NEVER CALL UNLESS PAR
     {
         auto argname = procedureDefinition.args[i];
         auto argexpr = procedureCall->argsExpressions[i];
-        TValue argv = InterpretExpression(argexpr);
+        MesaTValue argv = InterpretExpression(argexpr);
         functionScope.CreateNewMapEntry(argname, argv);
     }
     __MSRuntime.activeEnv.PushScope(&functionScope);
 
-    TValue retval;
+    MesaTValue retval;
     returnRequestedFlag = false;
     returnValueSetFlag = false;
 
@@ -2286,7 +2286,7 @@ void CallFunction_Parameterless(const char* functionIdentifier)
     InterpretStatement(&parameterlessProcCallNode);
 }
 
-void CallFunction_OneParam(const char* functionIdentifier, TValue arg0)
+void CallFunction_OneParam(const char* functionIdentifier, MesaTValue arg0)
 {
     ASTProcedureCall procCallNode = ASTProcedureCall(functionIdentifier);
     ASTSimplyTValue arg0Node = ASTSimplyTValue(arg0);
@@ -2295,41 +2295,41 @@ void CallFunction_OneParam(const char* functionIdentifier, TValue arg0)
 }
 
 
-TValue CPPBOUND_MESASCRIPT_Print(TValue value)
+MesaTValue CPPBOUND_MESASCRIPT_Print(MesaTValue value)
 {
     PLProfilerBegin(PLPROFILER_PRINT);
-    if (value.type == TValue::ValueType::Integer)
+    if (value.type == MesaTValue::ValueType::Integer)
     {
         printf("%lld\n", value.integerValue);
     }
-    else if (value.type == TValue::ValueType::Boolean)
+    else if (value.type == MesaTValue::ValueType::Boolean)
     {
         printf("%s\n", (value.boolValue ? "true" : "false"));
     }
-    else if (value.type == TValue::ValueType::Real)
+    else if (value.type == MesaTValue::ValueType::Real)
     {
         printf("%lf\n", value.realValue);
     }
-    else if (value.type == TValue::ValueType::GCObject)
+    else if (value.type == MesaTValue::ValueType::GCObject)
     {
         if (GetTypeOfGCObject(value.GCReferenceObject) == MesaGCObject::GCObjectType::Table)
         {
             printf("printing table\n");
             for (const auto& pair : AccessMesaScriptTable(value.GCReferenceObject)->table)
             {
-                if (pair.second.type == TValue::ValueType::Integer)
+                if (pair.second.type == MesaTValue::ValueType::Integer)
                 {
                     printf("\t%s : %lld\n", pair.first.c_str(), pair.second.integerValue);
                 }
-                else if (pair.second.type == TValue::ValueType::Boolean)
+                else if (pair.second.type == MesaTValue::ValueType::Boolean)
                 {
                     printf("\t%s : %s\n", pair.first.c_str(), (pair.second.boolValue ? "true" : "false"));
                 }
-                else if (pair.second.type == TValue::ValueType::Real)
+                else if (pair.second.type == MesaTValue::ValueType::Real)
                 {
                     printf("\t%s : %lf\n", pair.first.c_str(), pair.second.realValue);
                 }
-                else if (pair.second.type == TValue::ValueType::GCObject)
+                else if (pair.second.type == MesaTValue::ValueType::GCObject)
                 {
                     printf("\t%s : gcobject\n", pair.first.c_str());
                 }
@@ -2340,19 +2340,19 @@ TValue CPPBOUND_MESASCRIPT_Print(TValue value)
             printf("printing list\n");
             for (const auto& element : AccessMesaScriptList(value.GCReferenceObject)->list)
             {
-                if (element.type == TValue::ValueType::Integer)
+                if (element.type == MesaTValue::ValueType::Integer)
                 {
                     printf("\t%lld\n", element.integerValue);
                 }
-                else if (element.type == TValue::ValueType::Boolean)
+                else if (element.type == MesaTValue::ValueType::Boolean)
                 {
                     printf("\t%s\n", (element.boolValue ? "true" : "false"));
                 }
-                else if (element.type == TValue::ValueType::Real)
+                else if (element.type == MesaTValue::ValueType::Real)
                 {
                     printf("\t%lf\n", element.realValue);
                 }
-                else if (element.type == TValue::ValueType::GCObject)
+                else if (element.type == MesaTValue::ValueType::GCObject)
                 {
                     printf("\tgcobject\n");
                 }
@@ -2365,15 +2365,15 @@ TValue CPPBOUND_MESASCRIPT_Print(TValue value)
     }
 
     PLProfilerEnd(PLPROFILER_PRINT);
-    return TValue();
+    return MesaTValue();
 }
 
-TValue CPPBOUND_MESASCRIPT_RefCount(TValue gcobj)
+MesaTValue CPPBOUND_MESASCRIPT_RefCount(MesaTValue gcobj)
 {
-    ASSERT(gcobj.type == TValue::ValueType::GCObject);
+    ASSERT(gcobj.type == MesaTValue::ValueType::GCObject);
 
-    TValue result;
-    result.type = TValue::ValueType::Integer;
+    MesaTValue result;
+    result.type = MesaTValue::ValueType::Integer;
     result.integerValue = (int)GCOBJECTS_DATABASE.at(gcobj.GCReferenceObject)->refCount;
     return result;
 }

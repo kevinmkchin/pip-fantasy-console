@@ -7,18 +7,9 @@
 #include "Chunk.h"
 #include "Scanner.h"
 #include "Compiler.h"
+#include "Object.h"
 
 /// VM
-
-#define STACK_MAX 4000
-
-struct VM
-{
-    Chunk *chunk;
-    u8 *ip; // instruction pointer
-    TValue stack[STACK_MAX];
-    TValue *sp; // stack pointer
-};
 
 VM vm;
 
@@ -47,11 +38,12 @@ TValue Stack_Peek(int distance)
 void InitVM()
 {
     Stack_Reset();
+    InitHashMap(&vm.interned_strings);
 }
 
 void FreeVM()
 {
-
+    FreeHashMap(&vm.interned_strings);
 }
 
 static void RuntimeError(const char *format, ...)
@@ -74,6 +66,14 @@ static bool IsFalsey(TValue v)
     return !AS_BOOL(v);
 }
 
+static void ConcatenateStrings()
+{
+    RCString *r = RCOBJ_AS_STRING(Stack_Pop());
+    RCString *l = RCOBJ_AS_STRING(Stack_Pop());
+    std::string temp = (l->text + r->text);
+    Stack_Push(RCOBJ_VAL((RCObject*)CopyString(temp.c_str(), (int)temp.size())));
+}
+
 static bool IsEqual(TValue l, TValue r)
 {
     if (l.type != r.type) 
@@ -83,6 +83,12 @@ static bool IsEqual(TValue l, TValue r)
     {
         case TValue::BOOLEAN: return AS_BOOL(l) == AS_BOOL(r);
         case TValue::REAL:    return AS_NUMBER(l) == AS_NUMBER(r);
+        case TValue::RCOBJ:
+        {
+            // TODO the other RCOBJ types
+            return RCOBJ_AS_STRING(l) == RCOBJ_AS_STRING(r);
+        }
+        default: return false;
     }
 }
 
@@ -143,13 +149,29 @@ static InterpretResult Run()
                 Stack_Push(TValue::Number(-AS_NUMBER(Stack_Pop())));
                 break;
 
-            case OpCode::ADD: VM_BINARY_OP(NUMBER_VAL, +); break;
+            case OpCode::ADD: 
+                if (RCOBJ_IS_STRING(Stack_Peek(0)) && RCOBJ_IS_STRING(Stack_Peek(1)))
+                {
+                    ConcatenateStrings();
+                }
+                else if (IS_NUMBER(Stack_Peek(0)) && IS_NUMBER(Stack_Peek(1)))
+                {
+                    double r = Stack_Pop().real;
+                    double l = Stack_Pop().real;
+                    Stack_Push(NUMBER_VAL(l + r));
+                }
+                else
+                {
+                    RuntimeError("Operands to BINOP must be number values.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
             case OpCode::SUBTRACT: VM_BINARY_OP(NUMBER_VAL, -); break;
             case OpCode::MULTIPLY: VM_BINARY_OP(NUMBER_VAL, *); break;
             case OpCode::DIVIDE: VM_BINARY_OP(NUMBER_VAL, /); break;
 
-            case OpCode::TRUE: Stack_Push(BOOL_VAL(true)); break;
-            case OpCode::FALSE: Stack_Push(BOOL_VAL(false)); break;
+            case OpCode::OP_TRUE: Stack_Push(BOOL_VAL(true)); break;
+            case OpCode::OP_FALSE: Stack_Push(BOOL_VAL(false)); break;
             case OpCode::LOGICAL_NOT:
                 if (!IS_BOOL(Stack_Peek(0)))
                 {
