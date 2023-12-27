@@ -4,46 +4,46 @@
 #include "GfxRenderer.h"
 
 
-TValue Temp_RaiseTo(TValue base, TValue exponent)
+MesaTValue Temp_RaiseTo(MesaTValue base, MesaTValue exponent)
 {
-    ASSERT(base.type == TValue::ValueType::Integer);
-    ASSERT(exponent.type == TValue::ValueType::Integer);
+    ASSERT(base.type == MesaTValue::ValueType::Integer);
+    ASSERT(exponent.type == MesaTValue::ValueType::Integer);
 
-    TValue result;
-    result.type = TValue::ValueType::Integer;
+    MesaTValue result;
+    result.type = MesaTValue::ValueType::Integer;
     result.integerValue = (int)pow(double(base.integerValue), double(exponent.integerValue));
     return result;
 }
 
-TValue GfxRequestSpriteDraw(TValue spriteId, TValue x, TValue y)
+MesaTValue GfxRequestSpriteDraw(MesaTValue spriteId, MesaTValue x, MesaTValue y)
 {
-    ASSERT(spriteId.type == TValue::ValueType::Integer);
-    ASSERT(x.type == TValue::ValueType::Integer || x.type == TValue::ValueType::Real);
-    ASSERT(y.type == TValue::ValueType::Integer || y.type == TValue::ValueType::Real);
-    float fx = float(x.type == TValue::ValueType::Integer ? x.integerValue : x.realValue);
-    float fy = float(y.type == TValue::ValueType::Integer ? y.integerValue : y.realValue);
+    ASSERT(spriteId.type == MesaTValue::ValueType::Integer);
+    ASSERT(x.type == MesaTValue::ValueType::Integer || x.type == MesaTValue::ValueType::Real);
+    ASSERT(y.type == MesaTValue::ValueType::Integer || y.type == MesaTValue::ValueType::Real);
+    float fx = float(x.type == MesaTValue::ValueType::Integer ? x.integerValue : x.realValue);
+    float fy = float(y.type == MesaTValue::ValueType::Integer ? y.integerValue : y.realValue);
 
     Gfx::QueueSpriteForRender(spriteId.integerValue, vec2(fx, fy));
 
-    TValue result;
+    MesaTValue result;
     return result;
 }
 
 // TODO should be gfx.clear(color)
-TValue GfxClearColor(TValue r, TValue g, TValue b, TValue a)
+MesaTValue GfxClearColor(MesaTValue r, MesaTValue g, MesaTValue b, MesaTValue a)
 {
-    ASSERT(r.type == TValue::ValueType::Integer || r.type == TValue::ValueType::Real);
-    ASSERT(g.type == TValue::ValueType::Integer || g.type == TValue::ValueType::Real);
-    ASSERT(b.type == TValue::ValueType::Integer || b.type == TValue::ValueType::Real);
-    ASSERT(a.type == TValue::ValueType::Integer || a.type == TValue::ValueType::Real);
-    float fr = float(r.type == TValue::ValueType::Integer ? r.integerValue : r.realValue);
-    float fg = float(g.type == TValue::ValueType::Integer ? g.integerValue : g.realValue);
-    float fb = float(b.type == TValue::ValueType::Integer ? b.integerValue : b.realValue);
-    float fa = float(a.type == TValue::ValueType::Integer ? a.integerValue : a.realValue);
+    ASSERT(r.type == MesaTValue::ValueType::Integer || r.type == MesaTValue::ValueType::Real);
+    ASSERT(g.type == MesaTValue::ValueType::Integer || g.type == MesaTValue::ValueType::Real);
+    ASSERT(b.type == MesaTValue::ValueType::Integer || b.type == MesaTValue::ValueType::Real);
+    ASSERT(a.type == MesaTValue::ValueType::Integer || a.type == MesaTValue::ValueType::Real);
+    float fr = float(r.type == MesaTValue::ValueType::Integer ? r.integerValue : r.realValue);
+    float fg = float(g.type == MesaTValue::ValueType::Integer ? g.integerValue : g.realValue);
+    float fb = float(b.type == MesaTValue::ValueType::Integer ? b.integerValue : b.realValue);
+    float fa = float(a.type == MesaTValue::ValueType::Integer ? a.integerValue : a.realValue);
 
     Gfx::SetGameLayerClearColor(vec4(fr, fg, fb, fa));
 
-    TValue result;
+    MesaTValue result;
     return result;
 }
 

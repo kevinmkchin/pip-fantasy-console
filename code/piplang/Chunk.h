@@ -1,7 +1,6 @@
 #pragma once
 
 #include "PipLangCommon.h"
-#include <vector>
 
 
 struct Chunk

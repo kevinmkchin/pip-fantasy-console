@@ -2,8 +2,14 @@
 
 #include "../MesaCommon.h"
 
+#include <unordered_map>
+#include <vector>
+
+
 #define DEBUG_TRACE_EXECUTION
 #define DEBUG_PRINT_CODE
+
+struct RCObject;
 
 enum class OpCode : u8
 {
@@ -15,8 +21,8 @@ enum class OpCode : u8
     SUBTRACT,
     MULTIPLY,
     DIVIDE,
-    TRUE,
-    FALSE,
+    OP_TRUE,
+    OP_FALSE,
     LOGICAL_NOT,
     RELOP_EQUAL,
     RELOP_GREATER,
@@ -30,7 +36,7 @@ struct TValue
         BOOLEAN,
         REAL,
         //FUNC,
-        //GCOBJ
+        RCOBJ
     };
 
     VType type;
@@ -39,6 +45,7 @@ struct TValue
     {
         bool boolean;
         double real;
+        RCObject *rcobj;
     };
 
     static TValue Boolean(bool v)
@@ -56,12 +63,24 @@ struct TValue
         tv.real = v;
         return tv;
     }
+    
+    static TValue RCObject(RCObject *ptr)
+    {
+        TValue tv;
+        tv.type = RCOBJ;
+        tv.rcobj = ptr;
+        return tv;
+    }
 };
 
 #define BOOL_VAL(value)     (TValue::Boolean(value))
 #define NUMBER_VAL(value)   (TValue::Number(value))
+#define RCOBJ_VAL(value)    (TValue::RCObject(value))
+
 #define AS_BOOL(value)      ((value).boolean)
 #define AS_NUMBER(value)    ((value).real)
+#define AS_RCOBJ(value)     ((value).rcobj)
 
 #define IS_BOOL(value)      ((value).type == TValue::BOOLEAN)
 #define IS_NUMBER(value)    ((value).type == TValue::REAL)
+#define IS_RCOBJ(value)     ((value).type == TValue::RCOBJ)

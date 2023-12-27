@@ -5,6 +5,7 @@
 #ifdef DEBUG_PRINT_CODE
 #include "Debug.h"
 #endif
+#include "Object.h"
 
 typedef void(*ParseFn)();
 
@@ -149,8 +150,12 @@ static void EndCompiler()
 static void ParseNumber()
 {
     double value = strtod(parser.previous.start, NULL);
-    TValue v = TValue::Number(value);
-    EmitConstant(v);
+    EmitConstant(NUMBER_VAL(value));
+}
+
+static void ParseString()
+{
+    EmitConstant(RCOBJ_VAL((RCObject*)CopyString(parser.previous.start + 1, parser.previous.length - 2)));
 }
 
 static void ParseExpression()
@@ -227,8 +232,8 @@ static void ParseLiteral()
 {
     switch (parser.previous.type) 
     {
-        case TokenType::TRUE: EmitByte((u8)OpCode::TRUE); break;
-        case TokenType::FALSE: EmitByte((u8)OpCode::FALSE); break;
+        case TokenType::TRUE: EmitByte((u8)OpCode::OP_TRUE); break;
+        case TokenType::FALSE: EmitByte((u8)OpCode::OP_FALSE); break;
     }
 }
 
@@ -257,7 +262,7 @@ void SetupParsingRules()
     rules[(u8)TokenType::FORWARDSLASH]      = {          NULL,   ParseBinOp, Precedence::FACTOR };
     
     rules[(u8)TokenType::NUMBER_LITERAL]    = {   ParseNumber,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::STRING_LITERAL]    = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::STRING_LITERAL]    = {   ParseString,         NULL, Precedence::NONE };
     rules[(u8)TokenType::IDENTIFIER]        = {          NULL,         NULL, Precedence::NONE };
     
     rules[(u8)TokenType::TRUE]              = {  ParseLiteral,         NULL, Precedence::NONE };
