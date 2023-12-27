@@ -7,11 +7,13 @@ void InitHashMap(HashMap *map)
     map->count = 0;
     map->capacity = 0;
     // TODO
+    map->ds.clear();
 }
 
 void FreeHashMap(HashMap *map)
 {
     // TODO
+    map->ds.clear();
 }
 
 bool HashMapSet(HashMap *map, RCString *key, TValue value)

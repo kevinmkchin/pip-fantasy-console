@@ -100,6 +100,14 @@ int DisassembleInstruction(Chunk *chunk, int offset)
         return Debug_SimpleInstruction("RELOP_GREATER", offset);
     case OpCode::RELOP_LESSER:
         return Debug_SimpleInstruction("RELOP_LESSER", offset);
+    case OpCode::POP:
+        return Debug_SimpleInstruction("POP", offset);
+    case OpCode::DEFINE_GLOBAL:
+        return Debug_ConstantLongInstruction("DEFINE_GLOBAL", chunk, offset);
+    case OpCode::GET_GLOBAL:
+        return Debug_ConstantLongInstruction("GET_GLOBAL", chunk, offset);
+    case OpCode::SET_GLOBAL:
+        return Debug_ConstantLongInstruction("SET_GLOBAL", chunk, offset);
     default:
         printf("Unknown opcode %d\n", instruction);
         return offset + 1;

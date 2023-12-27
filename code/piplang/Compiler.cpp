@@ -12,7 +12,6 @@ typedef void(*ParseFn)();
 enum class Precedence : u8
 {
     NONE,
-    ASSIGNMENT, // =
     OR,         // or
     AND,        // and
     EQUALITY,   // == !=
@@ -102,6 +101,41 @@ static void Eat(TokenType type, const char *errorMsg)
     ErrorAtCurrent(errorMsg);
 }
 
+static bool Check(TokenType type)
+{
+    return parser.current.type == type;
+}
+
+static bool Match(TokenType type)
+{
+    if (!Check(type)) return false;
+    Advance();
+    return true;
+}
+
+static void EscapePanicMode()
+{
+    parser.panicMode = false;
+
+    while (parser.current.type != TokenType::END_OF_FILE) 
+    {
+        switch (parser.current.type) 
+        {
+            case TokenType::FN:
+            //case TOKEN_VAR:
+            //case TokenType::FOR:
+            case TokenType::WHILE:
+            case TokenType::IF:
+            case TokenType::RETURN:
+                return;
+            default:;
+        }
+        Advance();
+    }
+}
+
+
+
 Chunk *compilingChunk;
 
 static Chunk *CurrentChunk()
@@ -160,7 +194,7 @@ static void ParseString()
 
 static void ParseExpression()
 {
-    ParsePrecedence(Precedence::ASSIGNMENT);
+    ParsePrecedence(Precedence::OR);
 }
 
 static void ParseGrouping()
@@ -237,6 +271,123 @@ static void ParseLiteral()
     }
 }
 
+static u32 lastIdentifierConstantAdded = 0;
+static void IdentifierConstant(Token *name)
+{
+    lastIdentifierConstantAdded = AddConstant(CurrentChunk(), RCOBJ_VAL((RCObject *)CopyString(name->start, name->length)));
+}
+
+static void NamedVariable(Token name)
+{
+    IdentifierConstant(&name);
+
+    if (!Check(TokenType::EQUAL))
+    {
+        u32 arg = lastIdentifierConstantAdded;
+        EmitByte(OpCode::GET_GLOBAL);
+        EmitByte((u8)(arg >> 16));
+        EmitByte((u8)(arg >> 8));
+        EmitByte((u8)(arg));
+    }
+}
+
+static void Variable()
+{
+    NamedVariable(parser.previous);
+}
+
+static void Dot()
+{
+    Eat(TokenType::IDENTIFIER, "Expected map entry name after '.'.");
+    IdentifierConstant(&parser.previous);
+
+    //TODO
+    if (!Check(TokenType::EQUAL))
+    {
+        //u32 arg = lastIdentifierConstantAdded;
+        //EmitByte(OpCode::GET_GLOBAL);
+        //EmitByte((u8)(arg >> 16));
+        //EmitByte((u8)(arg >> 8));
+        //EmitByte((u8)(arg));
+    }
+}
+
+
+static void ParseExpressionStatement()
+{
+    ParseExpression();
+    EmitByte(OpCode::POP);
+}
+
+static void ParseStatement()
+{
+    if (true)
+    {
+        ParseExpression();
+        if (Match(TokenType::EQUAL))
+        {
+            u32 arg = lastIdentifierConstantAdded;
+            ParseExpression();
+
+            EmitByte(OpCode::SET_GLOBAL);
+            EmitByte((u8)(arg >> 16));
+            EmitByte((u8)(arg >> 8));
+            EmitByte((u8)(arg));
+        }
+        else
+        {
+            EmitByte(OpCode::POP);
+        }
+    }
+}
+
+static void ParseVariable(const char * errormsg)
+{
+    Eat(TokenType::IDENTIFIER, errormsg);
+    IdentifierConstant(&parser.previous);
+}
+
+static void DefineVariable(u32 global)
+{
+    // TODO(Kevin): Optimize by using LONG op if first 24 bits are non zero or just use u8 and limit max global varibles to 256
+    EmitByte(OpCode::DEFINE_GLOBAL);
+    EmitByte((u8)(global >> 16));
+    EmitByte((u8)(global >> 8));
+    EmitByte((u8)(global));
+}
+
+static void ParseVariableDeclaration()
+{
+    ParseVariable("Expected variable name");
+    u32 global = lastIdentifierConstantAdded;
+
+    if (Match(TokenType::EQUAL))
+    {
+        ParseExpression();
+    }
+    else
+    {
+        // variable declaration without initializing? probably want this
+    }
+
+    DefineVariable(global);
+}
+
+static void ParseDeclaration()
+{
+    if (Match(TokenType::MUT))
+    {
+        ParseVariableDeclaration();
+    }
+    else
+    {
+        ParseStatement();
+    }
+    
+    if (parser.panicMode) EscapePanicMode();
+}
+
+
 ParseRule rules[(u8)TokenType::END_OF_FILE];
 
 void SetupParsingRules()
@@ -256,6 +407,7 @@ void SetupParsingRules()
     rules[(u8)TokenType::LBRACE]            = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::RBRACE]            = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::COMMA]             = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::DOT]               = {          NULL,          Dot, Precedence::CALL };
     rules[(u8)TokenType::PLUS]              = {          NULL,   ParseBinOp, Precedence::TERM };
     rules[(u8)TokenType::MINUS]             = {    ParseUnary,   ParseBinOp, Precedence::TERM };
     rules[(u8)TokenType::ASTERISK]          = {          NULL,   ParseBinOp, Precedence::FACTOR };
@@ -263,7 +415,7 @@ void SetupParsingRules()
     
     rules[(u8)TokenType::NUMBER_LITERAL]    = {   ParseNumber,         NULL, Precedence::NONE };
     rules[(u8)TokenType::STRING_LITERAL]    = {   ParseString,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::IDENTIFIER]        = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::IDENTIFIER]        = {      Variable,         NULL, Precedence::NONE };
     
     rules[(u8)TokenType::TRUE]              = {  ParseLiteral,         NULL, Precedence::NONE };
     rules[(u8)TokenType::FALSE]             = {  ParseLiteral,         NULL, Precedence::NONE };
@@ -314,8 +466,11 @@ bool Compile(const char *source, Chunk *chunk)
     parser.panicMode = false;
 
     Advance();
-    ParseExpression();
-    Eat(TokenType::END_OF_FILE, "Expected end of expression.");
+
+    while (!Match(TokenType::END_OF_FILE))
+    {
+        ParseDeclaration();
+    }
 
     EndCompiler();
     return !parser.hadError;

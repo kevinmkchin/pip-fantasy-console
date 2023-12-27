@@ -23,15 +23,23 @@ struct VM
     TValue *sp; // stack pointer
 
     HashMap interned_strings;
+    HashMap globals;
 };
 
 extern VM vm;
 
 InterpretResult PipLangVM_RunScript(const char *source);
 
-
-
 /*
+
+declaration : statement
+
+statement : expression
+
+expression : cond_or
+
+
+
 
 TODO
 
@@ -62,6 +70,8 @@ PIPLANG GENERAL
 
 
 NOTES
+
+Revisit 1 * 2 = 3 + 4 assignment bug to fire Compile error https://craftinginterpreters.com/global-variables.html#assignment
 
 Revisit replacing std::string and std::unordered_map with custom implementation of string, hash table, and dynamic array and linear memory allocator instead of std::vector
 https://craftinginterpreters.com/strings.html
