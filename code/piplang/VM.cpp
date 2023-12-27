@@ -176,6 +176,20 @@ static InterpretResult Run()
                 break;
             }
 
+            case OpCode::GET_LOCAL:
+            {
+                u8 stackIndexOfLocal = VM_READ_BYTE();
+                Stack_Push(vm.stack[stackIndexOfLocal]);
+                break;
+            }
+
+            case OpCode::SET_LOCAL:
+            {
+                u8 stackIndexOfLocal = VM_READ_BYTE();
+                vm.stack[stackIndexOfLocal] = Stack_Pop();
+                break;
+            }
+
             case OpCode::NEGATE:
             {
                 if (!IS_NUMBER(Stack_Peek(0)))

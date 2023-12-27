@@ -56,6 +56,13 @@ int Debug_ConstantLongInstruction(const char *name, Chunk *chunk, int offset)
     return offset + 4;
 }
 
+int Debug_ByteInstruction(const char *name, Chunk *chunk, int offset)
+{
+    u8 byte = chunk->bytecode->at(offset + 1);
+    printf("%-16s %4d\n", name, byte);
+    return offset + 2;
+}
+
 int DisassembleInstruction(Chunk *chunk, int offset)
 {
     printf("%04d ", offset);
@@ -108,6 +115,10 @@ int DisassembleInstruction(Chunk *chunk, int offset)
         return Debug_ConstantLongInstruction("GET_GLOBAL", chunk, offset);
     case OpCode::SET_GLOBAL:
         return Debug_ConstantLongInstruction("SET_GLOBAL", chunk, offset);
+    case OpCode::GET_LOCAL:
+        return Debug_ByteInstruction("GET_LOCAL", chunk, offset);
+    case OpCode::SET_LOCAL:
+        return Debug_ByteInstruction("SET_LOCAL", chunk, offset);
     default:
         printf("Unknown opcode %d\n", instruction);
         return offset + 1;
