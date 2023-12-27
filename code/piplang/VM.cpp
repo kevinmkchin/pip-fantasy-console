@@ -98,7 +98,7 @@ static InterpretResult Run()
 {
 #define VM_READ_BYTE() (*vm.ip++) // read byte and move pointer along
 #define VM_READ_CONSTANT() (vm.chunk->constants->at(VM_READ_BYTE()))
-#define VM_READ_CONSTANT_LONG() (vm.chunk->constants->at(VM_READ_BYTE() << 16 | VM_READ_BYTE() << 8 | VM_READ_BYTE()))
+#define VM_READ_CONSTANT_LONG() (vm.chunk->constants->at(  (u32)*vm.ip++ << 16 | (u32)*(vm.ip++ + 1) << 8 | (u32)*(vm.ip++ + 2)  )) // 2023-12-27 have to do it this was because postfix increments happen at the very very end...
 #define VM_BINARY_OP(resultValueConstructor, op) \
     do { \
         if (!IS_NUMBER(Stack_Peek(0)) || !IS_NUMBER(Stack_Peek(1))) \
