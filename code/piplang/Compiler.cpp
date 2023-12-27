@@ -41,8 +41,28 @@ struct Parser
     bool panicMode = false;
 };
 
-Parser parser;
+struct Local
+{
+    Token name;
+    int depth;
+};
 
+struct Compiler
+{
+    Local locals[256];
+    int localCount;
+    int scopeDepth;
+};
+
+Parser parser;
+Compiler *current = NULL;
+
+static void InitCompiler(Compiler *compiler)
+{
+    compiler->localCount = 0;
+    compiler->scopeDepth = 0;
+    current = compiler;
+}
 
 static void ErrorAt(Token *token, const char *message) 
 {
@@ -181,29 +201,29 @@ static void EndCompiler()
 }
 
 
-static void ParseNumber()
+static void NumberLiteral()
 {
     double value = strtod(parser.previous.start, NULL);
     EmitConstant(NUMBER_VAL(value));
 }
 
-static void ParseString()
+static void StringLiteral()
 {
     EmitConstant(RCOBJ_VAL((RCObject*)CopyString(parser.previous.start + 1, parser.previous.length - 2)));
 }
 
-static void ParseExpression()
+static void Expression()
 {
     ParsePrecedence(Precedence::OR);
 }
 
-static void ParseGrouping()
+static void Grouping()
 {
-    ParseExpression();
+    Expression();
     Eat(TokenType::RPAREN, "Expected ')' after expression.");
 }
 
-static void ParseUnary()
+static void Unary()
 {
     TokenType operatorType = parser.previous.type;
 
@@ -216,7 +236,7 @@ static void ParseUnary()
     }
 }
 
-static void ParseBinOp()
+static void BinOp()
 {
     TokenType operatorType = parser.previous.type;
     ParseRule *rule = GetParseRule(operatorType);
@@ -228,16 +248,6 @@ static void ParseBinOp()
         case TokenType::MINUS:          EmitByte(OpCode::SUBTRACT); break;
         case TokenType::ASTERISK:       EmitByte(OpCode::MULTIPLY); break;
         case TokenType::FORWARDSLASH:   EmitByte(OpCode::DIVIDE); break;
-    }
-}
-
-static void ParseRelOp()
-{
-    TokenType operatorType = parser.previous.type;
-    ParsePrecedence((Precedence)((u8)GetParseRule(operatorType)->infixprecedence + 1));
-
-    switch (operatorType)
-    {
         case TokenType::BANG_EQUAL:
             EmitByte(OpCode::RELOP_EQUAL);
             EmitByte(OpCode::LOGICAL_NOT);
@@ -262,7 +272,7 @@ static void ParseRelOp()
     }
 }
 
-static void ParseLiteral()
+static void BoolLiteral()
 {
     switch (parser.previous.type) 
     {
@@ -313,21 +323,49 @@ static void Dot()
 }
 
 
-static void ParseExpressionStatement()
+//static void ParseExpressionStatement()
+//{
+//    Expression();
+//    EmitByte(OpCode::POP);
+//}
+
+static void Declaration();
+
+static void Block()
 {
-    ParseExpression();
-    EmitByte(OpCode::POP);
+    while (!Check(TokenType::RBRACE) && !Check(TokenType::END_OF_FILE))
+    {
+        Declaration();
+    }
+
+    Eat(TokenType::RBRACE, "Expected '}' after block.");
 }
 
-static void ParseStatement()
+static void BeginScope()
 {
-    if (true)
+    current->scopeDepth++;
+}
+
+static void EndScope()
+{
+    current->scopeDepth--;
+}
+
+static void Statement()
+{
+    if (Match(TokenType::LBRACE))
     {
-        ParseExpression();
+        BeginScope();
+        Block();
+        EndScope();
+    }
+    else
+    {
+        Expression();
         if (Match(TokenType::EQUAL))
         {
             u32 arg = lastIdentifierConstantAdded;
-            ParseExpression();
+            Expression();
 
             EmitByte(OpCode::SET_GLOBAL);
             EmitByte((u8)(arg >> 16));
@@ -363,7 +401,7 @@ static void ParseVariableDeclaration()
 
     if (Match(TokenType::EQUAL))
     {
-        ParseExpression();
+        Expression();
     }
     else
     {
@@ -373,7 +411,7 @@ static void ParseVariableDeclaration()
     DefineVariable(global);
 }
 
-static void ParseDeclaration()
+static void Declaration()
 {
     if (Match(TokenType::MUT))
     {
@@ -381,7 +419,7 @@ static void ParseDeclaration()
     }
     else
     {
-        ParseStatement();
+        Statement();
     }
     
     if (parser.panicMode) EscapePanicMode();
@@ -392,33 +430,33 @@ ParseRule rules[(u8)TokenType::END_OF_FILE];
 
 void SetupParsingRules()
 {
-    rules[(u8)TokenType::LESS]              = {          NULL,   ParseRelOp, Precedence::COMPARISON };
-    rules[(u8)TokenType::LESS_EQUAL]        = {          NULL,   ParseRelOp, Precedence::COMPARISON };
-    rules[(u8)TokenType::GREATER]           = {          NULL,   ParseRelOp, Precedence::COMPARISON };
-    rules[(u8)TokenType::GREATER_EQUAL]     = {          NULL,   ParseRelOp, Precedence::COMPARISON };
+    rules[(u8)TokenType::LESS]              = {          NULL,        BinOp, Precedence::COMPARISON };
+    rules[(u8)TokenType::LESS_EQUAL]        = {          NULL,        BinOp, Precedence::COMPARISON };
+    rules[(u8)TokenType::GREATER]           = {          NULL,        BinOp, Precedence::COMPARISON };
+    rules[(u8)TokenType::GREATER_EQUAL]     = {          NULL,        BinOp, Precedence::COMPARISON };
     rules[(u8)TokenType::EQUAL]             = {          NULL,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::BANG_EQUAL]        = {          NULL,   ParseRelOp, Precedence::EQUALITY };
-    rules[(u8)TokenType::EQUAL_EQUAL]       = {          NULL,   ParseRelOp, Precedence::EQUALITY };
-    rules[(u8)TokenType::BANG]              = {    ParseUnary,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::BANG_EQUAL]        = {          NULL,        BinOp, Precedence::EQUALITY };
+    rules[(u8)TokenType::EQUAL_EQUAL]       = {          NULL,        BinOp, Precedence::EQUALITY };
+    rules[(u8)TokenType::BANG]              = {         Unary,         NULL, Precedence::NONE };
     rules[(u8)TokenType::LSQBRACK]          = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::RSQBRACK]          = {          NULL,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::LPAREN]            = { ParseGrouping,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::LPAREN]            = {      Grouping,         NULL, Precedence::NONE };
     rules[(u8)TokenType::RPAREN]            = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::LBRACE]            = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::RBRACE]            = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::COMMA]             = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::DOT]               = {          NULL,          Dot, Precedence::CALL };
-    rules[(u8)TokenType::PLUS]              = {          NULL,   ParseBinOp, Precedence::TERM };
-    rules[(u8)TokenType::MINUS]             = {    ParseUnary,   ParseBinOp, Precedence::TERM };
-    rules[(u8)TokenType::ASTERISK]          = {          NULL,   ParseBinOp, Precedence::FACTOR };
-    rules[(u8)TokenType::FORWARDSLASH]      = {          NULL,   ParseBinOp, Precedence::FACTOR };
+    rules[(u8)TokenType::PLUS]              = {          NULL,        BinOp, Precedence::TERM };
+    rules[(u8)TokenType::MINUS]             = {         Unary,        BinOp, Precedence::TERM };
+    rules[(u8)TokenType::ASTERISK]          = {          NULL,        BinOp, Precedence::FACTOR };
+    rules[(u8)TokenType::FORWARDSLASH]      = {          NULL,        BinOp, Precedence::FACTOR };
     
-    rules[(u8)TokenType::NUMBER_LITERAL]    = {   ParseNumber,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::STRING_LITERAL]    = {   ParseString,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::NUMBER_LITERAL]    = { NumberLiteral,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::STRING_LITERAL]    = { StringLiteral,         NULL, Precedence::NONE };
     rules[(u8)TokenType::IDENTIFIER]        = {      Variable,         NULL, Precedence::NONE };
     
-    rules[(u8)TokenType::TRUE]              = {  ParseLiteral,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::FALSE]             = {  ParseLiteral,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::TRUE]              = {   BoolLiteral,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::FALSE]             = {   BoolLiteral,         NULL, Precedence::NONE };
     rules[(u8)TokenType::AND]               = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::OR]                = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::FN]                = {          NULL,         NULL, Precedence::NONE };
@@ -460,6 +498,8 @@ bool Compile(const char *source, Chunk *chunk)
     SetupParsingRules();
 
     InitScanner(source);
+    Compiler compiler;
+    InitCompiler(&compiler);
     compilingChunk = chunk;
 
     parser.hadError = false;
@@ -469,7 +509,7 @@ bool Compile(const char *source, Chunk *chunk)
 
     while (!Match(TokenType::END_OF_FILE))
     {
-        ParseDeclaration();
+        Declaration();
     }
 
     EndCompiler();

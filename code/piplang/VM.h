@@ -77,7 +77,7 @@ Revisit replacing std::string and std::unordered_map with custom implementation 
 https://craftinginterpreters.com/strings.html
 https://craftinginterpreters.com/hash-tables.html
 
-
+Can I be faster than Lua?
 
 
 */ 
