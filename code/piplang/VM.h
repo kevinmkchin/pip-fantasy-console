@@ -44,20 +44,19 @@ expression : cond_or
 TODO
 
 VM EPIC
- - Statements
- - Global variables
- - Local variables
- - Control flow & jumps
  - Call stacks & functions
  - Strings, Maps, Lists (MesaScript_GCObject types)
  - Reference counting and transiency handling
+ - 'continue' and 'break' in while and for-loops
+    - A continue statement jumps directly to the top of the nearest enclosing loop, skipping the rest of the loop body. 
+    Inside a for loop, a continue jumps to the increment clause, if there is one. It’s a compile-time error to have a 
+    continue statement not enclosed in a loop. Make sure to think about scope. What should happen to local variables 
+    declared inside the body of the loop or in blocks nested inside the loop when a continue is executed?
 
 PIPLANG GENERAL
  - Unit testing https://docs.racket-lang.org/rackunit/quick-start.html
  - RefCount Tests
  - % BinOp
- - while
- - for
  - elif
  - +=, -=, /=, *=
  - Handle cyclic references https://en.wikipedia.org/wiki/Reference_counting
@@ -79,6 +78,18 @@ https://craftinginterpreters.com/hash-tables.html
 
 Can I be faster than Lua?
 
+
+I want to support all of the following:
+
+map = [:]
+list = []
+
+for (n in [1, 2, 3, 5, 7, 11])
+for (k,v in [ a: 2, b: 3 ])
+for (,,)
+for (mut i = 0, i < 10, ++i)
+
+I don't think there's anything wrong with looking forward to inspect everything in the parentheses before compiling them...
 
 */ 
 

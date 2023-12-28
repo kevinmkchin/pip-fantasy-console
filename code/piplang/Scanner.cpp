@@ -154,6 +154,7 @@ static TokenType IdentifierType()
     if (word == "if") return TokenType::IF;
     if (word == "else") return TokenType::ELSE;
     if (word == "while") return TokenType::WHILE;
+    if (word == "for") return TokenType::FOR;
     if (word == "fn") return TokenType::FN;
     if (word == "mut") return TokenType::MUT;
     if (word == "return") return TokenType::RETURN;

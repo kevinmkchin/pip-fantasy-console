@@ -3,7 +3,7 @@
 #include "Chunk.h"
 #include "Object.h"
 
-void PrintRCObject(TValue value)
+static void PrintRCObject(TValue value)
 {
     switch (RCOBJ_TYPE(value))
     {
@@ -29,13 +29,13 @@ void PrintTValue(TValue value)
     }
 }
 
-int Debug_SimpleInstruction(const char *name, int offset)
+static int Debug_SimpleInstruction(const char *name, int offset)
 {
     printf("%s\n", name);
     return offset + 1;
 }
 
-int Debug_ConstantInstruction(const char *name, Chunk *chunk, int offset)
+static int Debug_ConstantInstruction(const char *name, Chunk *chunk, int offset)
 {
     u8 constantIndex = chunk->bytecode->at(offset + 1);
     printf("%-16s %4d '", name, constantIndex);
@@ -44,7 +44,7 @@ int Debug_ConstantInstruction(const char *name, Chunk *chunk, int offset)
     return offset + 2;
 }
 
-int Debug_ConstantLongInstruction(const char *name, Chunk *chunk, int offset)
+static int Debug_ConstantLongInstruction(const char *name, Chunk *chunk, int offset)
 {
     u32 byte2 = chunk->bytecode->at(offset + 1);
     u32 byte1 = chunk->bytecode->at(offset + 2);
@@ -56,11 +56,18 @@ int Debug_ConstantLongInstruction(const char *name, Chunk *chunk, int offset)
     return offset + 4;
 }
 
-int Debug_ByteInstruction(const char *name, Chunk *chunk, int offset)
+static int Debug_ByteInstruction(const char *name, Chunk *chunk, int offset)
 {
     u8 byte = chunk->bytecode->at(offset + 1);
     printf("%-16s %4d\n", name, byte);
     return offset + 2;
+}
+
+static int Debug_JumpInstruction(const char *name, int sign, Chunk *chunk, int offset) {
+    u16 jump = (u16)(chunk->bytecode->at(offset + 1) << 8);
+    jump |= chunk->bytecode->at(offset + 2);
+    printf("%-16s %4d -> %d\n", name, offset, offset + 3 + sign * jump);
+    return offset + 3;
 }
 
 int DisassembleInstruction(Chunk *chunk, int offset)
@@ -119,6 +126,12 @@ int DisassembleInstruction(Chunk *chunk, int offset)
         return Debug_ByteInstruction("GET_LOCAL", chunk, offset);
     case OpCode::SET_LOCAL:
         return Debug_ByteInstruction("SET_LOCAL", chunk, offset);
+    case OpCode::JUMP:
+        return Debug_JumpInstruction("JUMP", 1, chunk, offset);
+    case OpCode::JUMP_BACK:
+        return Debug_JumpInstruction("JUMP_BACK", -1, chunk, offset);
+    case OpCode::JUMP_IF_FALSE:
+        return Debug_JumpInstruction("JUMP_IF_FALSE", 1, chunk, offset);
     default:
         printf("Unknown opcode %d\n", instruction);
         return offset + 1;

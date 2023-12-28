@@ -32,7 +32,10 @@ enum class OpCode : u8
     GET_GLOBAL,
     SET_GLOBAL,
     GET_LOCAL,
-    SET_LOCAL
+    SET_LOCAL,
+    JUMP,
+    JUMP_BACK,
+    JUMP_IF_FALSE,
 };
 
 struct TValue

@@ -189,6 +189,42 @@ static void EmitReturn()
     EmitByte(OpCode::RETURN);
 }
 
+static void PatchJump(int index)
+{
+    u16 jump = (u16)((int)CurrentChunk()->bytecode->size() - index - 2); // 2 bytecodes for jump offset
+
+    if (jump > UINT16_MAX) 
+    {
+        Error("Too much code to jump over. Reduce code in block.");
+    }
+
+    CurrentChunk()->bytecode->at(index)     = (jump >> 8) & 0xff;
+    CurrentChunk()->bytecode->at(index + 1) = jump & 0xff;
+}
+
+static int EmitJump(OpCode op)
+{
+    EmitByte(op);
+    EmitByte(0xff); // return address/index of this byte
+    EmitByte(0xff);
+    return (int)CurrentChunk()->bytecode->size() - 2;
+}
+
+static void EmitLoop(int loopStart)
+{
+    EmitByte(OpCode::JUMP_BACK);
+
+    u16 jump = (u16)((int)CurrentChunk()->bytecode->size() - loopStart + 2);
+
+    if (jump > UINT16_MAX)
+    {
+        Error("Too much code to jump over. Reduce code in block.");
+    }
+
+    EmitByte((jump >> 8) & 0xff);
+    EmitByte(jump & 0xff);
+}
+
 static void EndCompiler()
 {
     EmitReturn();
@@ -281,6 +317,26 @@ static void BoolLiteral()
     }
 }
 
+static void LogicalAnd()
+{
+    int endJump = EmitJump(OpCode::JUMP_IF_FALSE);
+
+    EmitByte(OpCode::POP);
+    ParsePrecedence(Precedence::AND);
+    
+    PatchJump(endJump);
+}
+
+static void LogicalOr()
+{
+    int elseJump = EmitJump(OpCode::JUMP_IF_FALSE);
+    int endJump = EmitJump(OpCode::JUMP);
+    PatchJump(elseJump); // go here to check rest of predicate if False
+    EmitByte(OpCode::POP);
+    ParsePrecedence(Precedence::OR);
+    PatchJump(endJump); // go here to skip rest of predicate if True
+}
+
 static u32 lastIdentifierConstantAdded = 0;
 static int lastLocalIndexResolved = -1;
 static void IdentifierConstant(Token *name)
@@ -362,13 +418,16 @@ static void Dot()
 }
 
 
-//static void ParseExpressionStatement()
-//{
-//    Expression();
-//    EmitByte(OpCode::POP);
-//}
+static void ExpressionStatement()
+{
+    Expression();
+    EmitByte(OpCode::POP);
+}
 
+
+static void Statement();
 static void Declaration();
+static void ParseVariableDeclaration();
 
 static void Block()
 {
@@ -403,6 +462,97 @@ static void EndScope()
     // TODO could handle transiency here as well
 }
 
+static void IfStatement()
+{
+    Eat(TokenType::LPAREN, "Expected '(' after 'if'.");
+    Expression();
+    Eat(TokenType::RPAREN, "Expected ')' after predicate.");
+    
+    int thenJump = EmitJump(OpCode::JUMP_IF_FALSE);
+    
+    EmitByte(OpCode::POP);
+    Statement(); // if-body Block
+    int elseJump = EmitJump(OpCode::JUMP);
+
+    PatchJump(thenJump);
+
+    EmitByte(OpCode::POP);
+
+    if (Match(TokenType::ELSE)) Statement(); // else-body Block
+
+    PatchJump(elseJump);
+}
+
+static void WhileStatement()
+{
+    Eat(TokenType::LPAREN, "Expected '(' after keyword 'while'.");
+    int loopStart = (int)CurrentChunk()->bytecode->size();
+    Expression();
+    Eat(TokenType::RPAREN, "Expected ')' after while-loop predicate.");
+
+    int exitJump = EmitJump(OpCode::JUMP_IF_FALSE);
+    EmitByte(OpCode::POP);
+    Statement(); // while-body Block
+    EmitLoop(loopStart);
+    PatchJump(exitJump);
+    EmitByte(OpCode::POP);
+}
+
+static void ForStatement()
+{
+    BeginScope();
+
+    Eat(TokenType::LPAREN, "Expected '(' after 'for'.");
+    if (Match(TokenType::COMMA))
+    {
+        // no initializer
+    }
+    else if (Match(TokenType::MUT))
+    {
+        ParseVariableDeclaration();
+    }
+    else
+    {
+        ExpressionStatement();
+    }
+    Eat(TokenType::COMMA, "Expected ','.");
+    int loopStart = (int)CurrentChunk()->bytecode->size();
+    int exitJump = -1;
+    if (!Match(TokenType::COMMA))
+    {
+        Expression();
+        Eat(TokenType::COMMA, "Expected ',' after for-loop predicate.");
+        exitJump = EmitJump(OpCode::JUMP_IF_FALSE);
+        EmitByte(OpCode::POP);
+    }
+    //int postIncrementJump = -1;
+    if (!Match(TokenType::RPAREN))
+    {
+        int bodyJump = EmitJump(OpCode::JUMP);
+        int incrementStart = (int)CurrentChunk()->bytecode->size();
+        Statement();
+        Eat(TokenType::RPAREN, "Expected ')' after for-loop clauses.");
+
+        //postIncrementJump = EmitJump(OpCode::JUMP);
+
+        EmitLoop(loopStart);
+        loopStart = incrementStart;
+        PatchJump(bodyJump);
+    }
+
+    Statement(); // for-loop Block
+
+    EmitLoop(loopStart);
+
+    if (exitJump != -1)
+    {
+        PatchJump(exitJump);
+        EmitByte(OpCode::POP);
+    }
+
+    EndScope();
+}
+
 static void Statement()
 {
     if (Match(TokenType::LBRACE))
@@ -410,6 +560,18 @@ static void Statement()
         BeginScope();
         Block();
         EndScope();
+    }
+    else if (Match(TokenType::IF))
+    {
+        IfStatement();
+    }
+    else if (Match(TokenType::WHILE))
+    {
+        WhileStatement();
+    }
+    else if (Match(TokenType::FOR))
+    {
+        ForStatement();
     }
     else
     {
@@ -568,8 +730,8 @@ void SetupParsingRules()
     
     rules[(u8)TokenType::TRUE]              = {   BoolLiteral,         NULL, Precedence::NONE };
     rules[(u8)TokenType::FALSE]             = {   BoolLiteral,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::AND]               = {          NULL,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::OR]                = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::AND]               = {          NULL,   LogicalAnd, Precedence::AND };
+    rules[(u8)TokenType::OR]                = {          NULL,    LogicalOr, Precedence::OR };
     rules[(u8)TokenType::FN]                = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::IF]                = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::ELSE]              = {          NULL,         NULL, Precedence::NONE };
