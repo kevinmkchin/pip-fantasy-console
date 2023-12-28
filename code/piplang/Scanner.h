@@ -37,6 +37,7 @@ enum class TokenType : u8
     IF,
     ELSE,
     WHILE,
+    FOR,
     RETURN,
     MUT,
 

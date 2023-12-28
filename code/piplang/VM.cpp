@@ -97,8 +97,10 @@ static bool IsEqual(TValue l, TValue r)
 static InterpretResult Run()
 {
 #define VM_READ_BYTE() (*vm.ip++) // read byte and move pointer along
+#define VM_READ_WORD() (vm.ip += 2, (u16)((vm.ip[-2] << 8) | vm.ip[-1]))
+#define VM_READ_THREE_BYTES() (vm.ip += 3, (u32)((vm.ip[-3] << 8) | (vm.ip[-2] << 8) | vm.ip[-1]))
 #define VM_READ_CONSTANT() (vm.chunk->constants->at(VM_READ_BYTE()))
-#define VM_READ_CONSTANT_LONG() (vm.chunk->constants->at(  (u32)*vm.ip++ << 16 | (u32)*(vm.ip++ + 1) << 8 | (u32)*(vm.ip++ + 2)  )) // 2023-12-27 have to do it this was because postfix increments happen at the very very end...
+#define VM_READ_CONSTANT_LONG() (vm.chunk->constants->at(VM_READ_THREE_BYTES()))
 #define VM_BINARY_OP(resultValueConstructor, op) \
     do { \
         if (!IS_NUMBER(Stack_Peek(0)) || !IS_NUMBER(Stack_Peek(1))) \
@@ -238,11 +240,35 @@ static InterpretResult Run()
                 break;
             case OpCode::RELOP_GREATER: VM_BINARY_OP(BOOL_VAL, >); break;
             case OpCode::RELOP_LESSER: VM_BINARY_OP(BOOL_VAL, <); break;
+
+            case OpCode::JUMP_IF_FALSE: 
+            {
+                u16 jumpOffset = VM_READ_WORD();
+                if (IsFalsey(Stack_Peek(0))) vm.ip += jumpOffset;
+                break;
+            }
+
+            case OpCode::JUMP:
+            {
+                u16 jumpOffset = VM_READ_WORD();
+                vm.ip += jumpOffset;
+                break;
+            }
+
+            case OpCode::JUMP_BACK:
+            {
+                u16 jumpOffset = VM_READ_WORD();
+                vm.ip -= jumpOffset;
+                break;
+            }
+
         }
     }
 
 
 #undef VM_READ_BYTE
+#undef VM_READ_WORD
+#undef VM_READ_THREE_BYTES
 #undef VM_READ_CONSTANT
 #undef VM_READ_CONSTANT_LONG
 #undef VM_BINARY_OP
