@@ -47,8 +47,18 @@ struct Local
     int depth;
 };
 
+enum class CompilingToType
+{
+    FUNCTION,
+    TOPLEVELSCRIPT
+};
+
 struct Compiler
 {
+    Compiler *enclosing;
+    PipFunction *compilingTo;
+    CompilingToType compilingToType;
+
     Local locals[256];
     int localCount;
     int scopeDepth;
@@ -57,11 +67,26 @@ struct Compiler
 Parser parser;
 Compiler *current = NULL;
 
-static void InitCompiler(Compiler *compiler)
+static void InitCompiler(Compiler *compiler, CompilingToType compilingToType)
 {
+    compiler->enclosing = current;
+    compiler->compilingTo = NULL;
+    compiler->compilingToType = compilingToType;
+
     compiler->localCount = 0;
     compiler->scopeDepth = 0;
+    compiler->compilingTo = NewFunction();
     current = compiler;
+    if (compilingToType != CompilingToType::TOPLEVELSCRIPT)
+    {
+        current->compilingTo->name = CopyString(parser.previous.start, parser.previous.length);
+    }
+
+    // Compiler claims stack slot zero for class methods but I'm probably not going to implement classes or methods
+    Local *local = &current->locals[current->localCount++];
+    local->depth = 0;
+    local->name.start = "";
+    local->name.length = 0;
 }
 
 static void ErrorAt(Token *token, const char *message) 
@@ -154,13 +179,9 @@ static void EscapePanicMode()
     }
 }
 
-
-
-Chunk *compilingChunk;
-
 static Chunk *CurrentChunk()
 {
-    return compilingChunk;
+    return &current->compilingTo->chunk;
 }
 
 static void EmitByte(u8 byte)
@@ -182,11 +203,6 @@ static void EmitBytes(u8 byte1, u8 byte2)
 {
     EmitByte(byte1);
     EmitByte(byte2);
-}
-
-static void EmitReturn()
-{
-    EmitByte(OpCode::RETURN);
 }
 
 static void PatchJump(int index)
@@ -225,15 +241,22 @@ static void EmitLoop(int loopStart)
     EmitByte(jump & 0xff);
 }
 
-static void EndCompiler()
+static PipFunction *EndCompiler()
 {
-    EmitReturn();
+    EmitByte(OpCode::OP_FALSE);
+    EmitByte(OpCode::RETURN);
+
+    PipFunction *fn = current->compilingTo;
+
 #ifdef DEBUG_PRINT_CODE
     if (!parser.hadError)
     {
-        DisassembleChunk(CurrentChunk(), "Compiled code disassembly");
+        DisassembleChunk(CurrentChunk(), fn->name != NULL ? fn->name->text.c_str() : "<pip top-level script>");
     }
 #endif
+
+    current = current->enclosing;
+    return fn;
 }
 
 
@@ -270,6 +293,29 @@ static void Unary()
         case TokenType::BANG:  EmitByte(OpCode::LOGICAL_NOT); break;
         case TokenType::MINUS: EmitByte(OpCode::NEGATE); break;
     }
+}
+
+static u8 ArgumentList()
+{
+    u8 argc = 0;
+    if (!Check(TokenType::RPAREN))
+    {
+        do 
+        {
+            Expression();
+            if (argc == 255) Error("Can't have more than 255 arguments to a function.");
+            ++argc;
+        } while (Match(TokenType::COMMA));
+    }
+    Eat(TokenType::RPAREN, "Expected ')' after function arguments.");
+    return argc;
+}
+
+static void Call()
+{
+    u8 argc = ArgumentList();
+    EmitByte(OpCode::CALL);
+    EmitByte(argc);
 }
 
 static void BinOp()
@@ -553,6 +599,38 @@ static void ForStatement()
     EndScope();
 }
 
+static void ReturnStatement()
+{
+    if (current->compilingToType == CompilingToType::TOPLEVELSCRIPT)
+    {
+        Error("Can't return from top-level script.");
+    }
+
+    Eat(TokenType::LPAREN, "Expected '(' after 'return' keyword.");
+    if (Match(TokenType::RPAREN))
+    {
+        EmitByte(OpCode::OP_FALSE);
+        EmitByte(OpCode::RETURN);
+    }
+    else
+    {
+        Expression();
+        Eat(TokenType::RPAREN, "Expected ')' after return value.");
+        EmitByte(OpCode::RETURN);
+    }
+}
+
+static void PrintStatement()
+{
+    Eat(TokenType::LPAREN, "Expected '(' after 'print' keyword.");
+    if (!Match(TokenType::RPAREN))
+    {
+        Expression();
+        Eat(TokenType::RPAREN, "Expected ')' after print value.");
+        EmitByte(OpCode::PRINT);
+    }
+}
+
 static void Statement()
 {
     if (Match(TokenType::LBRACE))
@@ -572,6 +650,14 @@ static void Statement()
     else if (Match(TokenType::FOR))
     {
         ForStatement();
+    }
+    else if (Match(TokenType::RETURN))
+    {
+        ReturnStatement();
+    }
+    else if (Match(TokenType::PRINT))
+    {
+        PrintStatement();
     }
     else
     {
@@ -669,7 +755,7 @@ static void DefineVariable(u32 global)
 
 static void ParseVariableDeclaration()
 {
-    ParseVariable("Expected variable name");
+    ParseVariable("Expected variable identifier after 'mut'.");
     u32 global = lastIdentifierConstantAdded;
 
     if (Match(TokenType::EQUAL))
@@ -684,11 +770,58 @@ static void ParseVariableDeclaration()
     DefineVariable(global);
 }
 
+static void Function(CompilingToType compilingToType)
+{
+    Compiler compiler;
+    InitCompiler(&compiler, compilingToType);
+
+    BeginScope();
+    Eat(TokenType::LPAREN, "Expect '(' after function name.");
+    // Semantically, a parameter is simply a local variable declared in the outermost lexical scope of the function body. 
+    // We get to use the existing compiler support for declaring named local variables to parse and compile parameters. 
+    // Unlike local variables, which have initializers, there’s no code here to initialize the parameter’s value.
+    if (!Check(TokenType::RPAREN)) 
+    {
+        do {
+            current->compilingTo->arity++;
+            if (current->compilingTo->arity > 255) 
+            {
+                ErrorAtCurrent("Can't have more than 255 parameters.");
+            }
+            ParseVariable("Expect parameter name.");
+            DefineVariable(0);
+        } while (Match(TokenType::COMMA));
+    }
+    Eat(TokenType::RPAREN, "Expect ')' after parameters.");
+    Eat(TokenType::LBRACE, "Expect '{' before function body.");
+    Block();
+
+    PipFunction *fn = EndCompiler();
+
+    u32 arg = AddConstant(CurrentChunk(), FUNCTION_VAL(fn));
+    EmitByte(OpCode::CONSTANT_LONG);
+    EmitByte((u8)(arg >> 16));
+    EmitByte((u8)(arg >> 8));
+    EmitByte((u8)(arg));
+}
+
+static void ParseFunctionDeclaration()
+{
+    ParseVariable("Expected function identifier after 'fn'.");
+    u32 global = lastIdentifierConstantAdded;
+    Function(CompilingToType::FUNCTION);
+    DefineVariable(global);
+}
+
 static void Declaration()
 {
     if (Match(TokenType::MUT))
     {
         ParseVariableDeclaration();
+    }
+    else if (Match(TokenType::FN))
+    {
+        ParseFunctionDeclaration();
     }
     else
     {
@@ -713,7 +846,7 @@ void SetupParsingRules()
     rules[(u8)TokenType::BANG]              = {         Unary,         NULL, Precedence::NONE };
     rules[(u8)TokenType::LSQBRACK]          = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::RSQBRACK]          = {          NULL,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::LPAREN]            = {      Grouping,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::LPAREN]            = {      Grouping,         Call, Precedence::CALL };
     rules[(u8)TokenType::RPAREN]            = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::LBRACE]            = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::RBRACE]            = {          NULL,         NULL, Precedence::NONE };
@@ -736,7 +869,10 @@ void SetupParsingRules()
     rules[(u8)TokenType::IF]                = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::ELSE]              = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::WHILE]             = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::FOR]               = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::MUT]               = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::RETURN]            = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::PRINT]             = {          NULL,         NULL, Precedence::NONE };
     
     rules[(u8)TokenType::ERROR]             = {          NULL,         NULL, Precedence::NONE };
 };
@@ -766,14 +902,13 @@ static ParseRule *GetParseRule(TokenType type)
 }
 
 
-bool Compile(const char *source, Chunk *chunk)
+PipFunction *Compile(const char *source)
 {
     SetupParsingRules();
 
     InitScanner(source);
     Compiler compiler;
-    InitCompiler(&compiler);
-    compilingChunk = chunk;
+    InitCompiler(&compiler, CompilingToType::TOPLEVELSCRIPT);
 
     parser.hadError = false;
     parser.panicMode = false;
@@ -785,6 +920,6 @@ bool Compile(const char *source, Chunk *chunk)
         Declaration();
     }
 
-    EndCompiler();
-    return !parser.hadError;
+    PipFunction *toplevelscriptfn = EndCompiler();
+    return parser.hadError ? NULL : toplevelscriptfn;
 }

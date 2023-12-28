@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PipLangCommon.h"
+#include "Chunk.h"
 
 struct RCObject
 {
@@ -60,11 +61,26 @@ RCObject *NewRCObject(RCObject::OType type);
 
 RCString *CopyString(const char *buf, int length);
 
+
+
+
+struct PipFunction
+{
+    RCString *name;
+    int arity;
+    Chunk chunk;
+};
+
+PipFunction *NewFunction();
+
+
+
+
+
+
 //static RCString *TakeString(const char *buf, int length)
 //{
 //}
-
-
 
 //struct MesaScript_List
 //{

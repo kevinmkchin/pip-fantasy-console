@@ -1,5 +1,6 @@
 #pragma once
 
 struct Chunk;
+struct PipFunction;
 
-bool Compile(const char *source, Chunk *chunk);
+PipFunction *Compile(const char *source);

@@ -16,6 +16,7 @@ VM vm;
 void Stack_Reset()
 {
     vm.sp = vm.stack;
+    vm.frameCount = 0;
 }
 
 void Stack_Push(TValue value)
@@ -50,8 +51,9 @@ void FreeVM()
 
 static void RuntimeError(const char *format, ...)
 {
-    size_t instruction = vm.ip - vm.chunk->bytecode->data() - 1;
-    int line = vm.chunk->linenumbers->at(instruction);
+    CallFrame *frame = &vm.frames[vm.frameCount - 1];
+    size_t instruction = frame->ip - frame->fn->chunk.bytecode->data() - 1;
+    int line = frame->fn->chunk.linenumbers->at(instruction);
     fprintf(stderr, "[line %d] Runtime error: ", line);
 
     va_list args;
@@ -59,6 +61,24 @@ static void RuntimeError(const char *format, ...)
     vfprintf(stderr, format, args);
     va_end(args);
     fputs("\n", stderr);
+
+    // stack trace
+    fprintf(stderr, "=== Stack trace ===\n");
+    for (int i = vm.frameCount - 1; i >= 0; --i)
+    {
+        CallFrame *frame = &vm.frames[i];
+        PipFunction *fn = frame->fn;
+        size_t instruction = frame->ip - fn->chunk.bytecode->data() - 1;
+        fprintf(stderr, "[line %d] in ", fn->chunk.linenumbers->at(instruction));
+        if (fn->name == NULL)
+        {
+            fprintf(stderr, "top-level script\n");
+        }
+        else
+        {
+            fprintf(stderr, "%s()\n", fn->name->text.c_str());
+        }
+    }
 
     Stack_Reset();
 }
@@ -94,13 +114,45 @@ static bool IsEqual(TValue l, TValue r)
     }
 }
 
+static bool PushCallFrame(PipFunction *fn, u8 argc)
+{
+    if (argc != fn->arity)
+    {
+        RuntimeError("Expected %d arguments but got %d", fn->arity, argc);
+        return false;
+    }
+    if (vm.frameCount == FRAMES_MAX) 
+    {
+        RuntimeError("Stack overflow. Exceeded max number of call frames.");
+        return false;
+    }
+
+    CallFrame *frame = &vm.frames[vm.frameCount++];
+    frame->fn = fn;
+    frame->ip = fn->chunk.bytecode->data();
+    frame->bp = vm.sp - argc - 1;
+    return true;
+}
+
+static bool CallValue(TValue callee, u8 argc)
+{
+    if (IS_FUNCTION(callee))
+    {
+        return PushCallFrame(AS_FUNCTION(callee), argc);
+    }
+    RuntimeError("Invoked identifier does not map to a function.");
+    return false;
+}
+
 static InterpretResult Run()
 {
-#define VM_READ_BYTE() (*vm.ip++) // read byte and move pointer along
-#define VM_READ_WORD() (vm.ip += 2, (u16)((vm.ip[-2] << 8) | vm.ip[-1]))
-#define VM_READ_THREE_BYTES() (vm.ip += 3, (u32)((vm.ip[-3] << 8) | (vm.ip[-2] << 8) | vm.ip[-1]))
-#define VM_READ_CONSTANT() (vm.chunk->constants->at(VM_READ_BYTE()))
-#define VM_READ_CONSTANT_LONG() (vm.chunk->constants->at(VM_READ_THREE_BYTES()))
+    CallFrame *frame = &vm.frames[vm.frameCount - 1];
+
+#define VM_READ_BYTE() (*frame->ip++) // read byte and move pointer along
+#define VM_READ_WORD() (frame->ip += 2, (u16)((frame->ip[-2] << 8) | frame->ip[-1]))
+#define VM_READ_THREE_BYTES() (frame->ip += 3, (u32)((frame->ip[-3] << 8) | (frame->ip[-2] << 8) | frame->ip[-1]))
+#define VM_READ_CONSTANT() (frame->fn->chunk.constants->at(VM_READ_BYTE()))
+#define VM_READ_CONSTANT_LONG() (frame->fn->chunk.constants->at(VM_READ_THREE_BYTES()))
 #define VM_BINARY_OP(resultValueConstructor, op) \
     do { \
         if (!IS_NUMBER(Stack_Peek(0)) || !IS_NUMBER(Stack_Peek(1))) \
@@ -125,14 +177,30 @@ static InterpretResult Run()
             printf(" ]");
         }
         printf("\n");
-        DisassembleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->bytecode->data()));
+        DisassembleInstruction(&frame->fn->chunk, (int)(frame->ip - frame->fn->chunk.bytecode->data()));
 #endif
         OpCode op;
         switch (op = (OpCode)VM_READ_BYTE())
         {
+            case OpCode::PRINT:
+                PrintTValue(Stack_Pop());
+                printf("\n");
+                break;
 
             case OpCode::RETURN:
-                return InterpretResult::OK;
+            {
+                TValue result = Stack_Pop();
+                --vm.frameCount;
+                if (vm.frameCount == 0)
+                {
+                    Stack_Pop();
+                    return InterpretResult::OK;
+                }
+                vm.sp = frame->bp;
+                Stack_Push(result);
+                frame = &vm.frames[vm.frameCount - 1];
+                break;
+            }
 
             case OpCode::CONSTANT:
                 Stack_Push(VM_READ_CONSTANT());
@@ -180,15 +248,15 @@ static InterpretResult Run()
 
             case OpCode::GET_LOCAL:
             {
-                u8 stackIndexOfLocal = VM_READ_BYTE();
-                Stack_Push(vm.stack[stackIndexOfLocal]);
+                u8 bpOffset = VM_READ_BYTE();
+                Stack_Push(frame->bp[bpOffset]);
                 break;
             }
 
             case OpCode::SET_LOCAL:
             {
-                u8 stackIndexOfLocal = VM_READ_BYTE();
-                vm.stack[stackIndexOfLocal] = Stack_Pop();
+                u8 bpOffset = VM_READ_BYTE();
+                frame->bp[bpOffset] = Stack_Pop();
                 break;
             }
 
@@ -244,21 +312,32 @@ static InterpretResult Run()
             case OpCode::JUMP_IF_FALSE: 
             {
                 u16 jumpOffset = VM_READ_WORD();
-                if (IsFalsey(Stack_Peek(0))) vm.ip += jumpOffset;
+                if (IsFalsey(Stack_Peek(0))) frame->ip += jumpOffset;
                 break;
             }
 
             case OpCode::JUMP:
             {
                 u16 jumpOffset = VM_READ_WORD();
-                vm.ip += jumpOffset;
+                frame->ip += jumpOffset;
                 break;
             }
 
             case OpCode::JUMP_BACK:
             {
                 u16 jumpOffset = VM_READ_WORD();
-                vm.ip -= jumpOffset;
+                frame->ip -= jumpOffset;
+                break;
+            }
+
+            case OpCode::CALL:
+            {
+                u8 argc = VM_READ_BYTE();
+                if (!CallValue(Stack_Peek(argc), argc))
+                {
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                frame = &vm.frames[vm.frameCount - 1]; // Move to callee frame
                 break;
             }
 
@@ -275,24 +354,14 @@ static InterpretResult Run()
 }
 
 
-InterpretResult Interpret(const char *source)
+static InterpretResult Interpret(const char *source)
 {
-    Chunk chunk;
-    InitChunk(&chunk);
+    PipFunction *script = Compile(source);
+    if (script == NULL) return InterpretResult::COMPILE_ERROR;
 
-    if (!Compile(source, &chunk))
-    {
-        FreeChunk(&chunk);
-        return InterpretResult::COMPILE_ERROR;
-    }
-
-    vm.chunk = &chunk;
-    vm.ip = vm.chunk->bytecode->data();
-
-    InterpretResult result = Run();
-
-    FreeChunk(&chunk);
-    return result;
+    Stack_Push(FUNCTION_VAL(script)); // Why does first value of frame stack have to be the function itself?
+    PushCallFrame(script, 0);
+    return Run();
 }
 
 InterpretResult PipLangVM_RunScript(const char *source)

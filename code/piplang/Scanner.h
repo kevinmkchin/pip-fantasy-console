@@ -38,8 +38,9 @@ enum class TokenType : u8
     ELSE,
     WHILE,
     FOR,
-    RETURN,
     MUT,
+    RETURN,
+    PRINT,
 
     ERROR,
     END_OF_FILE

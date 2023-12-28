@@ -12,13 +12,21 @@ enum class InterpretResult
     RUNTIME_ERROR
 };
 
+#define FRAMES_MAX 64
+#define STACK_MAX FRAMES_MAX * 256
 
-#define STACK_MAX 4000
+struct CallFrame
+{
+    PipFunction *fn;
+    u8 *ip;     // instruction pointer
+    TValue *bp; // base pointer
+};
 
 struct VM
 {
-    Chunk *chunk;
-    u8 *ip; // instruction pointer
+    CallFrame frames[FRAMES_MAX];
+    int frameCount;
+
     TValue stack[STACK_MAX];
     TValue *sp; // stack pointer
 
@@ -44,7 +52,6 @@ expression : cond_or
 TODO
 
 VM EPIC
- - Call stacks & functions
  - Strings, Maps, Lists (MesaScript_GCObject types)
  - Reference counting and transiency handling
  - 'continue' and 'break' in while and for-loops

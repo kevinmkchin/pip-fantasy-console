@@ -158,6 +158,7 @@ static TokenType IdentifierType()
     if (word == "fn") return TokenType::FN;
     if (word == "mut") return TokenType::MUT;
     if (word == "return") return TokenType::RETURN;
+    if (word == "print") return TokenType::PRINT;
 
     return TokenType::IDENTIFIER;
 }

@@ -3,6 +3,16 @@
 #include "Chunk.h"
 #include "Object.h"
 
+static void PrintFunction(PipFunction *fn)
+{
+    if (fn->name == NULL)
+    {
+        printf("<pip top-level script>");
+        return;
+    }
+    printf("<fn %s>", fn->name->text.c_str());
+}
+
 static void PrintRCObject(TValue value)
 {
     switch (RCOBJ_TYPE(value))
@@ -22,6 +32,9 @@ void PrintTValue(TValue value)
             break;
         case TValue::REAL:
             printf("%g", AS_NUMBER(value));
+            break;
+        case TValue::FUNC:
+            PrintFunction(AS_FUNCTION(value));
             break;
         case TValue::RCOBJ:
             PrintRCObject(value); 
@@ -88,6 +101,8 @@ int DisassembleInstruction(Chunk *chunk, int offset)
     {
     case OpCode::RETURN:
         return Debug_SimpleInstruction("RETURN", offset);
+    case OpCode::PRINT:
+        return Debug_SimpleInstruction("PRINT", offset);
     case OpCode::CONSTANT:
         return Debug_ConstantInstruction("CONSTANT", chunk, offset);
     case OpCode::CONSTANT_LONG:
@@ -132,6 +147,8 @@ int DisassembleInstruction(Chunk *chunk, int offset)
         return Debug_JumpInstruction("JUMP_BACK", -1, chunk, offset);
     case OpCode::JUMP_IF_FALSE:
         return Debug_JumpInstruction("JUMP_IF_FALSE", 1, chunk, offset);
+    case OpCode::CALL:
+        return Debug_ByteInstruction("CALL", chunk, offset);
     default:
         printf("Unknown opcode %d\n", instruction);
         return offset + 1;

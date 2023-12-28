@@ -6,10 +6,11 @@
 #include <vector>
 
 
-#define DEBUG_PRINT_CODE
-#define DEBUG_TRACE_EXECUTION
+//#define DEBUG_PRINT_CODE
+//#define DEBUG_TRACE_EXECUTION
 
 struct RCObject;
+struct PipFunction;
 
 enum class OpCode : u8
 {
@@ -36,6 +37,8 @@ enum class OpCode : u8
     JUMP,
     JUMP_BACK,
     JUMP_IF_FALSE,
+    CALL,
+    PRINT
 };
 
 struct TValue
@@ -44,7 +47,7 @@ struct TValue
     {
         BOOLEAN,
         REAL,
-        //FUNC,
+        FUNC,
         RCOBJ
     };
 
@@ -55,6 +58,7 @@ struct TValue
         bool boolean;
         double real;
         RCObject *rcobj;
+        PipFunction *fn;
     };
 
     static TValue Boolean(bool v)
@@ -73,6 +77,14 @@ struct TValue
         return tv;
     }
     
+    static TValue Function(PipFunction *pipfn)
+    {
+        TValue tv;
+        tv.type = FUNC;
+        tv.fn = pipfn;
+        return tv;
+    }
+
     static TValue RCObject(RCObject *ptr)
     {
         TValue tv;
@@ -84,12 +96,15 @@ struct TValue
 
 #define BOOL_VAL(value)     (TValue::Boolean(value))
 #define NUMBER_VAL(value)   (TValue::Number(value))
+#define FUNCTION_VAL(value) (TValue::Function(value))
 #define RCOBJ_VAL(value)    (TValue::RCObject(value))
 
 #define AS_BOOL(value)      ((value).boolean)
 #define AS_NUMBER(value)    ((value).real)
+#define AS_FUNCTION(value)  ((value).fn)
 #define AS_RCOBJ(value)     ((value).rcobj)
 
 #define IS_BOOL(value)      ((value).type == TValue::BOOLEAN)
 #define IS_NUMBER(value)    ((value).type == TValue::REAL)
+#define IS_FUNCTION(value)  ((value).type == TValue::FUNC)
 #define IS_RCOBJ(value)     ((value).type == TValue::RCOBJ)

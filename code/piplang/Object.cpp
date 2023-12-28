@@ -1,7 +1,9 @@
 #include "Object.h"
 #include "VM.h"
 
+#define STD_UNORDERED_MAP_BACKEND
 
+#ifdef STD_UNORDERED_MAP_BACKEND
 void InitHashMap(HashMap *map)
 {
     map->count = 0;
@@ -70,8 +72,7 @@ static RCString *HashMapFindString(HashMap *map, const char *buf, int length) /*
         return NULL;
     }
 }
-
-
+#endif
 
 RCObject *NewRCObject(RCObject::OType type)
 {
@@ -107,4 +108,19 @@ RCString *CopyString(const char *buf, int length)
     HashMapSet(&vm.interned_strings, string, TValue());
 
     return string;
+}
+
+
+std::vector<PipFunction*> trackFunctions;
+
+PipFunction *NewFunction()
+{
+    PipFunction * fn = new PipFunction();
+    fn->arity = 0;
+    fn->name = NULL;
+    InitChunk(&fn->chunk);
+
+    trackFunctions.push_back(fn);
+
+    return fn;
 }
