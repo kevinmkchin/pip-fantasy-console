@@ -31,7 +31,7 @@ void PrintTValue(TValue value)
             printf(AS_BOOL(value) ? "True" : "False");
             break;
         case TValue::REAL:
-            printf("%g", AS_NUMBER(value));
+            printf("%lf", AS_NUMBER(value));
             break;
         case TValue::FUNC:
             PrintFunction(AS_FUNCTION(value));

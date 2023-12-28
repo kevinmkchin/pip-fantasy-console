@@ -418,9 +418,12 @@ static int ResolveLocal(Compiler *compiler, Token *name)
 
 static void NamedVariable(Token name)
 {
-    //IdentifierConstant(&name);
-
     lastLocalIndexResolved = ResolveLocal(current, &name);
+
+    if (lastLocalIndexResolved == -1)
+    {
+        IdentifierConstant(&name);
+    }
 
     if (!Check(TokenType::EQUAL))
     {
@@ -432,7 +435,6 @@ static void NamedVariable(Token name)
         }
         else
         {
-            IdentifierConstant(&name);
             u32 arg = lastIdentifierConstantAdded;
             EmitByte(OpCode::GET_GLOBAL);
             EmitByte((u8)(arg >> 16));
