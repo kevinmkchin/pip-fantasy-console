@@ -13,16 +13,33 @@
 
 ## What is it?
 
-The **Mesa GCS** is a game creation system.
+pip is a game making tool.
+
+SNES sprite graphics and Newgrounds (Dad n' Me, Alien Hominid) 2D graphics both possible.
+
 Build Diablo 2 / Skyrim like Roguelike along the way.
 https://store.steampowered.com/app/2218750/Halls_of_Torment/
 
 
 ## Build on Windows
 
+```
+build
+build clean - clean build directory
+build release - release build 
+
+run
+run release
+run vs - start vs sln
+run subl - start sublime project
+```
+
 ### Visual Studio
 Open repo directory with Visual Studio (requires Cmake tools for VS to be installed).
 Right click on CMakeLists.txt from the solution explorerer and "Set as Startup Item".
+
+### CLion
+Open CMakeLists.txt in root with CLion
 
 ## Build on Mac
 

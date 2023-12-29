@@ -13,40 +13,27 @@
 
 VM vm;
 
-void Stack_Reset()
+static void Stack_Reset()
 {
     vm.sp = vm.stack;
     vm.frameCount = 0;
 }
 
-void Stack_Push(TValue value)
+static void Stack_Push(TValue value)
 {
     *vm.sp = value;
     ++vm.sp;
 }
 
-TValue Stack_Pop()
+static TValue Stack_Pop()
 {
     --vm.sp;
     return *vm.sp;
 }
 
-TValue Stack_Peek(int distance)
+static TValue Stack_Peek(int distance)
 {
     return vm.sp[-1 - distance];
-}
-
-void InitVM()
-{
-    Stack_Reset();
-    AllocateHashMap(&vm.interned_strings);
-    AllocateHashMap(&vm.globals);
-}
-
-void FreeVM()
-{
-    FreeHashMap(&vm.interned_strings);
-    FreeHashMap(&vm.globals);
 }
 
 static void RuntimeError(const char *format, ...)
@@ -140,6 +127,14 @@ static bool CallValue(TValue callee, u8 argc)
     {
         return PushCallFrame(AS_FUNCTION(callee), argc);
     }
+    else if (IS_NATIVEFN(callee))
+    {
+        NativeFn native = AS_NATIVEFN(callee);
+        TValue result = native(argc, vm.sp - argc);
+        vm.sp -= argc + 1;
+        Stack_Push(result);
+        return true;
+    }
     RuntimeError("Invoked identifier does not map to a function.");
     return false;
 }
@@ -226,7 +221,7 @@ static InterpretResult Run()
                 TValue value;
                 if (!HashMapGet(&vm.globals, name, &value))
                 {
-                    RuntimeError("Undefined variable '%s'.", name->text);
+                    RuntimeError("Undefined variable '%s'.", name->text.c_str());
                     return InterpretResult::RUNTIME_ERROR;
                 }
                 Stack_Push(value);
@@ -239,7 +234,7 @@ static InterpretResult Run()
                 if (HashMapSet(&vm.globals, name, Stack_Peek(0)))
                 {
                     HashMapDelete(&vm.globals, name);
-                    RuntimeError("Undefined variable '%s'.", name->text);
+                    RuntimeError("Undefined variable '%s'.", name->text.c_str());
                     return InterpretResult::RUNTIME_ERROR;
                 }
                 Stack_Pop();
@@ -369,48 +364,39 @@ static InterpretResult Interpret(const char *source)
     return result;
 }
 
-InterpretResult PipLangVM_RunScript(const char *source)
+void PipLangVM_InitVM()
 {
-    InitVM();
-
-    return Interpret(source);
-
-    FreeVM();
+    Stack_Reset();
+    AllocateHashMap(&vm.interned_strings);
+    AllocateHashMap(&vm.globals);
 }
 
-//void PipLangRunSomeThings()
-//{
-//    InitVM();
-//
-//    Chunk chunk;
-//    InitChunk(&chunk);
-//
-//    //TValue v;
-//    //v.real = 34.201;
-//    //WriteConstant(&chunk, v, 0);
-//    //WriteConstant(&chunk, v, 1);
-//    //WriteChunk(&chunk, (u8)OpCode::NEGATE, 1);
-//    //WriteChunk(&chunk, (u8)OpCode::RETURN, 2);
-//
-//    TValue a, b, c;
-//    a.real = 1.2;
-//    b.real = 3.4;
-//    c.real = 5.6;
-//
-//    WriteConstant(&chunk, a, 0);
-//    WriteConstant(&chunk, b, 0);
-//    WriteChunk(&chunk, (u8)OpCode::ADD, 0);
-//    WriteConstant(&chunk, c, 0);
-//    WriteChunk(&chunk, (u8)OpCode::DIVIDE, 0);
-//    WriteChunk(&chunk, (u8)OpCode::NEGATE, 0);
-//    WriteChunk(&chunk, (u8)OpCode::RETURN, 1);
-//
-//    //Debug_DisassembleChunk(&chunk, "test chunk");
-//    //Interpret(&chunk);
-//
-//    FreeVM();
-//    FreeChunk(&chunk);
-//}
+void PipLangVM_FreeVM()
+{
+    FreeHashMap(&vm.interned_strings);
+    FreeHashMap(&vm.globals);
+}
+
+InterpretResult PipLangVM_RunScript(const char *source)
+{
+    return Interpret(source);
+}
+
+void PipLangVM_DefineNativeFn(const char *name, NativeFn fn)
+{
+    if (vm.globals.entries == NULL)
+    {
+        printf("pip vm: attempting to define native function before vm is initialized.");
+        return;
+    }
+
+    Stack_Push(RCOBJ_VAL((RCObject*)CopyString(name, (int)strlen(name))));
+    Stack_Push(NATIVEFN_VAL((void*)fn));
+    HashMapSet(&vm.globals, RCOBJ_AS_STRING(vm.stack[0]), vm.stack[1]);
+    Stack_Pop();
+    Stack_Pop();
+}
+
 
 
 
