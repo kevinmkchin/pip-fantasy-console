@@ -17,7 +17,7 @@ static RCString *HashMapFindString(HashMap *map, const char *buf, int length, u3
             // Check if empty non-tombstone entry
             if (!AS_BOOL(entry->value)) return NULL;
         }
-        else if (entry->key->hash == hash && entry->key->text == entry->key->text)
+        else if (entry->key->hash == hash && entry->key->text == std::string(buf, length))
         {
             return entry->key;
         }
@@ -138,7 +138,7 @@ static u32 HashString(const char *key, int length)
     }
     return hash;
 
-    // TODO try diff hash
+    // TODO try diff hash https://cp-algorithms.com/string/string-hashing.html
     //for (int i = 0; i < length; ++i)
     //{
     //    (u8)(key[i]) 
