@@ -3,14 +3,25 @@
 if not exist build mkdir build
 echo Build started: %time%
 
-if not "%1" == "clean" goto generate
-cmake --build build --target clean
-goto build
-
-:generate
 cmake -S . -B build
-goto build
 
-:build
-cmake --build build
+if "%1" == "clean" goto clean
+if "%1" == "release" goto release
+
+goto debug
+
+:clean
+cmake --build build --config Debug --target clean
+cmake --build build --config Release --target clean
+goto end
+
+:debug
+cmake --build build --config Debug
+goto end
+
+:release
+cmake --build build --config Release
+goto end
+
+:end
 echo Build finished: %time%
