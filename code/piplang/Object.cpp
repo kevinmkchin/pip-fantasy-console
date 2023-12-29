@@ -2,7 +2,7 @@
 #include "VM.h"
 
 
-#define MAX_LOADFACTOR 0.7f
+#define MAX_LOADFACTOR 0.7
 
 static RCString *HashMapFindString(HashMap *map, const char *buf, int length, u32 hash)
 {
@@ -91,7 +91,7 @@ void FreeHashMap(HashMap *map)
 
 bool HashMapSet(HashMap *map, RCString *key, TValue value)
 {
-    if (map->count + 1 > map->capacity * MAX_LOADFACTOR)
+    if ((double)map->count + 1 > (double)map->capacity * MAX_LOADFACTOR)
     {
         AdjustCapacity(map, map->capacity * 2);
     }

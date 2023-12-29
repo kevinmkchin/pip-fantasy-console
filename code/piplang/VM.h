@@ -13,7 +13,7 @@ enum class InterpretResult
 };
 
 #define FRAMES_MAX 64
-#define STACK_MAX FRAMES_MAX * 256
+#define STACK_MAX (FRAMES_MAX * 256)
 
 struct CallFrame
 {
@@ -36,7 +36,10 @@ struct VM
 
 extern VM vm;
 
+void PipLangVM_InitVM();
+void PipLangVM_FreeVM();
 InterpretResult PipLangVM_RunScript(const char *source);
+void PipLangVM_DefineNativeFn(const char *name, NativeFn fn);
 
 /*
 
@@ -47,8 +50,6 @@ statement : expression
 expression : cond_or
 
 
-
-
 TODO
 
 VM EPIC
@@ -56,7 +57,7 @@ VM EPIC
  - Reference counting and transiency handling
  - 'continue' and 'break' in while and for-loops
     - A continue statement jumps directly to the top of the nearest enclosing loop, skipping the rest of the loop body. 
-    Inside a for loop, a continue jumps to the increment clause, if there is one. It’s a compile-time error to have a 
+    Inside a for loop, a continue jumps to the increment clause, if there is one. Itâ€™s a compile-time error to have a 
     continue statement not enclosed in a loop. Make sure to think about scope. What should happen to local variables 
     declared inside the body of the loop or in blocks nested inside the loop when a continue is executed?
 
@@ -76,14 +77,9 @@ PIPLANG GENERAL
 
 
 NOTES
-
+Can I be faster than Lua? YESSSSSSSSSSSSSSSSSSS
 Revisit 1 * 2 = 3 + 4 assignment bug to fire Compile error https://craftinginterpreters.com/global-variables.html#assignment
-
-Revisit replacing std::string and std::unordered_map with custom implementation of string, hash table, and dynamic array and linear memory allocator instead of std::vector
-https://craftinginterpreters.com/strings.html
-https://craftinginterpreters.com/hash-tables.html
-
-Can I be faster than Lua?
+Revisit linear memory allocator instead of std::vector
 
 
 I want to support all of the following:

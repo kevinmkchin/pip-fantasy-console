@@ -63,8 +63,6 @@ RCObject *NewRCObject(RCObject::OType type);
 RCString *CopyString(const char *buf, int length);
 
 
-
-
 struct PipFunction
 {
     RCString *name;

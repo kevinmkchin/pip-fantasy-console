@@ -147,12 +147,17 @@ void Temp_LoadScript(std::string pathFromWd)
 
 #include "piplang/VM.h"
 
+
 void Temp_ExecCurrentScript()
 {
     //std::ostringstream profilerOutput;
 
     auto script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
+
+    PipLangVM_InitVM();
+//    PipLangVM_DefineNativeFn("something", something);
     PipLangVM_RunScript(script.c_str());
+    PipLangVM_FreeVM();
 
     //RunProfilerOnScript(script, profilerOutput);
     //PrintLog.Message(profilerOutput.str());
