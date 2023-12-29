@@ -7,22 +7,21 @@
 
 # Immediate next
 
+- The PipLang VM Epic...see VM.h
 - code editor: cut, copy, paste
 - code editor: ctrl+backspace and ctrl+delete for word deletion
 - code editor: insert mode + indicator (?)
+- code editor: SCROLLING
 
 - gfx api: draw rect function
-- piplang: When exception thrown, print warning and let program continue
 
 # Todo
 
-- The PipLang VM Epic...see VM.h
-
-- code editor: SCROLLING
 - boot sound (SDL_mixer)
 - Markdown reader - manual in markdown, toggled with F1
 - code editor: pg up pg down (maybe for functions?)
 - code editor: ctrl+f
+- piplang: Upon RuntimeError, exit function but continue game execution
 
 ### Uncategorized
 

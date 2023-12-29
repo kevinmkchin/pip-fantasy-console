@@ -74,13 +74,13 @@ PIPLANG GENERAL
  - need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement Note this is not deleting the object. Deleting an entry is different from deleting the object stored in that entry. I want to avoid ability to delete entire objects, because then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).
  - math ops: flr, ceil, rnd -> all return integer
  - More string operations
-
+ - Native function arity checking
+ - Native function RuntimeErrors
 
 NOTES
 Can I be faster than Lua? YESSSSSSSSSSSSSSSSSSS
 Revisit 1 * 2 = 3 + 4 assignment bug to fire Compile error https://craftinginterpreters.com/global-variables.html#assignment
-Revisit linear memory allocator instead of std::vector
-
+If I remove C++isms from PipLang and fully switch VM to C, then I can make instruction pointer a register.
 
 I want to support all of the following:
 

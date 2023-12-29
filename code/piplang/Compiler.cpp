@@ -781,7 +781,7 @@ static void Function(CompilingToType compilingToType)
     Eat(TokenType::LPAREN, "Expect '(' after function name.");
     // Semantically, a parameter is simply a local variable declared in the outermost lexical scope of the function body. 
     // We get to use the existing compiler support for declaring named local variables to parse and compile parameters. 
-    // Unlike local variables, which have initializers, there’s no code here to initialize the parameter’s value.
+    // Unlike local variables, which have initializers, thereâ€™s no code here to initialize the parameterâ€™s value.
     if (!Check(TokenType::RPAREN)) 
     {
         do {
