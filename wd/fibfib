@@ -1,9 +1,12 @@
 
+mut fncalls = 0
 
 fn fib(n)
 {
+  fncalls = fncalls + 1
   if (n < 2) return(n)
   else return(fib(n - 2) + fib(n - 1))
 }
 
-print(fib(10))
+print(fib(28))
+print(fncalls)

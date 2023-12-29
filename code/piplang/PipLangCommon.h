@@ -2,12 +2,10 @@
 
 #include "../MesaCommon.h"
 
-#include <unordered_map>
-#include <vector>
 
 
-//#define DEBUG_PRINT_CODE
-//#define DEBUG_TRACE_EXECUTION
+#define DEBUG_PRINT_CODE
+#define DEBUG_TRACE_EXECUTION
 
 struct RCObject;
 struct PipFunction;

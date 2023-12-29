@@ -39,8 +39,8 @@ TValue Stack_Peek(int distance)
 void InitVM()
 {
     Stack_Reset();
-    InitHashMap(&vm.interned_strings);
-    InitHashMap(&vm.globals);
+    AllocateHashMap(&vm.interned_strings);
+    AllocateHashMap(&vm.globals);
 }
 
 void FreeVM()
@@ -226,7 +226,7 @@ static InterpretResult Run()
                 TValue value;
                 if (!HashMapGet(&vm.globals, name, &value))
                 {
-                    RuntimeError("Undefined variable '%s'.", name->text.c_str());
+                    RuntimeError("Undefined variable '%s'.", name->text);
                     return InterpretResult::RUNTIME_ERROR;
                 }
                 Stack_Push(value);
@@ -239,7 +239,7 @@ static InterpretResult Run()
                 if (HashMapSet(&vm.globals, name, Stack_Peek(0)))
                 {
                     HashMapDelete(&vm.globals, name);
-                    RuntimeError("Undefined variable '%s'.", name->text.c_str());
+                    RuntimeError("Undefined variable '%s'.", name->text);
                     return InterpretResult::RUNTIME_ERROR;
                 }
                 Stack_Pop();
@@ -353,6 +353,7 @@ static InterpretResult Run()
 #undef VM_BINARY_OP
 }
 
+#include "../Timer.h"
 
 static InterpretResult Interpret(const char *source)
 {
@@ -361,7 +362,11 @@ static InterpretResult Interpret(const char *source)
 
     Stack_Push(FUNCTION_VAL(script)); // Why does first value of frame stack have to be the function itself?
     PushCallFrame(script, 0);
-    return Run();
+
+    double t = Time.TimeSinceProgramStartInSeconds();
+    InterpretResult result = Run();
+    printf("vm took %lf\n", Time.TimeSinceProgramStartInSeconds() - t);
+    return result;
 }
 
 InterpretResult PipLangVM_RunScript(const char *source)

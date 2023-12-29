@@ -21,10 +21,12 @@ struct RCString
     RCObject base;
 
     std::string text;
+    u32 hash;
 
     RCString()
     {
         base.type = RCObject::STRING;
+        hash = 0;
     }
 };
 
@@ -38,11 +40,10 @@ struct HashMap
 {
     int count;
     int capacity;
-
-    std::unordered_map<std::string, HashMapEntry> ds;
+    HashMapEntry *entries;
 };
 
-void InitHashMap(HashMap *map);
+void AllocateHashMap(HashMap *map);
 void FreeHashMap(HashMap *map);
 bool HashMapSet(HashMap *map, RCString *key, TValue value);
 bool HashMapGet(HashMap *map, RCString *key, TValue *value);
