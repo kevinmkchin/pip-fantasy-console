@@ -94,8 +94,7 @@ static bool IsEqual(TValue l, TValue r)
         case TValue::REAL:    return AS_NUMBER(l) == AS_NUMBER(r);
         case TValue::RCOBJ:
         {
-            // TODO the other RCOBJ types
-            return RCOBJ_AS_STRING(l) == RCOBJ_AS_STRING(r);
+            return AS_RCOBJ(l) == AS_RCOBJ(r);
         }
         default: return false;
     }
@@ -149,11 +148,31 @@ static i32 DecrementRefButDontDestroy(TValue v)
     return --(AS_RCOBJ(v)->refCount);
 }
 
+static i32 DecrementRef(TValue v);
 static void CheckRefCountAndDestroy(TValue v)
 {
     RCObject *obj = AS_RCOBJ(v);
     if (obj->refCount <= 0)
+    {
+        if (RCOBJ_IS_MAP(v))
+        {
+            HashMap *map = RCOBJ_AS_MAP(v);
+            HashMapEntry *entries = map->entries;
+            int cap = map->capacity;
+            for (int i = 0; i < cap; ++i)
+            {
+                if (entries->key)
+                {
+                    DecrementRef(RCOBJ_VAL((RCObject*)entries->key));
+                    if (IS_RCOBJ(entries->value))
+                    {
+                        DecrementRef(entries->value);
+                    }
+                }
+            }
+        }
         FreeRCObject(obj);
+    }
 }
 
 static i32 DecrementRef(TValue v)

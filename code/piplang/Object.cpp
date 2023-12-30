@@ -177,7 +177,6 @@ void FreeRCObject(RCObject *obj)
         case RCObject::MAP:
         {
             HashMap *map = (HashMap*)obj;
-            // TODO Decrement ref of every map entry.
             FreeHashMap(map);
             free(obj);
             break;
