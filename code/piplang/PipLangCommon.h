@@ -3,8 +3,7 @@
 #include "../MesaCommon.h"
 
 
-
-#define DEBUG_PRINT_CODE
+//#define DEBUG_PRINT_CODE
 //#define DEBUG_TRACE_EXECUTION
 
 struct RCObject;
@@ -27,6 +26,7 @@ enum class OpCode : u8
     RELOP_GREATER,
     RELOP_LESSER,
     POP,
+    POP_LOCAL,
     DEFINE_GLOBAL,
     GET_GLOBAL,
     SET_GLOBAL,
@@ -36,7 +36,9 @@ enum class OpCode : u8
     JUMP_BACK,
     JUMP_IF_FALSE,
     CALL,
-    PRINT
+    PRINT,
+    NEW_HASHMAP,
+    INCREMENT_REF_IF_RCOBJ
 };
 
 struct TValue
@@ -104,20 +106,20 @@ struct TValue
 
 typedef TValue (*NativeFn)(int argc, TValue *argv);
 
-#define BOOL_VAL(value)     (TValue::Boolean(value))
-#define NUMBER_VAL(value)   (TValue::Number(value))
-#define FUNCTION_VAL(value) (TValue::Function(value))
-#define NATIVEFN_VAL(value) (TValue::NativeFunction(value))
-#define RCOBJ_VAL(value)    (TValue::RCObject(value))
+#define BOOL_VAL(boolean)      (TValue::Boolean(boolean))
+#define NUMBER_VAL(real)       (TValue::Number(real))
+#define FUNCTION_VAL(pipfn)    (TValue::Function(pipfn))
+#define NATIVEFN_VAL(nativefn) (TValue::NativeFunction(nativefn))
+#define RCOBJ_VAL(rcobj)       (TValue::RCObject(rcobj))
 
-#define AS_BOOL(value)      ((value).boolean)
-#define AS_NUMBER(value)    ((value).real)
-#define AS_FUNCTION(value)  ((value).fn)
-#define AS_NATIVEFN(value)  ((NativeFn)(value).nativefn)
-#define AS_RCOBJ(value)     ((value).rcobj)
+#define AS_BOOL(value)         ((value).boolean)
+#define AS_NUMBER(value)       ((value).real)
+#define AS_FUNCTION(value)     ((value).fn)
+#define AS_NATIVEFN(value)     ((NativeFn)(value).nativefn)
+#define AS_RCOBJ(value)        ((value).rcobj)
 
-#define IS_BOOL(value)      ((value).type == TValue::BOOLEAN)
-#define IS_NUMBER(value)    ((value).type == TValue::REAL)
-#define IS_FUNCTION(value)  ((value).type == TValue::FUNC)
-#define IS_NATIVEFN(value)  ((value).type == TValue::NATIVEFN)
-#define IS_RCOBJ(value)     ((value).type == TValue::RCOBJ)
+#define IS_BOOL(value)         ((value).type == TValue::BOOLEAN)
+#define IS_NUMBER(value)       ((value).type == TValue::REAL)
+#define IS_FUNCTION(value)     ((value).type == TValue::FUNC)
+#define IS_NATIVEFN(value)     ((value).type == TValue::NATIVEFN)
+#define IS_RCOBJ(value)        ((value).type == TValue::RCOBJ)

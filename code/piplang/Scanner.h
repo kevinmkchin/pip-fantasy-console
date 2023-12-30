@@ -25,6 +25,8 @@ enum class TokenType : u8
     ASTERISK,
     FORWARDSLASH,
 
+    HASH,
+
     NUMBER_LITERAL,
     STRING_LITERAL,
     IDENTIFIER,
