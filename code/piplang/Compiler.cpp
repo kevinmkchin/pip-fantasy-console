@@ -79,7 +79,7 @@ static void InitCompiler(Compiler *compiler, CompilingToType compilingToType)
     current = compiler;
     if (compilingToType != CompilingToType::TOPLEVELSCRIPT)
     {
-        current->compilingTo->name = CopyString(parser.previous.start, parser.previous.length);
+        current->compilingTo->name = CopyString(parser.previous.start, parser.previous.length, false);
     }
 
     // Compiler claims stack slot zero for class methods but I'm probably not going to implement classes or methods
@@ -260,6 +260,34 @@ static PipFunction *EndCompiler()
 }
 
 
+// map.insert(k, v)
+//
+
+static void HashMapLiteral()
+{
+    /* The totality of this expression must result in 1 new stack value
+
+
+    Eat({)
+
+    OP create the hash map
+
+    while(!Match(})
+    {
+        Expression() // key expression
+        Match(:)
+        Expression() // value expression
+        // at this point there are two values on the stack
+        OP create hash map entry using the last two stack values
+    }
+
+    // still need to load this created transient hash map onto the stack? or is it loaded on create?
+
+    */
+
+    EmitByte(OpCode::NEW_HASHMAP);
+}
+
 static void NumberLiteral()
 {
     double value = strtod(parser.previous.start, NULL);
@@ -268,7 +296,7 @@ static void NumberLiteral()
 
 static void StringLiteral()
 {
-    EmitConstant(RCOBJ_VAL((RCObject*)CopyString(parser.previous.start + 1, parser.previous.length - 2)));
+    EmitConstant(RCOBJ_VAL((RCObject*)CopyString(parser.previous.start + 1, parser.previous.length - 2, true)));
 }
 
 static void Expression()
@@ -303,6 +331,7 @@ static u8 ArgumentList()
         do 
         {
             Expression();
+            EmitByte(OpCode::INCREMENT_REF_IF_RCOBJ);
             if (argc == 255) Error("Can't have more than 255 arguments to a function.");
             ++argc;
         } while (Match(TokenType::COMMA));
@@ -387,7 +416,7 @@ static u32 lastIdentifierConstantAdded = 0;
 static int lastLocalIndexResolved = -1;
 static void IdentifierConstant(Token *name)
 {
-    lastIdentifierConstantAdded = AddConstant(CurrentChunk(), RCOBJ_VAL((RCObject *)CopyString(name->start, name->length)));
+    lastIdentifierConstantAdded = AddConstant(CurrentChunk(), RCOBJ_VAL((RCObject *)CopyString(name->start, name->length, true)));
 }
 
 static bool IdentifiersEqual(Token *a, Token *b)
@@ -452,7 +481,15 @@ static void Variable()
 static void Dot()
 {
     Eat(TokenType::IDENTIFIER, "Expected map entry name after '.'.");
+
+    // if token we just read is "insert" "append" "remove" etc then do something else?
+    // map.insert then take previous expression (which must be a map or a list) and do something else
+    // Expression K
+    // Expression V
+    // use last three stack thingies?
+
     IdentifierConstant(&parser.previous);
+
 
     //TODO
     if (!Check(TokenType::EQUAL))
@@ -463,13 +500,6 @@ static void Dot()
         //EmitByte((u8)(arg >> 8));
         //EmitByte((u8)(arg));
     }
-}
-
-
-static void ExpressionStatement()
-{
-    Expression();
-    EmitByte(OpCode::POP);
 }
 
 
@@ -504,10 +534,9 @@ static void EndScope()
         A simple optimization you could add is a specialized OP_POPN instruction that takes an operand for the number of slots to pop and 
         pops them all at once.
         */
-        EmitByte(OpCode::POP);
+        EmitByte(OpCode::POP_LOCAL);
         current->localCount--;
     }
-    // TODO could handle transiency here as well
 }
 
 static void IfStatement()
@@ -561,7 +590,8 @@ static void ForStatement()
     }
     else
     {
-        ExpressionStatement();
+        Expression(); // TODO(Kevin): why allow expression as initializer clause at all?
+        EmitByte(OpCode::POP);
     }
     Eat(TokenType::COMMA, "Expected ','.");
     int loopStart = (int)CurrentChunk()->bytecode->size();
@@ -573,15 +603,12 @@ static void ForStatement()
         exitJump = EmitJump(OpCode::JUMP_IF_FALSE);
         EmitByte(OpCode::POP);
     }
-    //int postIncrementJump = -1;
     if (!Match(TokenType::RPAREN))
     {
         int bodyJump = EmitJump(OpCode::JUMP);
         int incrementStart = (int)CurrentChunk()->bytecode->size();
         Statement();
         Eat(TokenType::RPAREN, "Expected ')' after for-loop clauses.");
-
-        //postIncrementJump = EmitJump(OpCode::JUMP);
 
         EmitLoop(loopStart);
         loopStart = incrementStart;
@@ -763,6 +790,11 @@ static void ParseVariableDeclaration()
     if (Match(TokenType::EQUAL))
     {
         Expression();
+        if (current->scopeDepth > 0)
+        {
+            // check if result of expression is RCOBJ, then increment its ref
+            EmitByte(OpCode::INCREMENT_REF_IF_RCOBJ);
+        }
     }
     else
     {
@@ -858,7 +890,9 @@ void SetupParsingRules()
     rules[(u8)TokenType::MINUS]             = {         Unary,        BinOp, Precedence::TERM };
     rules[(u8)TokenType::ASTERISK]          = {          NULL,        BinOp, Precedence::FACTOR };
     rules[(u8)TokenType::FORWARDSLASH]      = {          NULL,        BinOp, Precedence::FACTOR };
-    
+
+    rules[(u8)TokenType::HASH]              = {HashMapLiteral,         NULL, Precedence::NONE };
+
     rules[(u8)TokenType::NUMBER_LITERAL]    = { NumberLiteral,         NULL, Precedence::NONE };
     rules[(u8)TokenType::STRING_LITERAL]    = { StringLiteral,         NULL, Precedence::NONE };
     rules[(u8)TokenType::IDENTIFIER]        = {      Variable,         NULL, Precedence::NONE };

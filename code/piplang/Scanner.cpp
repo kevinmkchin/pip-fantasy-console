@@ -183,28 +183,29 @@ Token ScanToken()
     if (IsNamingAlphabet(c)) return IdentifierToken();
     switch (c)
     {
-    case '(': return MakeToken(TokenType::LPAREN);
-    case ')': return MakeToken(TokenType::RPAREN);
-    case '{': return MakeToken(TokenType::LBRACE);
-    case '}': return MakeToken(TokenType::RBRACE);
-    case '[': return MakeToken(TokenType::LSQBRACK);
-    case ']': return MakeToken(TokenType::RSQBRACK);
-    case ',': return MakeToken(TokenType::COMMA);
-    case '.': return MakeToken(TokenType::DOT);
-    case '-': return MakeToken(TokenType::MINUS);
-    case '+': return MakeToken(TokenType::PLUS);
-    case '/': return MakeToken(TokenType::FORWARDSLASH);
-    case '*': return MakeToken(TokenType::ASTERISK);
-    case '!':
-        return MakeToken(Match('=') ? TokenType::BANG_EQUAL : TokenType::BANG);
-    case '=':
-        return MakeToken(Match('=') ? TokenType::EQUAL_EQUAL : TokenType::EQUAL);
-    case '<':
-        return MakeToken(Match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);
-    case '>':
-        return MakeToken(Match('=') ? TokenType::GREATER_EQUAL : TokenType::GREATER);
-    case '"': return StringToken(true);
-    case '\'': return StringToken(false);
+        case '(': return MakeToken(TokenType::LPAREN);
+        case ')': return MakeToken(TokenType::RPAREN);
+        case '{': return MakeToken(TokenType::LBRACE);
+        case '}': return MakeToken(TokenType::RBRACE);
+        case '[': return MakeToken(TokenType::LSQBRACK);
+        case ']': return MakeToken(TokenType::RSQBRACK);
+        case ',': return MakeToken(TokenType::COMMA);
+        case '.': return MakeToken(TokenType::DOT);
+        case '-': return MakeToken(TokenType::MINUS);
+        case '+': return MakeToken(TokenType::PLUS);
+        case '/': return MakeToken(TokenType::FORWARDSLASH);
+        case '*': return MakeToken(TokenType::ASTERISK);
+        case '!':
+            return MakeToken(Match('=') ? TokenType::BANG_EQUAL : TokenType::BANG);
+        case '=':
+            return MakeToken(Match('=') ? TokenType::EQUAL_EQUAL : TokenType::EQUAL);
+        case '<':
+            return MakeToken(Match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);
+        case '>':
+            return MakeToken(Match('=') ? TokenType::GREATER_EQUAL : TokenType::GREATER);
+        case '"': return StringToken(true);
+        case '\'': return StringToken(false);
+        case '#': return MakeToken(TokenType::HASH);
     }
 
     return ErrorToken("Scanned unexpected character.");

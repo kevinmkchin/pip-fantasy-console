@@ -76,20 +76,17 @@ static void AdjustCapacity(HashMap *map, int newCapacity)
 
 void AllocateHashMap(HashMap *map)
 {
-    map->count = 0;
-    map->capacity = 0;
-    map->entries = NULL;
+    *map = HashMap();
     AdjustCapacity(map, 8);
 }
 
 void FreeHashMap(HashMap *map)
 {
     free(map->entries);
-    map->count = 0;
-    map->capacity = 0;
+    *map = HashMap();
 }
 
-bool HashMapSet(HashMap *map, RCString *key, TValue value)
+bool HashMapSet(HashMap *map, RCString *key, TValue value, TValue *replaced)
 {
     if ((double)map->count + 1 > (double)map->capacity * MAX_LOADFACTOR)
     {
@@ -99,7 +96,7 @@ bool HashMapSet(HashMap *map, RCString *key, TValue value)
     HashMapEntry *entry = FindEntry(map->entries, map->capacity, key);
     bool isNewKey = entry->key == NULL;
     if (isNewKey && !AS_BOOL(entry->value)) ++(map->count);
-
+    if (!isNewKey && replaced) *replaced = entry->value;
     entry->key = key;
     entry->value = value;
     return isNewKey;
@@ -151,21 +148,45 @@ RCObject *NewRCObject(RCObject::OType type)
 
     switch (type)
     {
-    case RCObject::STRING:
-        rcobj = (RCObject *) new RCString(); // Throw somewhere on heap for now
-        break;
-        //case MesaGCObject::GCObjectType::String:
-        //    gcobj = (MesaGCObject *) new MesaScript_String();
-        //    break;
-        //case MesaGCObject::GCObjectType::List: {
-        //    gcobj = (MesaGCObject *) new MesaScript_List();
-        //    break;
+        case RCObject::STRING:
+            rcobj = (RCObject*) new RCString(); // Throw somewhere on heap for now
+            break;
+        case RCObject::MAP:
+            rcobj = (RCObject*) new HashMap();
+            AllocateHashMap((HashMap*)rcobj);
+            break;
     }
 
     return rcobj;
 }
 
-RCString *CopyString(const char *buf, int length)
+void FreeRCObject(RCObject *obj)
+{
+    switch (obj->type)
+    {
+        case RCObject::STRING:
+        {
+            RCString *str = (RCString*)obj;
+            if (!str->isConstant)
+            {
+                HashMapDelete(&vm.interned_strings, str);
+                free(obj);
+            }
+            break;
+        }
+        case RCObject::MAP:
+        {
+            HashMap *map = (HashMap*)obj;
+            // TODO Decrement ref of every map entry.
+            FreeHashMap(map);
+            free(obj);
+            break;
+        }
+    }
+
+}
+
+RCString *CopyString(const char *buf, int length, bool isConstant)
 {
     u32 stringhash = HashString(buf, length);
 
@@ -178,8 +199,9 @@ RCString *CopyString(const char *buf, int length)
     RCString *string = (RCString*)NewRCObject(RCObject::STRING);
     string->text = std::string(buf, length);
     string->hash = stringhash;
+    string->isConstant = isConstant;
 
-    HashMapSet(&vm.interned_strings, string, TValue());
+    HashMapSet(&vm.interned_strings, string, TValue(), NULL);
 
     return string;
 }

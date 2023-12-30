@@ -76,18 +76,25 @@ PIPLANG GENERAL
  - More string operations
  - Native function arity checking
  - Native function RuntimeErrors
+ - Should we assert BOOLEAN type for JUMP_IF_FALSE?
 
 NOTES
-Can I be faster than Lua? YESSSSSSSSSSSSSSSSSSS
+Goal: faster than Lua
 Revisit 1 * 2 = 3 + 4 assignment bug to fire Compile error https://craftinginterpreters.com/global-variables.html#assignment
 If I remove C++isms from PipLang and fully switch VM to C, then I can make instruction pointer a register.
 
 I want to support all of the following:
 
-map = [:]
+map = {}
 list = []
 
 for (n in [1, 2, 3, 5, 7, 11])
+{
+    // we want to provide a local var n which we update on every loop
+    so maybe we first create the array from which we extract n, populate it by evaluating
+    each expression, then once its populated we can start the for loop.
+    once the for loop is done, we pop n, we pop the array
+}
 for (k,v in [ a: 2, b: 3 ])
 for (,,)
 for (mut i = 0, i < 10, ++i)

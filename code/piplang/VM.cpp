@@ -80,7 +80,7 @@ static void ConcatenateStrings()
     RCString *r = RCOBJ_AS_STRING(Stack_Pop());
     RCString *l = RCOBJ_AS_STRING(Stack_Pop());
     std::string temp = (l->text + r->text);
-    Stack_Push(RCOBJ_VAL((RCObject*)CopyString(temp.c_str(), (int)temp.size())));
+    Stack_Push(RCOBJ_VAL((RCObject*)CopyString(temp.c_str(), (int)temp.size(), false)));
 }
 
 static bool IsEqual(TValue l, TValue r)
@@ -139,6 +139,30 @@ static bool CallValue(TValue callee, u8 argc)
     return false;
 }
 
+static i32 IncrementRef(TValue v)
+{
+    return ++(AS_RCOBJ(v)->refCount);
+}
+
+static i32 DecrementRefButDontDestroy(TValue v)
+{
+    return --(AS_RCOBJ(v)->refCount);
+}
+
+static void CheckRefCountAndDestroy(TValue v)
+{
+    RCObject *obj = AS_RCOBJ(v);
+    if (obj->refCount <= 0)
+        FreeRCObject(obj);
+}
+
+static i32 DecrementRef(TValue v)
+{
+    i32 ref = DecrementRefButDontDestroy(v);
+    CheckRefCountAndDestroy(v);
+    return ref;
+}
+
 static InterpretResult Run()
 {
     CallFrame *frame = &vm.frames[vm.frameCount - 1];
@@ -177,6 +201,13 @@ static InterpretResult Run()
         OpCode op;
         switch (op = (OpCode)VM_READ_BYTE())
         {
+            case OpCode::NEW_HASHMAP:
+            {
+                RCObject* map = NewRCObject(RCObject::MAP);
+                Stack_Push(RCOBJ_VAL(map));
+                break;
+            }
+
             case OpCode::PRINT:
                 PrintTValue(Stack_Pop());
                 printf("\n");
@@ -191,9 +222,40 @@ static InterpretResult Run()
                     Stack_Pop();
                     return InterpretResult::OK;
                 }
-                vm.sp = frame->bp;
+
+                bool isResultRefCounted = IS_RCOBJ(result);
+
+                // Need to sweep all locals to decrement ref
+                // This sweeps from sp to bp so works even for returns mid lexical-scope (i.e. mid for-loop)
+                {
+                    while (vm.sp > frame->bp + 1) // Note(Kevin): +1 is because first local is reserved for fn itself
+                    {
+                        TValue localOrParam = Stack_Pop();
+                        if (IS_RCOBJ(localOrParam))
+                        {
+                            if (isResultRefCounted && localOrParam.rcobj == result.rcobj)
+                                DecrementRefButDontDestroy(
+                                        localOrParam); // return value is transient until captured or OpCode::POP
+                            else
+                                DecrementRef(localOrParam);
+                        }
+                    }
+                    --vm.sp;
+                }
+
                 Stack_Push(result);
                 frame = &vm.frames[vm.frameCount - 1];
+                break;
+            }
+
+            case OpCode::CALL:
+            {
+                u8 argc = VM_READ_BYTE();
+                if (!CallValue(Stack_Peek(argc), argc))
+                {
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                frame = &vm.frames[vm.frameCount - 1]; // Move to callee frame
                 break;
             }
 
@@ -205,12 +267,34 @@ static InterpretResult Run()
                 Stack_Push(VM_READ_CONSTANT_LONG());
                 break;
 
-            case OpCode::POP: Stack_Pop(); break; // TODO(Kevin): destroy transient?
+            case OpCode::POP:
+            {
+                TValue v = Stack_Pop();
+                if (IS_RCOBJ(v)) CheckRefCountAndDestroy(v);
+                break;
+            }
+
+            case OpCode::POP_LOCAL:
+            {
+                TValue v = Stack_Pop();
+                if (IS_RCOBJ(v)) DecrementRef(v);
+                break;
+            }
+
+            case OpCode::INCREMENT_REF_IF_RCOBJ:
+            {
+                TValue v = Stack_Peek(0);
+                if (IS_RCOBJ(v)) IncrementRef(v);
+                break;
+            }
 
             case OpCode::DEFINE_GLOBAL:
             {
                 RCString *name = RCOBJ_AS_STRING(VM_READ_CONSTANT_LONG());
-                HashMapSet(&vm.globals, name, Stack_Peek(0));
+                TValue value = Stack_Peek(0);
+                HashMapSet(&vm.globals, name, value, NULL);
+                IncrementRef(RCOBJ_VAL((RCObject*)name));
+                if (IS_RCOBJ(value)) IncrementRef(value);
                 Stack_Pop();
                 break;
             }
@@ -231,12 +315,17 @@ static InterpretResult Run()
             case OpCode::SET_GLOBAL:
             {
                 RCString *name = RCOBJ_AS_STRING(VM_READ_CONSTANT_LONG());
-                if (HashMapSet(&vm.globals, name, Stack_Peek(0)))
+                TValue replaced;
+                TValue value = Stack_Peek(0);
+                bool isNewKey = HashMapSet(&vm.globals, name, value, &replaced);
+                if (isNewKey)
                 {
                     HashMapDelete(&vm.globals, name);
                     RuntimeError("Undefined variable '%s'.", name->text.c_str());
                     return InterpretResult::RUNTIME_ERROR;
                 }
+                if (IS_RCOBJ(value)) IncrementRef(value);
+                if (IS_RCOBJ(replaced)) DecrementRef(replaced);
                 Stack_Pop();
                 break;
             }
@@ -251,7 +340,11 @@ static InterpretResult Run()
             case OpCode::SET_LOCAL:
             {
                 u8 bpOffset = VM_READ_BYTE();
-                frame->bp[bpOffset] = Stack_Pop();
+                TValue value = Stack_Pop();
+                TValue replaced = frame->bp[bpOffset];
+                frame->bp[bpOffset] = value;
+                if (IS_RCOBJ(value)) IncrementRef(value);
+                if (IS_RCOBJ(replaced)) DecrementRef(replaced);
                 break;
             }
 
@@ -325,17 +418,6 @@ static InterpretResult Run()
                 break;
             }
 
-            case OpCode::CALL:
-            {
-                u8 argc = VM_READ_BYTE();
-                if (!CallValue(Stack_Peek(argc), argc))
-                {
-                    return InterpretResult::RUNTIME_ERROR;
-                }
-                frame = &vm.frames[vm.frameCount - 1]; // Move to callee frame
-                break;
-            }
-
         }
     }
 
@@ -373,12 +455,40 @@ void PipLangVM_InitVM()
 
 void PipLangVM_FreeVM()
 {
-    FreeHashMap(&vm.interned_strings);
+    // TODO CLEAN UP MEMORY UPON SUCCESSFUL EXIT OR RUNTIME ERROR
+    // Sweep all locals from vm.sp to vm.stack[0]
+    //      If RuntimeError, locals are still living on stack
+    // Sweep all globals
+    // All unique sweeped NON STRING RCObjects AND PipFunctions must be freed
+    // All strings in interned_strings (they're all unique) must be freed
+    // FreeHashMap(globals)
+    // FreeHashMap(interned_strings)
+
     FreeHashMap(&vm.globals);
+    FreeHashMap(&vm.interned_strings);
+}
+
+static TValue PrintGlobals(int argc, TValue *argv)
+{
+
+    printf("======================\nPrinting GLOBALS\n");
+    for (int i = 0; i < vm.globals.capacity; ++i)
+    {
+        if (vm.globals.entries[i].key)
+        {
+            printf("    %-16s", vm.globals.entries[i].key->text.c_str());
+            PrintTValue(vm.globals.entries[i].value);
+            printf("\n");
+        }
+    }
+    printf("======================\n");
+
+    return BOOL_VAL(false);
 }
 
 InterpretResult PipLangVM_RunScript(const char *source)
 {
+    PipLangVM_DefineNativeFn("printglobals", PrintGlobals);
     return Interpret(source);
 }
 
@@ -390,9 +500,9 @@ void PipLangVM_DefineNativeFn(const char *name, NativeFn fn)
         return;
     }
 
-    Stack_Push(RCOBJ_VAL((RCObject*)CopyString(name, (int)strlen(name))));
+    Stack_Push(RCOBJ_VAL((RCObject*)CopyString(name, (int)strlen(name), true)));
     Stack_Push(NATIVEFN_VAL((void*)fn));
-    HashMapSet(&vm.globals, RCOBJ_AS_STRING(vm.stack[0]), vm.stack[1]);
+    HashMapSet(&vm.globals, RCOBJ_AS_STRING(vm.stack[0]), vm.stack[1], NULL);
     Stack_Pop();
     Stack_Pop();
 }

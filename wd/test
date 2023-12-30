@@ -1,0 +1,18 @@
+
+
+mut x = #
+
+fn dosmth()
+{
+  for (mut i = 0, i < 5, i = i + 1)
+  {
+    mut y = x
+    ;printglobals()
+    return()
+  }
+}
+
+dosmth()
+printglobals()
+
+

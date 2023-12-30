@@ -18,9 +18,13 @@ static void PrintRCObject(TValue value)
     switch (RCOBJ_TYPE(value))
     {
         case RCObject::STRING:
-            printf("%s", RCOBJ_AS_STRING(value)->text.c_str());
+            printf("<'%s'", RCOBJ_AS_STRING(value)->text.c_str());
+            break;
+        case RCObject::MAP:
+            printf("<map{%d entries}", RCOBJ_AS_MAP(value)->count);
             break;
     }
+    printf(" : %d ref>", AS_RCOBJ(value)->refCount);
 }
 
 void PrintTValue(TValue value)
@@ -131,6 +135,8 @@ int DisassembleInstruction(Chunk *chunk, int offset)
         return Debug_SimpleInstruction("RELOP_LESSER", offset);
     case OpCode::POP:
         return Debug_SimpleInstruction("POP", offset);
+    case OpCode::POP_LOCAL:
+        return Debug_SimpleInstruction("POP_LOCAL", offset);
     case OpCode::DEFINE_GLOBAL:
         return Debug_ConstantLongInstruction("DEFINE_GLOBAL", chunk, offset);
     case OpCode::GET_GLOBAL:
@@ -149,6 +155,10 @@ int DisassembleInstruction(Chunk *chunk, int offset)
         return Debug_JumpInstruction("JUMP_IF_FALSE", 1, chunk, offset);
     case OpCode::CALL:
         return Debug_ByteInstruction("CALL", chunk, offset);
+    case OpCode::NEW_HASHMAP:
+        return Debug_SimpleInstruction("NEW_HASHMAP", offset);
+    case OpCode::INCREMENT_REF_IF_RCOBJ:
+        return Debug_SimpleInstruction("INCREMENT_REF_IF_RCOBJ", offset);
     default:
         printf("Unknown opcode %d\n", instruction);
         return offset + 1;

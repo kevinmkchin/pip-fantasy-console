@@ -7,8 +7,8 @@ struct RCObject
 {
     enum OType
     {
-        //MAP,
-        //LIST,
+        MAP,
+        //ARRAY,
         STRING
     };
 
@@ -22,30 +22,42 @@ struct RCString
 
     std::string text;
     u32 hash;
+    bool isConstant;
 
     RCString()
     {
         base.type = RCObject::STRING;
         hash = 0;
+        isConstant = false;
     }
 };
 
 struct HashMapEntry
 {
-    RCString* key;
+    RCString* key = NULL;
     TValue value;
 };
 
 struct HashMap
 {
+    RCObject base;
+
     int count;
     int capacity;
     HashMapEntry *entries;
+
+    HashMap()
+    {
+        base.type = RCObject::MAP;
+        count = 0;
+        capacity = 0;
+        entries = NULL;
+    }
 };
 
 void AllocateHashMap(HashMap *map);
 void FreeHashMap(HashMap *map);
-bool HashMapSet(HashMap *map, RCString *key, TValue value);
+bool HashMapSet(HashMap *map, RCString *key, TValue value, TValue *replaced);
 bool HashMapGet(HashMap *map, RCString *key, TValue *value);
 bool HashMapDelete(HashMap *map, RCString *key);
 
@@ -57,10 +69,14 @@ static inline bool IsRCObjType(TValue value, RCObject::OType type)
 #define RCOBJ_TYPE(value)      (AS_RCOBJ(value)->type)
 #define RCOBJ_IS_STRING(value) IsRCObjType(value, RCObject::STRING)
 #define RCOBJ_AS_STRING(value) ((RCString*)AS_RCOBJ(value))
+#define RCOBJ_IS_MAP(value)    IsRCObjType(value, RCObject::MAP)
+#define RCOBJ_AS_MAP(value)    ((HashMap*)AS_RCOBJ(value))
 
 RCObject *NewRCObject(RCObject::OType type);
 
-RCString *CopyString(const char *buf, int length);
+void FreeRCObject(RCObject *obj);
+
+RCString *CopyString(const char *buf, int length, bool isConstant);
 
 
 struct PipFunction
