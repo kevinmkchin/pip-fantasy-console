@@ -10,6 +10,7 @@
 - The PipLang VM Epic...see VM.h
 - code editor: cut, copy, paste
 - code editor: ctrl+backspace and ctrl+delete for word deletion
+- code editor: ctrl+d for duplicate line
 - code editor: insert mode + indicator (?)
 - code editor: SCROLLING
 

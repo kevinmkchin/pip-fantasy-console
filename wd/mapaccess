@@ -1,7 +1,0 @@
-
-mut map = { "x" : { "name" : "holden" } }
-print(map.x.name)
-map.x.name = "miller"
-print(map.x.name)
-
-

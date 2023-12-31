@@ -338,6 +338,8 @@ static void HashMapLiteral()
         Eat(TokenType::COLON, "Expected ':' after Key value expression in Map initializer.");
         Expression(); // value expression
         EmitByte(OpCode::SET_MAP_ENTRY);
+        if (!Check(TokenType::RBRACE))
+            Eat(TokenType::COMMA, "Expected ',' between map entry initializers.");
     }
 }
 
@@ -974,6 +976,7 @@ static void Function(CompilingToType compilingToType)
 static void ParseFunctionDeclaration()
 {
     if (parser.previewMode) PipLangAssert(0);
+    if (current->scopeDepth > 0) Error("Functions must be declared at the top-level.");
 
     u32 global = ParseVariable("Expected function identifier after 'fn'.");
     Function(CompilingToType::FUNCTION);
