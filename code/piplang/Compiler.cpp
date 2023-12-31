@@ -61,12 +61,37 @@ struct Parser
 {
     Token current{};
     Token previous{};
-
-    bool previewMode = false;
-
+    Token previousprevious{};
 
     bool hadError = false;
     bool panicMode = false;
+    bool previewMode = false;
+
+    int cachedCursorPosBeforePreview = 0;
+    void TurnOnPreviewMode()
+    {
+        if (previewMode) PipLangAssert(0);
+        cachedCursorPosBeforePreview = tokensequence.cursor;
+        previewMode = true;
+    }
+
+    void TurnOffPreviewMode()
+    {
+        if (!previewMode) PipLangAssert(0);
+        tokensequence.cursor = cachedCursorPosBeforePreview;
+        current = tokensequence.cursor < 1 ? Token() : tokensequence.tokens[tokensequence.cursor - 1];
+        previous = tokensequence.cursor < 2 ? Token() : tokensequence.tokens[tokensequence.cursor - 2];
+        previousprevious = tokensequence.cursor < 3 ? Token() : tokensequence.tokens[tokensequence.cursor - 3];
+        previewMode = false;
+    }
+
+    bool SweepPreviewFor(TokenType type) const
+    {
+        PipLangAssert(cachedCursorPosBeforePreview > 0);
+        for (int i = cachedCursorPosBeforePreview - 1; i < tokensequence.cursor; ++i)
+            if (tokensequence.tokens[i].type == type) return true;
+        return false;
+    }
 };
 
 struct Local
@@ -97,6 +122,8 @@ Compiler *current = NULL;
 
 static void InitCompiler(Compiler *compiler, CompilingToType compilingToType)
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     compiler->enclosing = current;
     compiler->compilingTo = NULL;
     compiler->compilingToType = compilingToType;
@@ -153,6 +180,7 @@ static void Error(const char *message)
 
 static void Advance()
 {
+    parser.previousprevious = parser.previous;
     parser.previous = parser.current;
     parser.current = tokensequence.tokens[tokensequence.cursor++];
 }
@@ -208,27 +236,37 @@ static Chunk *CurrentChunk()
 
 static void EmitByte(u8 byte)
 {
+    if (parser.previewMode) return;
+
     WriteChunk(CurrentChunk(), byte, parser.previous.line);
 }
 
 static void EmitByte(OpCode op)
 {
+    if (parser.previewMode) return;
+
     EmitByte((u8)op);
 }
 
 static void EmitConstant(TValue value)
 {
+    if (parser.previewMode) return;
+
     WriteConstant(CurrentChunk(), value, parser.previous.line);
 }
 
 static void EmitBytes(u8 byte1, u8 byte2)
 {
+    if (parser.previewMode) return;
+
     EmitByte(byte1);
     EmitByte(byte2);
 }
 
 static void PatchJump(int index)
 {
+    if (parser.previewMode) return;
+
     u16 jump = (u16)((int)CurrentChunk()->bytecode->size() - index - 2); // 2 bytecodes for jump offset
 
     if (jump > UINT16_MAX) 
@@ -242,6 +280,8 @@ static void PatchJump(int index)
 
 static int EmitJump(OpCode op)
 {
+    if (parser.previewMode) return -1;
+
     EmitByte(op);
     EmitByte(0xff); // return address/index of this byte
     EmitByte(0xff);
@@ -250,6 +290,8 @@ static int EmitJump(OpCode op)
 
 static void EmitLoop(int loopStart)
 {
+    if (parser.previewMode) return;
+
     EmitByte(OpCode::JUMP_BACK);
 
     u16 jump = (u16)((int)CurrentChunk()->bytecode->size() - loopStart + 2);
@@ -265,6 +307,8 @@ static void EmitLoop(int loopStart)
 
 static PipFunction *EndCompiler()
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     EmitByte(OpCode::OP_FALSE);
     EmitByte(OpCode::RETURN);
 
@@ -421,12 +465,11 @@ static void LogicalOr()
     PatchJump(endJump); // go here to skip rest of predicate if True
 }
 
-static bool assignValueToMapEntryFlag = false;
-static u32 lastIdentifierConstantAdded = 0;
-static int lastLocalIndexResolved = -1;
-static void IdentifierConstant(Token *name)
+static u32 IdentifierConstant(Token *name)
 {
-    lastIdentifierConstantAdded = AddConstant(CurrentChunk(), RCOBJ_VAL((RCObject *)CopyString(name->start, name->length, true)));
+    if (parser.previewMode) PipLangAssert(0);
+
+    return AddConstant(CurrentChunk(), RCOBJ_VAL((RCObject *)CopyString(name->start, name->length, true)));
 }
 
 static bool IdentifiersEqual(Token *a, Token *b)
@@ -437,6 +480,8 @@ static bool IdentifiersEqual(Token *a, Token *b)
 
 static int ResolveLocal(Compiler *compiler, Token *name)
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     // Requires: statements have stack effect of zero (it does not increase or decrease stack size).
     // Except for when local variables are initialized. This ensures that the n-th local variable will
     // be located exactly at stack[n].
@@ -457,35 +502,34 @@ static int ResolveLocal(Compiler *compiler, Token *name)
 
 static void NamedVariable(Token name)
 {
-    lastLocalIndexResolved = ResolveLocal(current, &name);
+    if (parser.previewMode) PipLangAssert(0);
 
-    if (lastLocalIndexResolved == -1)
+    if (Check(TokenType::EQUAL))
     {
-        IdentifierConstant(&name);
+        return; // then Assignment Effect
     }
 
-    if (!Check(TokenType::EQUAL))
-    {
-        if (lastLocalIndexResolved != -1)
-        {
+    int localIndexResolved = ResolveLocal(current, &name);
 
-            u8 arg = (u8)lastLocalIndexResolved;
-            EmitByte(OpCode::GET_LOCAL);
-            EmitByte(arg);
-        }
-        else
-        {
-            u32 arg = lastIdentifierConstantAdded;
-            EmitByte(OpCode::GET_GLOBAL);
-            EmitByte((u8)(arg >> 16));
-            EmitByte((u8)(arg >> 8));
-            EmitByte((u8)(arg));
-        }
+    if (localIndexResolved == -1)
+    {
+        u32 arg = IdentifierConstant(&name);
+        EmitByte(OpCode::GET_GLOBAL);
+        EmitByte((u8)(arg >> 16));
+        EmitByte((u8)(arg >> 8));
+        EmitByte((u8)(arg));
+    }
+    else
+    {
+        u8 arg = (u8)localIndexResolved;
+        EmitByte(OpCode::GET_LOCAL);
+        EmitByte(arg);
     }
 }
 
 static void Variable()
 {
+    if (parser.previewMode) return;
     NamedVariable(parser.previous);
 }
 
@@ -493,43 +537,46 @@ static void Dot()
 {
     Eat(TokenType::IDENTIFIER, "Expected map entry name after '.'.");
 
+    if (Check(TokenType::EQUAL))
+    {
+        return; // then Assignment Effect
+    }
+
     Token id = parser.previous;
     auto str = std::string(id.start, id.length);
-    if (str == "insert")
+    if (str == "insert" || str == "append" || str == "remove")
     {
-        Eat(TokenType::LPAREN, "Expected '(' after 'insert' contextual keyword.");
-        Expression(); // Key
-        assignValueToMapEntryFlag = true;
-    }
-    else if (str == "append")
-    {
-        // TODO
-    }
-    else if (str == "remove")
-    {
-        // TODO
-        Eat(TokenType::LPAREN, "Expected '(' after 'remove' contextual keyword.");
-        Expression(); // Key
-        Eat(TokenType::RPAREN, "Expected ')' after Key expression of 'remove' contextual keyword.");
-        EmitByte(OpCode::DEL_MAP_ENTRY);
+        if (str == "insert")
+        {
+            Eat(TokenType::LPAREN, "Expected '(' after 'insert' contextual keyword.");
+            Expression(); // Key
+            Eat(TokenType::COMMA, "Expected ',' after Key expression of 'insert' contextual keyword.");
+            Expression();
+            Eat(TokenType::RPAREN, "Expected ')' after Value expression of 'insert' contextual keyword.");
+            EmitByte(OpCode::SET_MAP_ENTRY);
+        }
+        else if (str == "append")
+        {
+
+        }
+        else if (str == "remove")
+        {
+            Eat(TokenType::LPAREN, "Expected '(' after 'remove' contextual keyword.");
+            Expression(); // Key
+            Eat(TokenType::RPAREN, "Expected ')' after Key expression of 'remove' contextual keyword.");
+            EmitByte(OpCode::DEL_MAP_ENTRY);
+        }
     }
     else
     {
+        // Otherwise GET_MAP_ENTRY
         EmitConstant(RCOBJ_VAL((RCObject *)CopyString(id.start, id.length, true)));
-
-        if (!Check(TokenType::EQUAL))
-        {
-            assignValueToMapEntryFlag = false;
-            EmitByte(OpCode::GET_MAP_ENTRY);
-        }
-        else
-        {
-            assignValueToMapEntryFlag = true;
-        }
+        EmitByte(OpCode::GET_MAP_ENTRY);
     }
 }
 
 
+static void Effect();
 static void Statement();
 static void Declaration();
 static void ParseVariableDeclaration();
@@ -568,6 +615,8 @@ static void EndScope()
 
 static void IfStatement()
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     Eat(TokenType::LPAREN, "Expected '(' after 'if'.");
     Expression();
     Eat(TokenType::RPAREN, "Expected ')' after predicate.");
@@ -589,6 +638,8 @@ static void IfStatement()
 
 static void WhileStatement()
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     Eat(TokenType::LPAREN, "Expected '(' after keyword 'while'.");
     int loopStart = (int)CurrentChunk()->bytecode->size();
     Expression();
@@ -604,6 +655,8 @@ static void WhileStatement()
 
 static void ForStatement()
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     BeginScope();
 
     Eat(TokenType::LPAREN, "Expected '(' after 'for'.");
@@ -617,8 +670,7 @@ static void ForStatement()
     }
     else
     {
-        Expression(); // TODO(Kevin): why allow expression as initializer clause at all?
-        EmitByte(OpCode::POP);
+        Effect();
     }
     Eat(TokenType::COMMA, "Expected ','.");
     int loopStart = (int)CurrentChunk()->bytecode->size();
@@ -634,7 +686,7 @@ static void ForStatement()
     {
         int bodyJump = EmitJump(OpCode::JUMP);
         int incrementStart = (int)CurrentChunk()->bytecode->size();
-        Statement(); // TODO should be an expression statement...
+        Effect();
         Eat(TokenType::RPAREN, "Expected ')' after for-loop clauses.");
 
         EmitLoop(loopStart);
@@ -657,6 +709,8 @@ static void ForStatement()
 
 static void ReturnStatement()
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     if (current->compilingToType == CompilingToType::TOPLEVELSCRIPT)
     {
         Error("Can't return from top-level script.");
@@ -678,6 +732,8 @@ static void ReturnStatement()
 
 static void PrintStatement()
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     Eat(TokenType::LPAREN, "Expected '(' after 'print' keyword.");
     if (!Match(TokenType::RPAREN))
     {
@@ -687,8 +743,72 @@ static void PrintStatement()
     }
 }
 
+static void Effect() // Stack effect = 0
+{
+    if (parser.previewMode) PipLangAssert(0);
+
+    parser.TurnOnPreviewMode();
+    Expression();
+    if (Check(TokenType::EQUAL)) // ASSIGNMENT EFFECT
+    {
+        parser.TurnOffPreviewMode();
+
+        Expression();
+
+        if (parser.previous.type != TokenType::IDENTIFIER)
+        {
+            ErrorAtCurrent("Left of assignment operator must be an identifier.");
+        }
+
+        if (parser.previousprevious.type == TokenType::DOT) // set map entry
+        {
+            Token id = parser.previous;
+            EmitConstant(RCOBJ_VAL((RCObject *)CopyString(id.start, id.length, true)));
+            PipLangAssert(Match(TokenType::EQUAL));
+            Expression();
+            EmitByte(OpCode::SET_MAP_ENTRY);
+            EmitByte(OpCode::POP);
+        }
+        else // set local or global var
+        {
+            int localIndexResolved = ResolveLocal(current, &parser.previous);
+
+            if (localIndexResolved == -1)
+            {
+                u32 arg = IdentifierConstant(&parser.previous);
+
+                PipLangAssert(Match(TokenType::EQUAL));
+                Expression();
+
+                EmitByte(OpCode::SET_GLOBAL);
+                EmitByte((u8)(arg >> 16));
+                EmitByte((u8)(arg >> 8));
+                EmitByte((u8)(arg));
+            }
+            else
+            {
+                u8 arg = (u8)localIndexResolved;
+
+                PipLangAssert(Match(TokenType::EQUAL));
+                Expression();
+
+                EmitByte(OpCode::SET_LOCAL);
+                EmitByte(arg);
+            }
+        }
+    }
+    else // EXPRESSION EFFECT
+    {
+        parser.TurnOffPreviewMode();
+        Expression();
+        EmitByte(OpCode::POP);
+    }
+}
+
 static void Statement()
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     if (Match(TokenType::LBRACE))
     {
         BeginScope();
@@ -717,61 +837,15 @@ static void Statement()
     }
     else
     {
-//        PreviewExpression();
-
-        Expression();
-        if (assignValueToMapEntryFlag)
-        {
-            if (Match(TokenType::EQUAL))
-            {
-                Expression();
-                EmitByte(OpCode::SET_MAP_ENTRY);
-                EmitByte(OpCode::POP);
-            }
-            else if (Match(TokenType::COMMA))
-            {
-                Expression();
-                Eat(TokenType::RPAREN, "Expected ')' after Value expression of 'insert' contextual keyword.");
-                EmitByte(OpCode::SET_MAP_ENTRY);
-                EmitByte(OpCode::POP);
-            }
-            else
-            {
-                ErrorAtCurrent("assignValueToMapEntryFlag is set incorrectly.");
-            }
-            assignValueToMapEntryFlag = false;
-        }
-        else if (Match(TokenType::EQUAL))
-        {
-            if (lastLocalIndexResolved != -1)
-            {
-                u8 arg = (u8)lastLocalIndexResolved;
-                Expression();
-
-                EmitByte(OpCode::SET_LOCAL);
-                EmitByte(arg);
-            }
-            else
-            {
-                u32 arg = lastIdentifierConstantAdded;
-                Expression();
-
-                EmitByte(OpCode::SET_GLOBAL);
-                EmitByte((u8)(arg >> 16));
-                EmitByte((u8)(arg >> 8));
-                EmitByte((u8)(arg));
-            }
-        }
-        else
-        {
-            EmitByte(OpCode::POP);
-        }
+        Effect();
     }
 }
 
 // Add local variable to the compiler's list of variables for the current scope
 static void AddLocal(Token name)
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     if (current->localCount == 256)
     {
         Error("Functions can only declare 256 local variables. Too many local variables in function.");
@@ -786,6 +860,7 @@ static void AddLocal(Token name)
 // Record the existence of a local variable
 static void DeclareLocalVariable()
 {
+    if (parser.previewMode) PipLangAssert(0);
     if (current->scopeDepth == 0) return;
 
     Token *name = &parser.previous;
@@ -802,14 +877,16 @@ static void DeclareLocalVariable()
     AddLocal(*name);
 }
 
-static void ParseVariable(const char * errormsg)
+static u32 ParseVariable(const char * errormsg)
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     Eat(TokenType::IDENTIFIER, errormsg);
 
     DeclareLocalVariable();
-    if (current->scopeDepth > 0) return;
+    if (current->scopeDepth > 0) return 0;
 
-    IdentifierConstant(&parser.previous);
+    return IdentifierConstant(&parser.previous);
 }
 
 static void MarkLocalAsInitialized()
@@ -819,6 +896,8 @@ static void MarkLocalAsInitialized()
 
 static void DefineVariable(u32 global)
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     if (current->scopeDepth > 0)
     {
         MarkLocalAsInitialized();
@@ -834,8 +913,9 @@ static void DefineVariable(u32 global)
 
 static void ParseVariableDeclaration()
 {
-    ParseVariable("Expected variable identifier after 'mut'.");
-    u32 global = lastIdentifierConstantAdded;
+    if (parser.previewMode) PipLangAssert(0);
+
+    u32 global = ParseVariable("Expected variable identifier after 'mut'.");
 
     if (Match(TokenType::EQUAL))
     {
@@ -856,6 +936,8 @@ static void ParseVariableDeclaration()
 
 static void Function(CompilingToType compilingToType)
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     Compiler compiler;
     InitCompiler(&compiler, compilingToType);
 
@@ -891,14 +973,17 @@ static void Function(CompilingToType compilingToType)
 
 static void ParseFunctionDeclaration()
 {
-    ParseVariable("Expected function identifier after 'fn'.");
-    u32 global = lastIdentifierConstantAdded;
+    if (parser.previewMode) PipLangAssert(0);
+
+    u32 global = ParseVariable("Expected function identifier after 'fn'.");
     Function(CompilingToType::FUNCTION);
     DefineVariable(global);
 }
 
 static void Declaration()
 {
+    if (parser.previewMode) PipLangAssert(0);
+
     if (Match(TokenType::MUT))
     {
         ParseVariableDeclaration();
