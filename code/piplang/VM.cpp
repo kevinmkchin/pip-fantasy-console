@@ -413,11 +413,15 @@ static InterpretResult Run()
                     RuntimeError("Provided invalid map to 'insert' contextual keyword.");
                     return InterpretResult::RUNTIME_ERROR;
                 }
-                if (!HashMapDelete(RCOBJ_AS_MAP(m), RCOBJ_AS_STRING(k)))
+                TValue v;
+                if (!HashMapGet(RCOBJ_AS_MAP(m), RCOBJ_AS_STRING(k), &v))
                 {
                     RuntimeError("Provided key does not exist in map"); // TODO probably just make this a warning
                     return InterpretResult::RUNTIME_ERROR;
                 }
+                HashMapDelete(RCOBJ_AS_MAP(m), RCOBJ_AS_STRING(k));
+                DecrementRef(k);
+                if (IS_RCOBJ(v)) IncrementRef(v);
                 break;
             }
 

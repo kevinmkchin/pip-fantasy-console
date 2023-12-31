@@ -44,22 +44,19 @@ void PipLangVM_DefineNativeFn(const char *name, NativeFn fn);
 /*
 
 declaration : statement
-
 statement : expression
-
 expression : cond_or
-
 
 TODO
 
 VM EPIC
- - Strings, Maps, Lists (MesaScript_GCObject types)
- - Reference counting and transiency handling
+ - Arrays
  - 'continue' and 'break' in while and for-loops
     - A continue statement jumps directly to the top of the nearest enclosing loop, skipping the rest of the loop body. 
     Inside a for loop, a continue jumps to the increment clause, if there is one. It’s a compile-time error to have a 
     continue statement not enclosed in a loop. Make sure to think about scope. What should happen to local variables 
     declared inside the body of the loop or in blocks nested inside the loop when a continue is executed?
+ - Thinking about switching to mark-and-sweep GC...
 
 PIPLANG GENERAL
  - Unit testing https://docs.racket-lang.org/rackunit/quick-start.html
@@ -68,10 +65,6 @@ PIPLANG GENERAL
  - elif
  - +=, -=, /=, *=
  - Handle cyclic references https://en.wikipedia.org/wiki/Reference_counting
- - map initialization
- - access map elements via dot (e.g. map.x or map.f(param))
- - allow chaining list or map access like: list[4]["x"][2] (an access of an access of an access)
- - need way to delete a list/table entry (remember to release ref count) https://docs.python.org/3/tutorial/datastructures.html#the-del-statement Note this is not deleting the object. Deleting an entry is different from deleting the object stored in that entry. I want to avoid ability to delete entire objects, because then we are able to destroy objects that are still referenced by other objects or variables...which would require tracking down every reference and removing them (otherwise they would be pointing to a "deleted" or "null" GCObject).
  - math ops: flr, ceil, rnd -> all return integer
  - More string operations
  - Native function arity checking
@@ -100,6 +93,13 @@ for (,,)
 for (mut i = 0, i < 10, ++i)
 
 I don't think there's anything wrong with looking forward to inspect everything in the parentheses before compiling them...
+
+python del doesn't delete "the object" but rather that identifier
+https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
+    mylist = [ ... ]
+    copy = mylist
+    del mylist
+    # copy is still valid at this point and retains the original list reference
 
 */ 
 
