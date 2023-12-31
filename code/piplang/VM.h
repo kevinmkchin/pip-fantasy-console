@@ -50,20 +50,18 @@ expression : cond_or
 TODO
 
 VM EPIC
+ - compile time introspection
+ - Clean up the way I'm emitting SET LOCAL SET GLOBAL SET MAP ENTRY instructions i think...
  - Arrays
- - 'continue' and 'break' in while and for-loops
-    - A continue statement jumps directly to the top of the nearest enclosing loop, skipping the rest of the loop body. 
-    Inside a for loop, a continue jumps to the increment clause, if there is one. It’s a compile-time error to have a 
-    continue statement not enclosed in a loop. Make sure to think about scope. What should happen to local variables 
-    declared inside the body of the loop or in blocks nested inside the loop when a continue is executed?
- - Thinking about switching to mark-and-sweep GC...
-
-PIPLANG GENERAL
- - Unit testing https://docs.racket-lang.org/rackunit/quick-start.html
- - RefCount Tests
  - % BinOp
  - elif
  - +=, -=, /=, *=
+ - Unit testing https://docs.racket-lang.org/rackunit/quick-start.html
+ - for (n in [1, 2, 3, 5, 7, 11])
+ - for (k,v in [ a: 2, b: 3 ])
+
+PIPLANG GENERAL
+ - RefCount Tests
  - Handle cyclic references https://en.wikipedia.org/wiki/Reference_counting
  - math ops: flr, ceil, rnd -> all return integer
  - More string operations
@@ -73,6 +71,14 @@ PIPLANG GENERAL
 
 NOTES
 Goal: faster than Lua
+
+
+- A continue statement jumps directly to the top of the nearest enclosing loop, skipping the rest of the loop body.
+    Inside a for loop, a continue jumps to the increment clause, if there is one. It’s a compile-time error to have a
+    continue statement not enclosed in a loop. Make sure to think about scope. What should happen to local variables
+    declared inside the body of the loop or in blocks nested inside the loop when a continue is executed?
+
+
 Revisit 1 * 2 = 3 + 4 assignment bug to fire Compile error https://craftinginterpreters.com/global-variables.html#assignment
 If I remove C++isms from PipLang and fully switch VM to C, then I can make instruction pointer a register.
 
@@ -100,6 +106,10 @@ https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
     copy = mylist
     del mylist
     # copy is still valid at this point and retains the original list reference
+
+
+ - 'continue' and 'break' in while and for-loops
+
 
 */ 
 

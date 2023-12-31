@@ -32,10 +32,38 @@ struct ParseRule
 static void ParsePrecedence(Precedence precedence);
 static ParseRule *GetParseRule(TokenType type);
 
+struct TokenSequence
+{
+    Token *tokens = NULL;
+    //Token tokens[4096];
+    int numTokens = 0;
+    int cursor = 0;
+
+    void Allocate()
+    {
+        numTokens = 0;
+        cursor = 0;
+        if (tokens == NULL)
+            tokens = (Token*)calloc(4096, sizeof(Token));
+    }
+
+    void Free()
+    {
+        free(tokens);
+        numTokens = 0;
+        cursor = 0;
+    }
+};
+
+TokenSequence tokensequence;
+
 struct Parser
 {
-    Token current;
-    Token previous;
+    Token current{};
+    Token previous{};
+
+    bool previewMode = false;
+
 
     bool hadError = false;
     bool panicMode = false;
@@ -126,13 +154,7 @@ static void Error(const char *message)
 static void Advance()
 {
     parser.previous = parser.current;
-
-    for (;;)
-    {
-        parser.current = ScanToken();
-        if (parser.current.type != TokenType::ERROR) break;
-        ErrorAtCurrent(parser.current.start);
-    }
+    parser.current = tokensequence.tokens[tokensequence.cursor++];
 }
 
 static void Eat(TokenType type, const char *errorMsg)
@@ -167,8 +189,8 @@ static void EscapePanicMode()
         switch (parser.current.type) 
         {
             case TokenType::FN:
-            //case TOKEN_VAR:
-            //case TokenType::FOR:
+            case TokenType::MUT:
+            case TokenType::FOR:
             case TokenType::WHILE:
             case TokenType::IF:
             case TokenType::RETURN:
@@ -446,6 +468,7 @@ static void NamedVariable(Token name)
     {
         if (lastLocalIndexResolved != -1)
         {
+
             u8 arg = (u8)lastLocalIndexResolved;
             EmitByte(OpCode::GET_LOCAL);
             EmitByte(arg);
@@ -492,7 +515,7 @@ static void Dot()
     }
     else
     {
-        WriteConstant(CurrentChunk(), RCOBJ_VAL((RCObject *)CopyString(id.start, id.length, true)), id.line);
+        EmitConstant(RCOBJ_VAL((RCObject *)CopyString(id.start, id.length, true)));
 
         if (!Check(TokenType::EQUAL))
         {
@@ -611,7 +634,7 @@ static void ForStatement()
     {
         int bodyJump = EmitJump(OpCode::JUMP);
         int incrementStart = (int)CurrentChunk()->bytecode->size();
-        Statement();
+        Statement(); // TODO should be an expression statement...
         Eat(TokenType::RPAREN, "Expected ')' after for-loop clauses.");
 
         EmitLoop(loopStart);
@@ -694,6 +717,8 @@ static void Statement()
     }
     else
     {
+//        PreviewExpression();
+
         Expression();
         if (assignValueToMapEntryFlag)
         {
@@ -960,12 +985,37 @@ static ParseRule *GetParseRule(TokenType type)
     return &rules[(u8)type];
 }
 
+static void TokenizeAll(const char *source)
+{
+    InitScanner(source);
+
+    for (int i = 0; i < 4096; ++i)
+    {
+        Token t = ScanToken();
+
+        if (t.type == TokenType::ERROR)
+        {
+            ErrorAtCurrent(t.start);
+            break;
+        }
+
+        tokensequence.tokens[i] = t;
+
+        if (t.type == TokenType::END_OF_FILE)
+        {
+            tokensequence.numTokens = i + 1;
+            break;
+        }
+    }
+}
 
 PipFunction *Compile(const char *source)
 {
-    SetupParsingRules();
+    tokensequence.Allocate();
 
-    InitScanner(source);
+    SetupParsingRules();
+    TokenizeAll(source);
+
     Compiler compiler;
     InitCompiler(&compiler, CompilingToType::TOPLEVELSCRIPT);
 
@@ -981,4 +1031,6 @@ PipFunction *Compile(const char *source)
 
     PipFunction *toplevelscriptfn = EndCompiler();
     return parser.hadError ? NULL : toplevelscriptfn;
+
+    tokensequence.Free();
 }

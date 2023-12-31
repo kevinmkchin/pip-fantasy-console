@@ -49,10 +49,10 @@ enum class TokenType : u8
 
 struct Token
 {
-    TokenType type;
     const char *start;
-    int length;
-    int line;
+    TokenType type;
+    u16 length;
+    u16 line;
 };
 
 struct Scanner
