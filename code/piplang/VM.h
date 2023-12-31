@@ -50,15 +50,14 @@ expression : cond_or
 TODO
 
 VM EPIC
- - compile time introspection
- - Clean up the way I'm emitting SET LOCAL SET GLOBAL SET MAP ENTRY instructions i think...
+ - Unit testing https://docs.racket-lang.org/rackunit/quick-start.html
  - Arrays
  - % BinOp
  - elif
  - +=, -=, /=, *=
- - Unit testing https://docs.racket-lang.org/rackunit/quick-start.html
  - for (n in [1, 2, 3, 5, 7, 11])
  - for (k,v in [ a: 2, b: 3 ])
+ - 'continue' and 'break' in while and for-loops
 
 PIPLANG GENERAL
  - RefCount Tests
@@ -106,9 +105,6 @@ https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
     copy = mylist
     del mylist
     # copy is still valid at this point and retains the original list reference
-
-
- - 'continue' and 'break' in while and for-loops
 
 
 */ 
