@@ -18,8 +18,8 @@ inline std::string wd_path(const std::string& name) { return wd_path() + std::st
 inline std::string data_path() { return wd_path() + "data/"; }
 inline std::string data_path(const std::string& name) { return wd_path() + "data/" + name; }
 
-#if (defined _WIN32)
-#define ASSERT(predicate) if(!(predicate)) {*(int*)0 = 0;}
+#if (defined _MSC_VER)
+#define ASSERT(predicate) if(!(predicate)) { __debugbreak(); }
 #else
 #define ASSERT(predicate) if(!(predicate)) { __builtin_trap(); }
 #endif

@@ -126,3 +126,10 @@ typedef TValue (*NativeFn)(int argc, TValue *argv);
 #define IS_FUNCTION(value)     ((value).type == TValue::FUNC)
 #define IS_NATIVEFN(value)     ((value).type == TValue::NATIVEFN)
 #define IS_RCOBJ(value)        ((value).type == TValue::RCOBJ)
+
+
+#if (defined _MSC_VER)
+#define PipLangAssert(predicate) if(!(predicate)) { __debugbreak(); }
+#else
+#define PipLangAssert(predicate) if(!(predicate)) {  }
+#endif
