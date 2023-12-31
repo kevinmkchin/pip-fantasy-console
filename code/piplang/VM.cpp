@@ -367,6 +367,60 @@ static InterpretResult Run()
                 break;
             }
 
+            case OpCode::SET_MAP_ENTRY:
+            {
+                TValue v = Stack_Pop();
+                TValue k = Stack_Pop();
+                TValue m = Stack_Peek(0);
+                if (!RCOBJ_IS_MAP(m) || !RCOBJ_IS_STRING(k))
+                {
+                    RuntimeError("Provided invalid map or key when setting map entry.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                TValue replaced;
+                bool isNewKey = HashMapSet(RCOBJ_AS_MAP(m), RCOBJ_AS_STRING(k), v, &replaced);
+                if (isNewKey) IncrementRef(k);
+                if (IS_RCOBJ(v)) IncrementRef(v);
+                if (!isNewKey && IS_RCOBJ(replaced)) DecrementRef(replaced);
+                break;
+            }
+
+            case OpCode::GET_MAP_ENTRY:
+            {
+                TValue k = Stack_Pop();
+                TValue m = Stack_Pop();
+                if (!RCOBJ_IS_MAP(m) || !RCOBJ_IS_STRING(k))
+                {
+                    RuntimeError("Provided invalid map or key when getting map entry.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                TValue v;
+                if (!HashMapGet(RCOBJ_AS_MAP(m), RCOBJ_AS_STRING(k), &v))
+                {
+                    RuntimeError("Provided key does not exist in map.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                Stack_Push(v);
+                break;
+            }
+
+            case OpCode::DEL_MAP_ENTRY:
+            {
+                TValue k = Stack_Pop();
+                TValue m = Stack_Peek(0);
+                if (!RCOBJ_IS_MAP(m) || !RCOBJ_IS_STRING(k))
+                {
+                    RuntimeError("Provided invalid map to 'insert' contextual keyword.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                if (!HashMapDelete(RCOBJ_AS_MAP(m), RCOBJ_AS_STRING(k)))
+                {
+                    RuntimeError("Provided key does not exist in map"); // TODO probably just make this a warning
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
+
             case OpCode::NEGATE:
             {
                 if (!IS_NUMBER(Stack_Peek(0)))
