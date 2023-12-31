@@ -1,0 +1,187 @@
+enablepipunit()
+
+checkeq(7, 7.0)
+checkeq(3.14 + 2.77, 5.91)
+checkeq(2.71 * 9.5, 25.745)
+checkeq(2.71 - 9.5, -6.79)
+checkeq(9 + 2.71, 11.71)
+checkeq(2.71 / 2.71, 1.0)
+checkeq(100000.0/100000, 1)
+checkeq((2.71/9.5) - 0.285263 < 0.0001 and (2.71/9.5) - 0.285263 > -0.0001, true)
+
+fn a() { b() }
+fn b() { c() }
+fn c()
+{
+  c("too", "many")
+}
+
+checkerror(a(), "Expected 0 arguments but got 2");
+
+;; valid enum in pip
+mut MYENUM = { "APPLE": 0, "BANANA": 1, "PEAR": 2 }
+mut objectA = {}
+mut objectB = {}
+objectA.type = MYENUM.APPLE
+objectB.type = MYENUM.BANANA
+checkeq(objectA.type == objectB.type, false)
+objectA.type = MYENUM.PEAR
+objectB.type = MYENUM.PEAR
+checkeq(objectA.type == objectB.type, true)
+
+;; map access
+mut map = { "x" : { "name" : "holden" } }
+checkeq(map.x.name, "holden")
+map.x.name = "miller"
+checkeq(map.x.name, "miller")
+
+;; Find the n-th Fibonacci number
+fn fib(n)
+{
+  if (n < 2) return(n)
+  else return(fib(n - 2) + fib(n - 1))
+}
+checkeq(fib(10), 55)
+checkeq(fib(4), 3)
+
+;; Find the factorial of n
+fn fact(n)
+{
+    if (n == 0) { return (1) }
+    else return (  n*  fact   (n- 1))
+}
+checkeq(fact(0), 1)
+checkeq(fact(1), 1)
+checkeq(fact(4), 24)
+checkeq(fact(9), 362880)
+
+mut x = "hello "
+mut y = "world"
+x = x + y
+mut z = 'x'
+z = 0
+checkeq(x, "hello world")
+
+
+;; Zoo
+
+fn MakeAardvark() {
+  mut aardvark = { 
+    'name': "jeff", 
+    "food": 'apple', 
+    "age": 10 
+  }
+  return(aardvark)
+}
+
+fn MakeAnimal(name, food, age)
+{
+  mut animal = { 
+    "name": name, 
+    'food': food, 
+    'age': age 
+  }
+  return(animal)
+}
+
+fn MakeZoo()
+{
+  mut zoo = {}
+  zoo.insert("aardvark", MakeAardvark())
+  zoo.insert("barracuda", MakeAnimal("barry", "sardines", 4))
+  zoo.insert("caribou", MakeAnimal("cassie", "pineapple", 20))
+  mut caribou = "donkey"
+  zoo.insert(caribou, MakeAnimal("dan", "carrot", 12))
+  zoo.insert("elephant", MakeAnimal("dumbo", "watermelon", 28))
+  mut elephant = "fox"
+  zoo.insert(elephant, MakeAnimal("Mr Fox", "cider", 16))
+  return(zoo)
+}
+
+fn MakeZooAfterNScopes(n)
+{
+  if (n == 1)
+  {
+    return(MakeZoo())
+  }
+  else
+  {
+    return(MakeZooAfterNScopes(n - 1))
+  }
+}
+
+fn GetCombinedAgeAfterNScopes(n, z)
+{
+  if (n == 1)
+  {
+    mut a = z.aardvark
+    mut b = z.barracuda
+    mut c = z.caribou
+    mut d = z.donkey
+    mut e = z.elephant
+    mut f = z.fox
+    return(a.age + b.age + c.age + d.age + e.age + f.age)
+  }
+  else
+  {
+    return(GetCombinedAgeAfterNScopes(n - 1, z));
+  }
+}
+
+
+mut accumulateAge = 0;
+mut i = 0
+mut n = 500
+while (i < n)
+{
+  mut z = MakeZooAfterNScopes(5)
+  mut combinedAge = GetCombinedAgeAfterNScopes(2, z);
+  accumulateAge = accumulateAge + combinedAge
+  i = i + 1
+}
+
+checkeq(accumulateAge, 90 * n)
+
+
+/*
+
+fn StringIsPassedByValueTest()
+{
+    str = "string is passed by value test"
+    someList = [ str, str, str ]
+    someMap = {}
+    someMap["someIndex"] = str
+    ;at this point, there are 5 strings, and str still only has one refcount
+
+    checkeq(refcount(str), 0) ;refcount returns 0 because it checks the refcount of a str copy
+}
+StringIsPassedByValueTest();
+
+fn Helper_RefCountTests_DeeperScope(obj)
+{
+    checkeq(refcount(obj), 5);
+    a = obj;
+    b = obj;
+    c = obj;
+    checkeq(refcount(obj), 8);
+}
+
+fn RefCountTests()
+{
+    A = [ [1, 2, 3], 4, [5, 6] ]
+    B = A[2]
+    checkeq(refcount(B), 2)
+
+    someList = [ 1, 2, "hello", 32]
+    someListRef1 = someList
+    someListRef2 = someList
+    someListRef3 = someList
+
+    checkeq(refcount(someList), 4)
+    Helper_RefCountTests_DeeperScope(someList)
+    checkeq(refcount(someList), 4)
+}
+RefCountTests()
+
+
+*/

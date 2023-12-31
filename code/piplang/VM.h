@@ -40,7 +40,7 @@ void PipLangVM_InitVM();
 void PipLangVM_FreeVM();
 InterpretResult PipLangVM_RunScript(const char *source);
 void PipLangVM_DefineNativeFn(const char *name, NativeFn fn);
-
+void PipLangVM_NativeRuntimeError(const char *format, ...);
 /*
 
 declaration : statement
@@ -71,14 +71,11 @@ PIPLANG GENERAL
 NOTES
 Goal: faster than Lua
 
-
 - A continue statement jumps directly to the top of the nearest enclosing loop, skipping the rest of the loop body.
     Inside a for loop, a continue jumps to the increment clause, if there is one. It’s a compile-time error to have a
     continue statement not enclosed in a loop. Make sure to think about scope. What should happen to local variables
     declared inside the body of the loop or in blocks nested inside the loop when a continue is executed?
 
-
-Revisit 1 * 2 = 3 + 4 assignment bug to fire Compile error https://craftinginterpreters.com/global-variables.html#assignment
 If I remove C++isms from PipLang and fully switch VM to C, then I can make instruction pointer a register.
 
 I want to support all of the following:

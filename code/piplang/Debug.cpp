@@ -41,6 +41,9 @@ void PrintTValue(TValue value)
         case TValue::FUNC:
             PrintFunction(AS_FUNCTION(value));
             break;
+        case TValue::NATIVEFN:
+            printf("<nativefn>");
+            break;
         case TValue::RCOBJ:
             PrintRCObject(value); 
             break;

@@ -36,26 +36,63 @@ static TValue Stack_Peek(int distance)
     return vm.sp[-1 - distance];
 }
 
-static void RuntimeError(const char *format, ...)
+#pragma region RuntimeErrors
+
+static bool pipunitTestEnvironmentEnabled = false;
+static int pipUnitTestsRan = 0;
+static int pipunitTestsPassed = 0;
+static int pipunitTestsFailed = 0;
+static bool nativeRuntimeErrorFiredFlag = false;
+static char lastRuntimeErrorMessage[256];
+
+void PipLangVM_NativeRuntimeError(const char *format, ...)
 {
-    CallFrame *frame = &vm.frames[vm.frameCount - 1];
-    size_t instruction = frame->ip - frame->fn->chunk.bytecode->data() - 1;
-    int line = frame->fn->chunk.linenumbers->at(instruction);
-    fprintf(stderr, "[line %d] Runtime error: ", line);
+    nativeRuntimeErrorFiredFlag = true;
 
     va_list args;
     va_start(args, format);
-    vfprintf(stderr, format, args);
+    vsprintf(lastRuntimeErrorMessage, format, args);
     va_end(args);
+
+    CallFrame *frame = &vm.frames[vm.frameCount - 1];
+    size_t instruction = frame->ip - frame->fn->chunk.bytecode->data() - 1;
+    int line = frame->fn->chunk.linenumbers->at(instruction);
+    fprintf(stderr, "[line %d] Runtime error: %s", line, lastRuntimeErrorMessage);
     fputs("\n", stderr);
+
+    if (pipunitTestEnvironmentEnabled)
+    {
+        return;
+    }
+
+    Stack_Reset();
+}
+
+static void RuntimeError(const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vsprintf(lastRuntimeErrorMessage, format, args);
+    va_end(args);
+
+    CallFrame *frame = &vm.frames[vm.frameCount - 1];
+    size_t instruction = frame->ip - frame->fn->chunk.bytecode->data() - 1;
+    int line = frame->fn->chunk.linenumbers->at(instruction);
+    fprintf(stderr, "[line %d] Runtime error: %s", line, lastRuntimeErrorMessage);
+    fputs("\n", stderr);
+
+    if (pipunitTestEnvironmentEnabled)
+    {
+        return;
+    }
 
     // stack trace
     fprintf(stderr, "=== Stack trace ===\n");
     for (int i = vm.frameCount - 1; i >= 0; --i)
     {
-        CallFrame *frame = &vm.frames[i];
+        frame = &vm.frames[i];
         PipFunction *fn = frame->fn;
-        size_t instruction = frame->ip - fn->chunk.bytecode->data() - 1;
+        instruction = frame->ip - fn->chunk.bytecode->data() - 1;
         fprintf(stderr, "[line %d] in ", fn->chunk.linenumbers->at(instruction));
         if (fn->name == NULL)
         {
@@ -69,6 +106,8 @@ static void RuntimeError(const char *format, ...)
 
     Stack_Reset();
 }
+
+#pragma endregion
 
 static bool IsFalsey(TValue v)
 {
@@ -92,6 +131,7 @@ static bool IsEqual(TValue l, TValue r)
     {
         case TValue::BOOLEAN: return AS_BOOL(l) == AS_BOOL(r);
         case TValue::REAL:    return AS_NUMBER(l) == AS_NUMBER(r);
+        case TValue::FUNC:    return AS_FUNCTION(l) == AS_FUNCTION(r);
         case TValue::RCOBJ:
         {
             return AS_RCOBJ(l) == AS_RCOBJ(r);
@@ -130,6 +170,11 @@ static bool CallValue(TValue callee, u8 argc)
     {
         NativeFn native = AS_NATIVEFN(callee);
         TValue result = native(argc, vm.sp - argc);
+        if (nativeRuntimeErrorFiredFlag)
+        {
+            nativeRuntimeErrorFiredFlag = false;
+            return false;
+        }
         vm.sp -= argc + 1;
         Stack_Push(result);
         return true;
@@ -202,6 +247,20 @@ static InterpretResult Run()
         double l = Stack_Pop().real; \
         Stack_Push(resultValueConstructor(l op r)); \
     } while (false)
+#define VM_RETURN_RUNTIME_ERROR() \
+    do {                          \
+        if (pipunitTestEnvironmentEnabled) \
+        { \
+            Stack_Push({}); \
+            op = OpCode::RETURN; \
+            goto START_OF_OP_SWITCH; \
+        } \
+        else \
+        { \
+            return InterpretResult::RUNTIME_ERROR; \
+        } \
+    } while (false)
+
 
 
     for (;;)
@@ -217,8 +276,9 @@ static InterpretResult Run()
         printf("\n");
         DisassembleInstruction(&frame->fn->chunk, (int)(frame->ip - frame->fn->chunk.bytecode->data()));
 #endif
-        OpCode op;
-        switch (op = (OpCode)VM_READ_BYTE())
+        OpCode op = (OpCode)VM_READ_BYTE();
+START_OF_OP_SWITCH:
+        switch (op)
         {
             case OpCode::NEW_HASHMAP:
             {
@@ -272,7 +332,7 @@ static InterpretResult Run()
                 u8 argc = VM_READ_BYTE();
                 if (!CallValue(Stack_Peek(argc), argc))
                 {
-                    return InterpretResult::RUNTIME_ERROR;
+                    VM_RETURN_RUNTIME_ERROR();
                 }
                 frame = &vm.frames[vm.frameCount - 1]; // Move to callee frame
                 break;
@@ -325,7 +385,7 @@ static InterpretResult Run()
                 if (!HashMapGet(&vm.globals, name, &value))
                 {
                     RuntimeError("Undefined variable '%s'.", name->text.c_str());
-                    return InterpretResult::RUNTIME_ERROR;
+                    VM_RETURN_RUNTIME_ERROR();
                 }
                 Stack_Push(value);
                 break;
@@ -341,7 +401,7 @@ static InterpretResult Run()
                 {
                     HashMapDelete(&vm.globals, name);
                     RuntimeError("Undefined variable '%s'.", name->text.c_str());
-                    return InterpretResult::RUNTIME_ERROR;
+                    VM_RETURN_RUNTIME_ERROR();
                 }
                 if (IS_RCOBJ(value)) IncrementRef(value);
                 if (IS_RCOBJ(replaced)) DecrementRef(replaced);
@@ -375,7 +435,7 @@ static InterpretResult Run()
                 if (!RCOBJ_IS_MAP(m) || !RCOBJ_IS_STRING(k))
                 {
                     RuntimeError("Provided invalid map or key when setting map entry.");
-                    return InterpretResult::RUNTIME_ERROR;
+                    VM_RETURN_RUNTIME_ERROR();
                 }
                 TValue replaced;
                 bool isNewKey = HashMapSet(RCOBJ_AS_MAP(m), RCOBJ_AS_STRING(k), v, &replaced);
@@ -392,13 +452,13 @@ static InterpretResult Run()
                 if (!RCOBJ_IS_MAP(m) || !RCOBJ_IS_STRING(k))
                 {
                     RuntimeError("Provided invalid map or key when getting map entry.");
-                    return InterpretResult::RUNTIME_ERROR;
+                    VM_RETURN_RUNTIME_ERROR();
                 }
                 TValue v;
                 if (!HashMapGet(RCOBJ_AS_MAP(m), RCOBJ_AS_STRING(k), &v))
                 {
                     RuntimeError("Provided key does not exist in map.");
-                    return InterpretResult::RUNTIME_ERROR;
+                    VM_RETURN_RUNTIME_ERROR();
                 }
                 Stack_Push(v);
                 break;
@@ -411,13 +471,13 @@ static InterpretResult Run()
                 if (!RCOBJ_IS_MAP(m) || !RCOBJ_IS_STRING(k))
                 {
                     RuntimeError("Provided invalid map to 'insert' contextual keyword.");
-                    return InterpretResult::RUNTIME_ERROR;
+                    VM_RETURN_RUNTIME_ERROR();
                 }
                 TValue v;
                 if (!HashMapGet(RCOBJ_AS_MAP(m), RCOBJ_AS_STRING(k), &v))
                 {
                     RuntimeError("Provided key does not exist in map"); // TODO probably just make this a warning
-                    return InterpretResult::RUNTIME_ERROR;
+                    VM_RETURN_RUNTIME_ERROR();
                 }
                 HashMapDelete(RCOBJ_AS_MAP(m), RCOBJ_AS_STRING(k));
                 DecrementRef(k);
@@ -430,7 +490,7 @@ static InterpretResult Run()
                 if (!IS_NUMBER(Stack_Peek(0)))
                 {
                     RuntimeError("Operand to NEGATE op must be a number value.");
-                    return InterpretResult::RUNTIME_ERROR;
+                    VM_RETURN_RUNTIME_ERROR();
                 }
                 Stack_Push(TValue::Number(-AS_NUMBER(Stack_Pop())));
                 break;
@@ -450,7 +510,7 @@ static InterpretResult Run()
                 else
                 {
                     RuntimeError("Operands to BINOP must be number values.");
-                    return InterpretResult::RUNTIME_ERROR;
+                    VM_RETURN_RUNTIME_ERROR();
                 }
                 break;
             }
@@ -464,7 +524,7 @@ static InterpretResult Run()
                 if (!IS_BOOL(Stack_Peek(0)))
                 {
                     RuntimeError("Operand to LOGICAL NOT op must be a boolean value.");
-                    return InterpretResult::RUNTIME_ERROR;
+                    VM_RETURN_RUNTIME_ERROR();
                 }
                 Stack_Push(BOOL_VAL(IsFalsey(Stack_Pop())));
                 break;
@@ -494,7 +554,6 @@ static InterpretResult Run()
                 frame->ip -= jumpOffset;
                 break;
             }
-
         }
     }
 
@@ -505,6 +564,7 @@ static InterpretResult Run()
 #undef VM_READ_CONSTANT
 #undef VM_READ_CONSTANT_LONG
 #undef VM_BINARY_OP
+#undef VM_RETURN_RUNTIME_ERROR
 }
 
 #include "../Timer.h"
@@ -525,6 +585,8 @@ static InterpretResult Interpret(const char *source)
 
 void PipLangVM_InitVM()
 {
+    pipunitTestEnvironmentEnabled = false;
+    nativeRuntimeErrorFiredFlag = false;
     Stack_Reset();
     AllocateHashMap(&vm.interned_strings);
     AllocateHashMap(&vm.globals);
@@ -563,10 +625,146 @@ static TValue PrintGlobals(int argc, TValue *argv)
     return BOOL_VAL(false);
 }
 
+/*
+    How to write unit tests in pip:
+
+    Add enablepipunit() to the top of your test script.
+    Create a function for each isolated unit you want to test.
+    Use 'checkeq' to check equivalence between two expressions.
+        e.g. checkeq(2*3*5*7, 210, "2 x 3 x 5 x 7 should be 210")
+    Use 'checkerror' to assert that the provided function unit throws the provided error message.
+    The first argument to checkerror must be a function call.
+        e.g. checkerror(SomeFunction(), "Error msg from SomeFunction")
+    The second argument to checkerror must be a substring of the expected error message. If the
+    expected error message begins with the provided substring, the test passes.
+        e.g. checkerror(SomeFunction(), "") will always pass.
+    The above checks can be used within functions as well as at the top-level script.
+
+*/
+
+static TValue PipUnit_checkeq(int argc, TValue *argv)
+{
+    ++pipUnitTestsRan;
+
+    if (argc < 2 || argc > 3)
+    {
+        PipLangVM_NativeRuntimeError("checkeq expects 2 or 3 arguments: <actual> <expected> <message>.");
+        return {};
+    }
+
+    TValue actual = argv[0];
+    TValue expected = argv[1];
+    bool equivalence = IsEqual(actual, expected);
+
+    if (equivalence)
+        ++pipunitTestsPassed;
+    else
+    {
+        ++pipunitTestsFailed;
+        if (argc == 3)
+        {
+            TValue message = argv[2];
+            if (!RCOBJ_IS_STRING(message))
+            {
+                PipLangVM_NativeRuntimeError("checkeq expects a string as its third argument.");
+                return {};
+            }
+
+            printf("CHECKEQ FAIL: '%s'\n", RCOBJ_AS_STRING(message)->text.c_str());
+        }
+        else
+        {
+            printf("CHECKEQ FAIL\n");
+        }
+        printf("    expected: ");
+        PrintTValue(expected);
+        printf("\n");
+        printf("      actual: ");
+        PrintTValue(actual);
+        printf("\n");
+    }
+
+    return {};
+}
+
+static TValue PipUnit_checkerror(int argc, TValue *argv)
+{
+    ++pipUnitTestsRan;
+
+    if (argc != 2)
+    {
+        PipLangVM_NativeRuntimeError("checkerror expects 2 arguments: <expression> <expected-error-msg>.");
+        return {};
+    }
+
+    TValue message = argv[1];
+    if (!RCOBJ_IS_STRING(message))
+    {
+        PipLangVM_NativeRuntimeError("checkerror expects a string as its second argument.");
+        return {};
+    }
+
+    bool stringmatch = true;
+    std::string expected = RCOBJ_AS_STRING(message)->text;
+    if (strlen(expected.c_str()) <= strlen(lastRuntimeErrorMessage))
+    {
+        for (int i = 0; i < expected.length(); ++i)
+        {
+            if (expected.at(i) != lastRuntimeErrorMessage[i]) stringmatch = false;
+        }
+    }
+    else
+    {
+        stringmatch = false;
+    }
+
+    if (strlen(lastRuntimeErrorMessage) == 0)
+    {
+        ++pipunitTestsFailed;
+        printf("CHECKERROR FAIL: Provided function did not throw a RuntimeError.\n");
+    }
+    else if (!stringmatch)
+    {
+        ++pipunitTestsFailed;
+        printf("CHECKERROR FAIL:\n");
+        printf("    expected error: '%s'\n", expected.c_str());
+        printf("      actual error: '%s'\n", lastRuntimeErrorMessage);
+    }
+    else
+    {
+        ++pipunitTestsPassed;
+    }
+
+    memset(lastRuntimeErrorMessage, 0, ARRAY_COUNT(lastRuntimeErrorMessage));
+    return {};
+}
+
+static TValue PipUnit_enablepipunittests(int argc, TValue *argv)
+{
+    pipunitTestEnvironmentEnabled = true;
+    pipUnitTestsRan = 0;
+    pipunitTestsPassed = 0;
+    pipunitTestsFailed = 0;
+    PipLangVM_DefineNativeFn("checkeq", PipUnit_checkeq);
+    PipLangVM_DefineNativeFn("checkerror", PipUnit_checkerror);
+    return {};
+}
+
 InterpretResult PipLangVM_RunScript(const char *source)
 {
     PipLangVM_DefineNativeFn("printglobals", PrintGlobals);
-    return Interpret(source);
+    PipLangVM_DefineNativeFn("enablepipunit", PipUnit_enablepipunittests);
+
+    InterpretResult result = Interpret(source);
+
+    if (pipunitTestEnvironmentEnabled)
+    {
+        printf("pipunit ran %4d tests\n", pipUnitTestsRan);
+        printf("pipunit passed %4d tests\n", pipunitTestsPassed);
+        printf("pipunit failed %4d tests\n", pipunitTestsFailed);
+    }
+
+    return result;
 }
 
 void PipLangVM_DefineNativeFn(const char *name, NativeFn fn)
@@ -579,7 +777,7 @@ void PipLangVM_DefineNativeFn(const char *name, NativeFn fn)
 
     Stack_Push(RCOBJ_VAL((RCObject*)CopyString(name, (int)strlen(name), true)));
     Stack_Push(NATIVEFN_VAL((void*)fn));
-    HashMapSet(&vm.globals, RCOBJ_AS_STRING(vm.stack[0]), vm.stack[1], NULL);
+    HashMapSet(&vm.globals, RCOBJ_AS_STRING(vm.sp[-2]), vm.sp[-1], NULL);
     Stack_Pop();
     Stack_Pop();
 }
