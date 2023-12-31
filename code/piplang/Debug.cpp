@@ -21,6 +21,7 @@ static void PrintRCObject(TValue value)
             printf("<'%s'", RCOBJ_AS_STRING(value)->text.c_str());
             break;
         case RCObject::MAP:
+            // entries include tombstones
             printf("<map{%d entries}", RCOBJ_AS_MAP(value)->count);
             break;
     }
@@ -159,6 +160,12 @@ int DisassembleInstruction(Chunk *chunk, int offset)
         return Debug_SimpleInstruction("NEW_HASHMAP", offset);
     case OpCode::INCREMENT_REF_IF_RCOBJ:
         return Debug_SimpleInstruction("INCREMENT_REF_IF_RCOBJ", offset);
+    case OpCode::SET_MAP_ENTRY:
+        return Debug_SimpleInstruction("SET_MAP_ENTRY", offset);
+    case OpCode::GET_MAP_ENTRY:
+        return Debug_SimpleInstruction("GET_MAP_ENTRY", offset);
+    case OpCode::DEL_MAP_ENTRY:
+        return Debug_SimpleInstruction("DEL_MAP_ENTRY", offset);
     default:
         printf("Unknown opcode %d\n", instruction);
         return offset + 1;

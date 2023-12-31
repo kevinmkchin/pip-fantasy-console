@@ -260,32 +260,19 @@ static PipFunction *EndCompiler()
 }
 
 
-// map.insert(k, v)
-//
+static void Expression();
 
 static void HashMapLiteral()
 {
-    /* The totality of this expression must result in 1 new stack value
-
-
-    Eat({)
-
-    OP create the hash map
-
-    while(!Match(})
-    {
-        Expression() // key expression
-        Match(:)
-        Expression() // value expression
-        // at this point there are two values on the stack
-        OP create hash map entry using the last two stack values
-    }
-
-    // still need to load this created transient hash map onto the stack? or is it loaded on create?
-
-    */
-
     EmitByte(OpCode::NEW_HASHMAP);
+
+    while (!Match(TokenType::RBRACE))
+    {
+        Expression(); // key expression
+        Eat(TokenType::COLON, "Expected ':' after Key value expression in Map initializer.");
+        Expression(); // value expression
+        EmitByte(OpCode::SET_MAP_ENTRY);
+    }
 }
 
 static void NumberLiteral()
@@ -412,6 +399,7 @@ static void LogicalOr()
     PatchJump(endJump); // go here to skip rest of predicate if True
 }
 
+static bool assignValueToMapEntryFlag = false;
 static u32 lastIdentifierConstantAdded = 0;
 static int lastLocalIndexResolved = -1;
 static void IdentifierConstant(Token *name)
@@ -482,23 +470,39 @@ static void Dot()
 {
     Eat(TokenType::IDENTIFIER, "Expected map entry name after '.'.");
 
-    // if token we just read is "insert" "append" "remove" etc then do something else?
-    // map.insert then take previous expression (which must be a map or a list) and do something else
-    // Expression K
-    // Expression V
-    // use last three stack thingies?
-
-    IdentifierConstant(&parser.previous);
-
-
-    //TODO
-    if (!Check(TokenType::EQUAL))
+    Token id = parser.previous;
+    auto str = std::string(id.start, id.length);
+    if (str == "insert")
     {
-        //u32 arg = lastIdentifierConstantAdded;
-        //EmitByte(OpCode::GET_MAP_ENTRY);
-        //EmitByte((u8)(arg >> 16));
-        //EmitByte((u8)(arg >> 8));
-        //EmitByte((u8)(arg));
+        Eat(TokenType::LPAREN, "Expected '(' after 'insert' contextual keyword.");
+        Expression(); // Key
+        assignValueToMapEntryFlag = true;
+    }
+    else if (str == "append")
+    {
+        // TODO
+    }
+    else if (str == "remove")
+    {
+        // TODO
+        Eat(TokenType::LPAREN, "Expected '(' after 'remove' contextual keyword.");
+        Expression(); // Key
+        Eat(TokenType::RPAREN, "Expected ')' after Key expression of 'remove' contextual keyword.");
+        EmitByte(OpCode::DEL_MAP_ENTRY);
+    }
+    else
+    {
+        WriteConstant(CurrentChunk(), RCOBJ_VAL((RCObject *)CopyString(id.start, id.length, true)), id.line);
+
+        if (!Check(TokenType::EQUAL))
+        {
+            assignValueToMapEntryFlag = false;
+            EmitByte(OpCode::GET_MAP_ENTRY);
+        }
+        else
+        {
+            assignValueToMapEntryFlag = true;
+        }
     }
 }
 
@@ -691,7 +695,28 @@ static void Statement()
     else
     {
         Expression();
-        if (Match(TokenType::EQUAL))
+        if (assignValueToMapEntryFlag)
+        {
+            if (Match(TokenType::EQUAL))
+            {
+                Expression();
+                EmitByte(OpCode::SET_MAP_ENTRY);
+                EmitByte(OpCode::POP);
+            }
+            else if (Match(TokenType::COMMA))
+            {
+                Expression();
+                Eat(TokenType::RPAREN, "Expected ')' after Value expression of 'insert' contextual keyword.");
+                EmitByte(OpCode::SET_MAP_ENTRY);
+                EmitByte(OpCode::POP);
+            }
+            else
+            {
+                ErrorAtCurrent("assignValueToMapEntryFlag is set incorrectly.");
+            }
+            assignValueToMapEntryFlag = false;
+        }
+        else if (Match(TokenType::EQUAL))
         {
             if (lastLocalIndexResolved != -1)
             {
@@ -878,11 +903,11 @@ void SetupParsingRules()
     rules[(u8)TokenType::BANG_EQUAL]        = {          NULL,        BinOp, Precedence::EQUALITY };
     rules[(u8)TokenType::EQUAL_EQUAL]       = {          NULL,        BinOp, Precedence::EQUALITY };
     rules[(u8)TokenType::BANG]              = {         Unary,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::LSQBRACK]          = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::LSQBRACK]          = {  /*ArrayLiteral*/NULL,  /*AccessAorM*/NULL, Precedence::NONE /*CALL probably*/ };
     rules[(u8)TokenType::RSQBRACK]          = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::LPAREN]            = {      Grouping,         Call, Precedence::CALL };
     rules[(u8)TokenType::RPAREN]            = {          NULL,         NULL, Precedence::NONE };
-    rules[(u8)TokenType::LBRACE]            = {          NULL,         NULL, Precedence::NONE };
+    rules[(u8)TokenType::LBRACE]            = {HashMapLiteral,         NULL, Precedence::NONE };
     rules[(u8)TokenType::RBRACE]            = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::COMMA]             = {          NULL,         NULL, Precedence::NONE };
     rules[(u8)TokenType::DOT]               = {          NULL,          Dot, Precedence::CALL };
@@ -890,8 +915,6 @@ void SetupParsingRules()
     rules[(u8)TokenType::MINUS]             = {         Unary,        BinOp, Precedence::TERM };
     rules[(u8)TokenType::ASTERISK]          = {          NULL,        BinOp, Precedence::FACTOR };
     rules[(u8)TokenType::FORWARDSLASH]      = {          NULL,        BinOp, Precedence::FACTOR };
-
-    rules[(u8)TokenType::HASH]              = {HashMapLiteral,         NULL, Precedence::NONE };
 
     rules[(u8)TokenType::NUMBER_LITERAL]    = { NumberLiteral,         NULL, Precedence::NONE };
     rules[(u8)TokenType::STRING_LITERAL]    = { StringLiteral,         NULL, Precedence::NONE };

@@ -195,6 +195,7 @@ Token ScanToken()
         case '+': return MakeToken(TokenType::PLUS);
         case '/': return MakeToken(TokenType::FORWARDSLASH);
         case '*': return MakeToken(TokenType::ASTERISK);
+        case ':': return MakeToken(TokenType::COLON);
         case '!':
             return MakeToken(Match('=') ? TokenType::BANG_EQUAL : TokenType::BANG);
         case '=':
@@ -205,7 +206,6 @@ Token ScanToken()
             return MakeToken(Match('=') ? TokenType::GREATER_EQUAL : TokenType::GREATER);
         case '"': return StringToken(true);
         case '\'': return StringToken(false);
-        case '#': return MakeToken(TokenType::HASH);
     }
 
     return ErrorToken("Scanned unexpected character.");

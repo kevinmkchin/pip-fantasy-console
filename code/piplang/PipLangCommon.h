@@ -3,8 +3,8 @@
 #include "../MesaCommon.h"
 
 
-//#define DEBUG_PRINT_CODE
-//#define DEBUG_TRACE_EXECUTION
+#define DEBUG_PRINT_CODE
+#define DEBUG_TRACE_EXECUTION
 
 struct RCObject;
 struct PipFunction;
@@ -38,6 +38,9 @@ enum class OpCode : u8
     CALL,
     PRINT,
     NEW_HASHMAP,
+    SET_MAP_ENTRY,
+    GET_MAP_ENTRY,
+    DEL_MAP_ENTRY,
     INCREMENT_REF_IF_RCOBJ
 };
 
