@@ -21,8 +21,6 @@
 #include "MesaIMGUI.h"
 #include "Editor.h"
 #include "Game.h"
-#include "MesaScript.h"
-#include "PipAPI.h"
 
 SDL_Window *g_SDLWindow;
 static SDL_GLContext g_SDLGLContext;
@@ -73,8 +71,6 @@ static bool InitializeEverything()
     g_gfx.Init();
     MesaGUI::Init();
 
-    InitializeLanguageCompilerAndRuntime();
-    BindPipAPI();
     SetupConsoleCommands();
 
     PrintLog.Message("Graphics loaded...");
@@ -172,6 +168,11 @@ static void ProcessSDLEvents()
 
 void StartEditor()
 {
+    if (g_ProgramMode == MesaProgramMode::Game)
+    {
+        TemporaryGameShutdown();
+    }
+
     g_ProgramMode = MesaProgramMode::Editor;
 
     // TODO(Kevin): get editor w editor h editor s from cached editor data or .ini
@@ -196,7 +197,11 @@ void StartGameSpace()
     SDL_SetWindowSize(g_SDLWindow, w*(int)g_gfx.screenScaling, h*(int)g_gfx.screenScaling);
     g_gfx.UpdateBackBufferAndGameSize();
 
-    TemporaryGameInit();
+    if (!TemporaryGameInit())
+    {
+        TemporaryGameShutdown();
+        StartEditor();
+    }
 }
 
 static void LoadFantasyConsole()

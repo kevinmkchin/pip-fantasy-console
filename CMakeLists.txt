@@ -50,12 +50,8 @@ set(SOURCE_FILES
     code/Editor.cpp
     code/CodeEditor.h
     code/CodeEditor.cpp
-    code/MesaScript.h
-    code/MesaScript.cpp
     code/Game.h
     code/Game.cpp
-    code/Space.h
-    code/Space.cpp
     code/PipAPI.h
     code/PipAPI.cpp
 

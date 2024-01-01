@@ -12,11 +12,6 @@
 #include "MesaIMGUI.h"
 #include "MesaMain.h"
 
-// TODO(Kevin): maybe renderer shouldn't need to know about this shit:
-#include "Game.h"
-#include "Space.h"
-#include "MesaScript.h"
-
 namespace Gfx
 {
     static SDL_Window* s_ActiveSDLWindow = nullptr;
@@ -99,7 +94,7 @@ namespace Gfx
 
     void SetGameLayerClearColor(vec4 color)
     {
-        gameLayer_ClearColor = color;
+        gameLayer_ClearColor = color/255.f;
     }
 
 

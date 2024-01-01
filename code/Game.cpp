@@ -1,81 +1,53 @@
 #include "Game.h"
-#include "Space.h"
-#include "MesaScript.h"
 #include "InputSystem.h"
 #include "Timer.h"
 #include "EditorState.h"
 
+#include "PipAPI.h"
 
-static MesaScript_Table gamecodeTable;
 
-void TemporaryGameInit() 
+bool TemporaryGameInit()
 {
     EditorState *activeEditorState = EditorState::ActiveEditorState();
-
     std::string& gamecode = activeEditorState->codePage1;
-    CompileAndRunMesaScriptCode(gamecode, &gamecodeTable);
 
-    static bool doOnce = false;
-    if (!doOnce)
+    PipLangVM_InitVM();
+    InitializePipAPI();
+    InterpretResult rungamecodeResult = PipLangVM_RunGameCode(gamecode.c_str());
+    if (rungamecodeResult != InterpretResult::OK)
     {
-        doOnce = true; // TODO(Kevin): do something more robust like what should actually happen to these singletons on restart?
-
-        MesaScript_Table *input = EmplaceMapInGlobalScope("input");
-        MesaTValue left;
-        left.type = MesaTValue::ValueType::Boolean;
-        left.boolValue = false;
-        MesaTValue right;
-        right.type = MesaTValue::ValueType::Boolean;
-        right.boolValue = false;
-        MesaTValue up;
-        up.type = MesaTValue::ValueType::Boolean;
-        up.boolValue = false;
-        MesaTValue down;
-        down.type = MesaTValue::ValueType::Boolean;
-        down.boolValue = false;
-        input->CreateNewMapEntry("left", left);
-        input->CreateNewMapEntry("right", right);
-        input->CreateNewMapEntry("up", up);
-        input->CreateNewMapEntry("down", down);
-
-        MesaScript_Table *time = EmplaceMapInGlobalScope("time");
-        MesaTValue deltaTime;
-        deltaTime.type = MesaTValue::ValueType::Real;
-        deltaTime.realValue = Time.deltaTime;
-        time->CreateNewMapEntry("dt", deltaTime);
-        MesaTValue timeSinceStart;
-        timeSinceStart.type = MesaTValue::ValueType::Real;
-        timeSinceStart.realValue = Time.timeSinceStart;
-        time->CreateNewMapEntry("timeSinceStart", timeSinceStart);
+        return false;
     }
 
-    // SetEnvironmentScope(&gamecodeTable);
-    // CallFunction_Parameterless("init");
-    // ClearEnvironmentScope();
+    return true;
+
+//        MesaScript_Table *input = EmplaceMapInGlobalScope("input");
+//        input->CreateNewMapEntry("left", left);
+//        input->CreateNewMapEntry("right", right);
+//        input->CreateNewMapEntry("up", up);
+//        input->CreateNewMapEntry("down", down);
+//        time->CreateNewMapEntry("timeSinceStart", timeSinceStart);
 }
 
 void TemporaryGameLoop()
 {
-    /*
-    7. Set the "time" and "key/input" global variables ("math" and "gui" should probably be set earlier since they don't need updating)
-    */
+    UpdatePipAPI();
+    PipLangVM_RunGameFunction("tick");
 
-    MesaScript_Table *input = AccessMapInGlobalScope("input");
-    input->table.at("left").boolValue = Input.currentKeyState[SDL_SCANCODE_LEFT];
-    input->table.at("right").boolValue = Input.currentKeyState[SDL_SCANCODE_RIGHT];
-    input->table.at("up").boolValue = Input.currentKeyState[SDL_SCANCODE_UP];
-    input->table.at("down").boolValue = Input.currentKeyState[SDL_SCANCODE_DOWN];
-    MesaScript_Table *time = AccessMapInGlobalScope("time");
-    time->table.at("dt").realValue = Time.deltaTime;
-    time->table.at("timeSinceStart").realValue = Time.timeSinceStart;
+    // time
+    // ctrl/input
 
-    SetEnvironmentScope(&gamecodeTable);
-    //CallFunction_Parameterless("pretick");
-    CallFunction_Parameterless("tick");
-    //CallFunction_Parameterless("posttick");
-    CallFunction_Parameterless("draw");
-    ClearEnvironmentScope();
+//    //CallFunction_Parameterless("pretick");
+//    CallFunction_Parameterless("tick");
+//    //CallFunction_Parameterless("posttick");
+//    CallFunction_Parameterless("draw");
 
+}
+
+void TemporaryGameShutdown()
+{
+    TeardownPipAPI();
+    PipLangVM_FreeVM();
 }
 
 

@@ -6,7 +6,6 @@
 #include "MesaCommon.h"
 #include "MesaMath.h"
 
-#include "Space.h"
 #include "GfxDataTypesAndUtility.h"
 
 /*

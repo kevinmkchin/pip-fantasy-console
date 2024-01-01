@@ -1,58 +1,85 @@
 #include "PipAPI.h"
 
-#include "MesaScript.h"
 #include "GfxRenderer.h"
+#include "Timer.h"
+
+HashMap PipAPI_time;
+HashMap PipAPI_input;
+HashMap PipAPI_gfx;
 
 
-MesaTValue Temp_RaiseTo(MesaTValue base, MesaTValue exponent)
+#define PIPVM_THROW_RUNTIME_ERROR(condition, msg) \
+    do {                                          \
+        if (condition)                            \
+        {                                         \
+            PipLangVM_NativeRuntimeError(msg);    \
+            return BOOL_VAL(false);               \
+        }                                         \
+    } while(false);
+
+static TValue GfxRequestSpriteDraw(int argc, TValue *argv)
 {
-    ASSERT(base.type == MesaTValue::ValueType::Integer);
-    ASSERT(exponent.type == MesaTValue::ValueType::Integer);
+    PIPVM_THROW_RUNTIME_ERROR(argc != 3, "need 3 args");
+    PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(argv[0]), "spriteId not a number");
+    PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(argv[1]), "x not a number");
+    PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(argv[2]), "y not a number");
 
-    MesaTValue result;
-    result.type = MesaTValue::ValueType::Integer;
-    result.integerValue = (int)pow(double(base.integerValue), double(exponent.integerValue));
-    return result;
+    i64 spriteId = (i64)AS_NUMBER(argv[0]);
+    float fx = (float)AS_NUMBER(argv[1]);
+    float fy = (float)AS_NUMBER(argv[2]);
+
+    Gfx::QueueSpriteForRender(spriteId, vec2(fx, fy));
+
+    return BOOL_VAL(true);
 }
 
-MesaTValue GfxRequestSpriteDraw(MesaTValue spriteId, MesaTValue x, MesaTValue y)
+static TValue GfxClearColor(int argc, TValue *argv)
 {
-    ASSERT(spriteId.type == MesaTValue::ValueType::Integer);
-    ASSERT(x.type == MesaTValue::ValueType::Integer || x.type == MesaTValue::ValueType::Real);
-    ASSERT(y.type == MesaTValue::ValueType::Integer || y.type == MesaTValue::ValueType::Real);
-    float fx = float(x.type == MesaTValue::ValueType::Integer ? x.integerValue : x.realValue);
-    float fy = float(y.type == MesaTValue::ValueType::Integer ? y.integerValue : y.realValue);
+    PIPVM_THROW_RUNTIME_ERROR(argc != 4, "need 4 args");
+    PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(argv[0]), "r not a number");
+    PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(argv[1]), "g not a number");
+    PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(argv[2]), "b not a number");
+    PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(argv[3]), "a not a number");
 
-    Gfx::QueueSpriteForRender(spriteId.integerValue, vec2(fx, fy));
-
-    MesaTValue result;
-    return result;
-}
-
-// TODO should be gfx.clear(color)
-MesaTValue GfxClearColor(MesaTValue r, MesaTValue g, MesaTValue b, MesaTValue a)
-{
-    ASSERT(r.type == MesaTValue::ValueType::Integer || r.type == MesaTValue::ValueType::Real);
-    ASSERT(g.type == MesaTValue::ValueType::Integer || g.type == MesaTValue::ValueType::Real);
-    ASSERT(b.type == MesaTValue::ValueType::Integer || b.type == MesaTValue::ValueType::Real);
-    ASSERT(a.type == MesaTValue::ValueType::Integer || a.type == MesaTValue::ValueType::Real);
-    float fr = float(r.type == MesaTValue::ValueType::Integer ? r.integerValue : r.realValue);
-    float fg = float(g.type == MesaTValue::ValueType::Integer ? g.integerValue : g.realValue);
-    float fb = float(b.type == MesaTValue::ValueType::Integer ? b.integerValue : b.realValue);
-    float fa = float(a.type == MesaTValue::ValueType::Integer ? a.integerValue : a.realValue);
+    float fr = (float)AS_NUMBER(argv[0]);
+    float fg = (float)AS_NUMBER(argv[1]);
+    float fb = (float)AS_NUMBER(argv[2]);
+    float fa = (float)AS_NUMBER(argv[3]);
 
     Gfx::SetGameLayerClearColor(vec4(fr, fg, fb, fa));
-
-    MesaTValue result;
-    return result;
+    return BOOL_VAL(true);
 }
 
-void BindPipAPI()
+void InitializePipAPI()
 {
-    // TODO these need to go inside a map called gfx
-    pipl_bind_cpp_fn("gfx_clear", 4, GfxClearColor);
-    pipl_bind_cpp_fn("gfx_sprite", 3, GfxRequestSpriteDraw);
+    if (vm.globals.entries == NULL)
+    {
+        printf("pip API: attempting to initialize pip API without initializing pip VM!");
+        return;
+    }
 
+    PipAPI_time = HashMap();
+    AllocateHashMap(&PipAPI_time);
+    ++PipAPI_time.base.refCount;
+    HashMapSet(&vm.globals, CopyString("time", 4, true), RCOBJ_VAL((RCObject*)&PipAPI_time), NULL);
 
-    pipl_bind_cpp_fn("raise_to", 2, Temp_RaiseTo);
+    HashMapSet(&PipAPI_time, CopyString("dt", 2, true), NUMBER_VAL(Time.deltaTime), NULL);
+
+    PipAPI_gfx = HashMap();
+    AllocateHashMap(&PipAPI_gfx);
+    ++PipAPI_gfx.base.refCount;
+    HashMapSet(&vm.globals, CopyString("gfx", 3, true), RCOBJ_VAL((RCObject*)&PipAPI_gfx), NULL);
+
+    PipLangVM_DefineNativeFn(&PipAPI_gfx, "clear", GfxClearColor);
+    PipLangVM_DefineNativeFn(&PipAPI_gfx, "sprite", GfxRequestSpriteDraw);
+}
+
+void UpdatePipAPI()
+{
+    HashMapSet(&PipAPI_time, CopyString("dt", 2, true), NUMBER_VAL(Time.deltaTime), NULL);
+}
+
+void TeardownPipAPI()
+{
+
 }

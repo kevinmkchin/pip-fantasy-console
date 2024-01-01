@@ -1,0 +1,9 @@
+
+
+
+fn tick()
+{
+  gfx.clear(0,255,255,255);
+  print(time.dt);
+  gfx.sprite(0, -100, -20)'
+}

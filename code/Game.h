@@ -4,7 +4,8 @@
 #include "MesaMath.h"
 
 
-void TemporaryGameInit();
+bool TemporaryGameInit();
 void TemporaryGameLoop();
+void TemporaryGameShutdown();
 
 struct Space* GetGameActiveSpace();

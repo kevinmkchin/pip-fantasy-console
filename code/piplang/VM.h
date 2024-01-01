@@ -38,9 +38,14 @@ extern VM vm;
 
 void PipLangVM_InitVM();
 void PipLangVM_FreeVM();
-InterpretResult PipLangVM_RunScript(const char *source);
-void PipLangVM_DefineNativeFn(const char *name, NativeFn fn);
+void PipLangVM_DefineNativeFn(HashMap *mapToAddTo, const char *name, NativeFn fn);
 void PipLangVM_NativeRuntimeError(const char *format, ...);
+InterpretResult PipLangVM_RunGameCode(const char *source);
+InterpretResult PipLangVM_RunGameFunction(const std::string& name);
+
+
+InterpretResult PipLangVM_RunScript(const char *source);
+
 /*
 
 Declaration : Variable declaration
