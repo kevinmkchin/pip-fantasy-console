@@ -47,7 +47,7 @@ namespace MesaGUI
         vec4 buttonHoveredColor = vec4(0.08f, 0.08f, 0.08f, 1.f);
         vec4 buttonActiveColor = vec4(0.06f, 0.06f, 0.06f, 1.f);
         Font textFont;
-        vec4 textColor = vec4(1.f, 1.f, 1.f, 1.f);
+        vec4 textColor = vec4(1.f, 1.f, 1.f, 1.0f);
 
         int paddingTop = 1;
         int paddingBottom = 1;

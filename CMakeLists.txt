@@ -68,6 +68,8 @@ set(SOURCE_FILES
     code/piplang/Object.cpp
     code/piplang/Debug.h
     code/piplang/Debug.cpp
+        code/SpriteEditor.cpp
+        code/SpriteEditor.h
 )
 
 set(OTHER_FILES_FOR_IDE

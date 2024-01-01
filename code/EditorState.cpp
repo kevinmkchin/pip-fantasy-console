@@ -1,11 +1,6 @@
 #include "EditorState.h"
 
-static EditorState globalEditorState;
-
-EditorState *EditorState::ActiveEditorState()
-{
-    return &globalEditorState;
-}
+GameEditorData gamedata;
 
 // int EditorState::FreshSpriteID()
 // {

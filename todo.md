@@ -7,13 +7,18 @@
 
 # Immediate next
 
-- The PipLang VM Epic...see VM.h
+- pl: Arrays
+- pl: % BinOp
+- pl: elif
+- pl: +=, -=, /=, *=
+- pl: for (n in [1, 2, 3, 5, 7, 11])
+- pl: for (k,v in [ a: 2, b: 3 ])
+- pl: 'continue' and 'break' in while and for-loops
 - code editor: cut, copy, paste
 - code editor: ctrl+backspace and ctrl+delete for word deletion
 - code editor: ctrl+d for duplicate line
 - code editor: insert mode + indicator (?)
 - code editor: SCROLLING
-
 - gfx api: draw rect function
 
 # Todo
@@ -22,20 +27,26 @@
 - Markdown reader - manual in markdown, toggled with F1
 - code editor: pg up pg down (maybe for functions?)
 - code editor: ctrl+f
-- piplang: Upon RuntimeError, exit function but continue game execution
+
+## piplang general
+ - math ops: flr, ceil, rnd -> all return integer
+ - More string operations
+ - Should we assert BOOLEAN type for JUMP_IF_FALSE?
 
 ### Uncategorized
 
 - Sprite sheet & animations
 - Sprite batch rendering
 
-- Editor camera & game camera API
-- Game GUI API
+- camera API (maybe not? user can implement own camera)
+- gui API
+- juice API
+- sfx & music API
 - Game file management
   - meta data (Title, Cover art, Author, etc.)
   - everything needed to play or edit the game
 - juice API
-- Sound effects and music API
+- sfx & music API
 
 - Collision and dispatch system: Pixel perfect AABB Collision checks -> GJK&EPA
   - Select collider type from AABB, Sphere, and Convex point cloud
@@ -76,6 +87,7 @@ Gfx (probably don't make a module out of this)
 
 # Done
 
+- piplang VM EPIC
 - Fixed bug with "return 'string' or return MakeZoo()" where the transient object gets destroyed before being made transient at one scope higher.
 - code editor: draw selection highlighting
 - code editor: mouse dragging for selection

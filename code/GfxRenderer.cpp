@@ -87,7 +87,7 @@ namespace Gfx
     void QueueSpriteForRender(i64 spriteId, vec2 position)
     {
         RenderQueueData dat;
-        dat.sprite = EditorState::ActiveEditorState()->sprites.at(spriteId);
+        dat.sprite = gamedata.sprites.at(spriteId);
         dat.position = position;
         gameLayer_RenderQueue.push_back(dat);
     }

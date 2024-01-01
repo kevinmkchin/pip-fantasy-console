@@ -262,8 +262,11 @@ void DoCodeEditorGUI(CodeEditorString code)
         MesaGUI::SetHovered(g_CodeEditorUIID);
     }
 
-    const int codeEditorRectCornerRadius = 6;
-    MesaGUI::PrimitivePanel(codeEditorRect, codeEditorRectCornerRadius, MesaGUI::IsActive(g_CodeEditorUIID) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
+    const int codeEditorRectCornerRadius = 0;
+    MesaGUI::UIRect rectcopy = codeEditorRect;
+    rectcopy.y -= 4;
+    //MesaGUI::PrimitivePanel(rectcopy, codeEditorRectCornerRadius, MesaGUI::IsActive(g_CodeEditorUIID) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
+    //MesaGUI::PrimitivePanel(rectcopy, codeEditorRectCornerRadius, MesaGUI::IsActive(g_CodeEditorUIID) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
 
     const int textBeginAnchorX = x + textAnchorOffsetX;
     const int textBeginAnchorY = y + textAnchorOffsetY;
@@ -274,7 +277,10 @@ void DoCodeEditorGUI(CodeEditorString code)
     // Draw cursor
     if (MesaGUI::IsActive(g_CodeEditorUIID))
     {
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX - 1 + ccol * 6, textBeginAnchorY-13 + crow * 12, 1, 16), vec4(1,1,1,1));
+        if (stbCodeEditorState.insert_mode)
+            MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX + ccol * 6, textBeginAnchorY - 2 + crow * 12, 5, 2), vec4(1,1,1,1));
+        else
+            MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX - 1 + ccol * 6, textBeginAnchorY-12 + crow * 12, 1, 13), vec4(1,1,1,1));
     }
 
     // Draw code
@@ -283,9 +289,10 @@ void DoCodeEditorGUI(CodeEditorString code)
     MesaGUI::UIStyle uiss = MesaGUI::GetActiveUIStyleCopy();
     if (code.stringlen > 0)
     {
-        uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 1.f);
+        uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 0.9f);
+//        uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 1.f);
         MesaGUI::PushUIStyle(uiss);
-        MesaGUI::PrimitiveTextMasked(textBeginAnchorX, textBeginAnchorY, 9, MesaGUI::TextAlignment::Left, std::string(code.string, code.stringlen).c_str(), codeEditorRect, codeEditorRectCornerRadius);
+        MesaGUI::PrimitiveText(textBeginAnchorX, textBeginAnchorY, 9, MesaGUI::TextAlignment::Left, std::string(code.string, code.stringlen).c_str());
         MesaGUI::PopUIStyle();
     }
 
@@ -335,7 +342,8 @@ void DoCodeEditorGUI(CodeEditorString code)
     uiss = MesaGUI::GetActiveUIStyleCopy();
     uiss.textColor = vec4(1.f, 1.f, 1.f, 0.38f);
     MesaGUI::PushUIStyle(uiss);
-    MesaGUI::PrimitiveTextMasked(textBeginAnchorX - 8, textBeginAnchorY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str(), codeEditorRect, codeEditorRectCornerRadius);
+    //MesaGUI::PrimitiveTextMasked(textBeginAnchorX - 8, textBeginAnchorY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str(), codeEditorRect, codeEditorRectCornerRadius);
+    MesaGUI::PrimitiveText(textBeginAnchorX - 8, textBeginAnchorY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str());
     MesaGUI::PopUIStyle();
 }
 

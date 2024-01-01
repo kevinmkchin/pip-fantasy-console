@@ -65,34 +65,8 @@ Effect : Assignment
 
 Expression : MesaScript "cond_or"
 
-TODO
-
-VM EPIC
- - Arrays
- - % BinOp
- - elif
- - +=, -=, /=, *=
- - for (n in [1, 2, 3, 5, 7, 11])
- - for (k,v in [ a: 2, b: 3 ])
- - 'continue' and 'break' in while and for-loops
-
-PIPLANG GENERAL
- - More tests
- - math ops: flr, ceil, rnd -> all return integer
- - More string operations
- - Should we assert BOOLEAN type for JUMP_IF_FALSE?
-
 NOTES
 Goal: faster than Lua
-
-- A continue statement jumps directly to the top of the nearest enclosing loop, skipping the rest of the loop body.
-    Inside a for loop, a continue jumps to the increment clause, if there is one. It’s a compile-time error to have a
-    continue statement not enclosed in a loop. Make sure to think about scope. What should happen to local variables
-    declared inside the body of the loop or in blocks nested inside the loop when a continue is executed?
-
-If I remove C++isms from PipLang and fully switch VM to C, then I can make instruction pointer a register.
-
-Maybe I just dont handle cyclic references https://en.wikipedia.org/wiki/Reference_counting. Swift doesn't really.
 
 I want to support all of the following:
 list = []
@@ -106,6 +80,16 @@ for (n in [1, 2, 3, 5, 7, 11])
 for (k,v in [ a: 2, b: 3 ])
 for (,,)
 for (mut i = 0, i < 10, ++i)
+
+- A continue statement jumps directly to the top of the nearest enclosing loop, skipping the rest of the loop body.
+    Inside a for loop, a continue jumps to the increment clause, if there is one. It’s a compile-time error to have a
+    continue statement not enclosed in a loop. Make sure to think about scope. What should happen to local variables
+    declared inside the body of the loop or in blocks nested inside the loop when a continue is executed?
+
+
+Maybe I just dont handle cyclic references https://en.wikipedia.org/wiki/Reference_counting. Swift doesn't really.
+
+If I remove C++isms from PipLang and fully switch VM to C, then I can make instruction pointer a register.
 
 python del doesn't delete "the object" but rather that identifier
 https://docs.python.org/3/tutorial/datastructures.html#the-del-statement

@@ -28,12 +28,8 @@ struct EditorWorldViewInfo
 //     Gfx::TextureHandle sprite;
 // }
 
-struct EditorState // GameData (edited by editor, used by game?)
+struct GameEditorData
 {
-
-public:
-    static EditorState *ActiveEditorState();
-
 public:
     std::vector<Gfx::TextureHandle> sprites;
 
@@ -41,6 +37,7 @@ public:
     std::string codePage1;
 };
 
+extern GameEditorData gamedata;
 
 
 

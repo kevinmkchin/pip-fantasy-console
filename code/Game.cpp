@@ -8,8 +8,7 @@
 
 bool TemporaryGameInit()
 {
-    EditorState *activeEditorState = EditorState::ActiveEditorState();
-    std::string& gamecode = activeEditorState->codePage1;
+    std::string& gamecode = gamedata.codePage1;
 
     PipLangVM_InitVM();
     InitializePipAPI();
