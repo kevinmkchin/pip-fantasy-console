@@ -38,8 +38,6 @@ static void WorldDesigner()
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(worldEntitySelectorLayout), s_EditorColor1);
     MesaGUI::BeginZone(MesaGUI::UIRect(worldEntitySelectorLayout));
 
-    EditorState *activeEditorState = EditorState::ActiveEditorState();
-
     // MesaGUI::EditorBeginListBox();
     // const std::vector<int>& entityAssetIdsList = *activeEditorState->RetrieveAllEntityAssetIds();
     // for (size_t i = 0; i < entityAssetIdsList.size(); ++i)

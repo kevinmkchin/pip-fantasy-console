@@ -2,12 +2,12 @@
 
 #include "FileSystem.h"
 #include "PrintLog.h"
-#include "MesaIMGUI.h"
 #include "EditorState.h"
 #include "GfxDataTypesAndUtility.h"
 #include "GfxRenderer.h"
 #include "InputSystem.h"
 #include "CodeEditor.h"
+#include "SpriteEditor.h"
 #include "Console.h"
 
 const static int s_ToolBarHeight = 26;
@@ -20,11 +20,13 @@ static Gfx::TextureHandle thBu00_generic_a;
 static Gfx::TextureHandle thBu01_normal;
 static Gfx::TextureHandle thBu01_hovered;
 static Gfx::TextureHandle thBu01_active;
+static Gfx::TextureHandle borders_00;
 
-static MesaGUI::ALH *editorLayout = NULL;
-static MesaGUI::ALH *mainbarLayout = NULL;
+MesaGUI::ALH *editorLayout = NULL;
+MesaGUI::ALH *mainbarLayout = NULL;
 
-static MesaGUI::ALH *codeEditorTabLayout = NULL;
+MesaGUI::ALH *codeEditorTabLayout = NULL;
+MesaGUI::ALH *alh_sprite_editor = NULL;
 
 static CodeEditorString tempCodeEditorStringA;
 
@@ -37,9 +39,10 @@ static void LoadResourcesForEditorGUI()
     thBu01_normal = Gfx::CreateGPUTextureFromDisk(data_path("bu01.png").c_str());
     thBu01_hovered = Gfx::CreateGPUTextureFromDisk(data_path("bu01_hovered.png").c_str());
     thBu01_active = Gfx::CreateGPUTextureFromDisk(data_path("bu01_active.png").c_str());
+    borders_00 = Gfx::CreateGPUTextureFromDisk(data_path("borders_02.png").c_str());
 
-    EditorState::ActiveEditorState()->sprites.push_back(thBu01_normal);
-    EditorState::ActiveEditorState()->sprites.push_back(thBu01_active);
+    gamedata.sprites.push_back(thBu01_normal);
+    gamedata.sprites.push_back(thBu01_active);
 }
 
 
@@ -85,7 +88,7 @@ bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
 
 void EditorMainBar()
 {
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->x, mainbarLayout->y, mainbarLayout->w, mainbarLayout->h), vec4(RGBHEXTO1(0xd2cabd),1));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->x, mainbarLayout->y, mainbarLayout->w, mainbarLayout->h), vec4(RGBHEXTO1(0xc9c9ae),1)); // RGBHEXTO1(0xc6c6c6) RGBHEXTO1(0xd2cabd)
 
     if(s_ActiveMode == EditorMode::ArtAndAnimation)
         MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
@@ -146,68 +149,16 @@ void Temp_LoadScript(std::string pathFromWd)
 
 #include "piplang/VM.h"
 
-
 void Temp_ExecCurrentScript()
 {
     //std::ostringstream profilerOutput;
-
     auto script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
-
     PipLangVM_InitVM();
     PipLangVM_RunScript(script.c_str());
     PipLangVM_FreeVM();
-
     //RunProfilerOnScript(script, profilerOutput);
     //PrintLog.Message(profilerOutput.str());
 }
-//
-//char dateAndTimeBuffer[80];
-//
-//std::ostringstream PipLangBenchmarkInternal()
-//{
-//    time_t t = time(0);
-//    struct tm *now = localtime(&t);
-//    strftime(dateAndTimeBuffer, 80, "%Y-%m-%d-%H-%M-%S", now);
-//
-//    std::ostringstream profilerOutput;
-//
-//    profilerOutput << "Running PipLang benchmarks " << dateAndTimeBuffer << std::endl << std::endl;
-//
-//    Temp_LoadScript("benchmarks/fib.pl");
-//    profilerOutput << "fib.pl" << std::endl;
-//    auto script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
-//    RunProfilerOnScript(script, profilerOutput);
-//
-//    Temp_LoadScript("benchmarks/zoo.pl");
-//    profilerOutput << "zoo.pl" << std::endl;
-//    script = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
-//    RunProfilerOnScript(script, profilerOutput);
-//
-//    return profilerOutput;
-//}
-//
-//void PipLangBenchmark()
-//{
-//    auto profilerOutput = PipLangBenchmarkInternal();
-//
-//    BinaryFileHandle file;
-//    std::string outputcopy = profilerOutput.str();
-//    file.memory = (void *)outputcopy.c_str();
-//    file.size = (u32)outputcopy.size();
-//
-//    std::string outputPath = wd_path("benchmarks/" + std::string(dateAndTimeBuffer) + std::string(".txt"));
-//    if (WriteFileBinary(file, outputPath.c_str()))
-//    {
-//        printf("saved benchmark results to %s\n", outputPath.c_str());
-//    }
-//}
-//
-//void PipLangBenchmarkToConsole()
-//{
-//    auto profilerOutput = PipLangBenchmarkInternal();
-//
-//    PrintLog.Message(profilerOutput.str());
-//}
 
 void InitEditorGUI()
 {
@@ -216,47 +167,34 @@ void InitEditorGUI()
     GiveMeTheConsole()->bind_cmd("save", Temp_SaveScript);
     GiveMeTheConsole()->bind_cmd("open", Temp_LoadScript);
     GiveMeTheConsole()->bind_cmd("run", Temp_ExecCurrentScript);
-//    GiveMeTheConsole()->bind_cmd("benchmark", PipLangBenchmark);
-//    GiveMeTheConsole()->bind_cmd("benchmark_to_console", PipLangBenchmarkToConsole);
 
 
+    //EditorState *activeEditorState = EditorState::ActiveEditorState();
 
-
-    EditorState *activeEditorState = EditorState::ActiveEditorState();
-    
-    //activeEditorState->codePage1 = "abcdef\nghij\nlm\n";
-    //activeEditorState->codePage1 = "ab\ncdef\nhijklm\n";
-    activeEditorState->codePage1 = "";
+    gamedata.codePage1 = "";
     //activeEditorState->codePage1 = "str = 'test' fn tick() { print(str) }\nfn draw() { gfx_sprite(0, 0, 0) gfx_sprite(1, 50, 50) }";
-
-    //activeEditorState->codePage1 = 
-    //           "fn Update(self) { \n"
-    //           "    print(time['dt'])\n"
-    //           "    if (input['left']) {\n"
-    //           "        self['x'] = self['x'] - 180 * time['dt']\n" 
-    //           "    }\n" 
-    //           "    if (input['right']) {\n"
-    //           "        self['x'] = self['x'] + 180 * time['dt']\n" 
-    //           "    }\n" 
-    //           "    if (input['up']) {\n"
-    //           "        self['y'] = self['y'] + 180 * time['dt']\n" 
-    //           "    }\n" 
-    //           "    if (input['down']) {\n"
-    //           "        self['y'] = self['y'] - 180 * time['dt']\n" 
-    //           "    }\n" 
-    //           "}";
 
     SetupWorldDesigner();
 
     editorLayout = MesaGUI::NewALH(true);
     mainbarLayout = MesaGUI::NewALH(-1, -1, -1, s_ToolBarHeight, false);
     codeEditorTabLayout = MesaGUI::NewALH(false);
+    alh_sprite_editor = MesaGUI::NewALH(false);
 
     editorLayout->Insert(mainbarLayout);
     editorLayout->Insert(codeEditorTabLayout);
 
     tempCodeEditorStringA = GiveMeNewCodeEditorString();
-    SetupCodeEditorString(&tempCodeEditorStringA, activeEditorState->codePage1.c_str(), (u32)activeEditorState->codePage1.size());
+    SetupCodeEditorString(&tempCodeEditorStringA, gamedata.codePage1.c_str(), (u32)gamedata.codePage1.size());
+}
+
+static bool IsPointInLayoutRect(ivec2 point, MesaGUI::ALH *layout)
+{
+    int xmin = layout->x;
+    int ymin = layout->y;
+    int xmax = layout->x + layout->w - 1;
+    int ymax = layout->y + layout->h - 1;
+    return xmin <= point.x && point.x <= xmax && ymin <= point.y && point.y <= ymax;
 }
 
 static ivec2 WindowCoordinateToCodeEditorCoordinate(ivec2 xy_win)
@@ -285,8 +223,13 @@ void EditorSDLProcessEvent(const SDL_Event event)
 
                 if (MesaGUI::IsActive(g_CodeEditorUIID))
                 {
-                    ivec2 xy_codeeditorgui = WindowCoordinateToCodeEditorCoordinate(ivec2(event.button.x, event.button.y));
-                    SendMouseDownToCodeEditor(&tempCodeEditorStringA, xy_codeeditorgui.x, xy_codeeditorgui.y);
+                    ivec2 point_windowcoords = ivec2(event.button.x, event.button.y);
+                    ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToInternalCoordinate(point_windowcoords);
+                    if (IsPointInLayoutRect(xy_internal, codeEditorTabLayout))
+                    {
+                        ivec2 xy_codeeditorgui = WindowCoordinateToCodeEditorCoordinate(point_windowcoords);
+                        SendMouseDownToCodeEditor(&tempCodeEditorStringA, xy_codeeditorgui.x, xy_codeeditorgui.y);
+                    }
                 }
             }
 
@@ -307,8 +250,13 @@ void EditorSDLProcessEvent(const SDL_Event event)
         {
             if (MesaGUI::IsActive(g_CodeEditorUIID) && leftMouseDown)
             {
-                ivec2 xy_codeeditorgui = WindowCoordinateToCodeEditorCoordinate(ivec2(event.button.x, event.button.y));
-                SendMouseMoveToCodeEditor(&tempCodeEditorStringA, xy_codeeditorgui.x, xy_codeeditorgui.y);
+                ivec2 point_windowcoords = ivec2(event.button.x, event.button.y);
+                ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToInternalCoordinate(point_windowcoords);
+                if (IsPointInLayoutRect(xy_internal, codeEditorTabLayout))
+                {
+                    ivec2 xy_codeeditorgui = WindowCoordinateToCodeEditorCoordinate(point_windowcoords);
+                    SendMouseMoveToCodeEditor(&tempCodeEditorStringA, xy_codeeditorgui.x, xy_codeeditorgui.y);
+                }
             }
 
             break;
@@ -344,13 +292,14 @@ void EditorDoGUI()
 
     MesaGUI::UpdateMainCanvasALH(editorLayout);
 
-    EditorMainBar();
-
     switch (s_ActiveMode)
     {
         case EditorMode::ArtAndAnimation:
         {
-            MesaGUI::PrimitiveText(20, 100, 9, MesaGUI::TextAlignment::Left, "Art and animation creator coming soon");
+            editorLayout->Replace(1, alh_sprite_editor);
+            MesaGUI::UpdateMainCanvasALH(editorLayout);
+            DoSpriteEditorGUI();
+//            MesaGUI::PrimitiveText(20, 100, 9, MesaGUI::TextAlignment::Left, "Art and animation creator coming soon");
             break;
         }
         case EditorMode::EntityDesigner: 
@@ -358,16 +307,16 @@ void EditorDoGUI()
             editorLayout->Replace(1, codeEditorTabLayout);
             MesaGUI::UpdateMainCanvasALH(editorLayout);
 
-            MesaGUI::PrimitivePanel(MesaGUI::UIRect(codeEditorTabLayout), s_EditorColor1);
+            MesaGUI::PrimitivePanel(MesaGUI::UIRect(codeEditorTabLayout), vec4(RGBHEXTO1(0x193342), 1.f));//s_EditorColor1);
             MesaGUI::BeginZone(MesaGUI::UIRect(codeEditorTabLayout));
             DoCodeEditorGUI(tempCodeEditorStringA);
+            gamedata.codePage1 = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
             MesaGUI::EndZone();
 
-             if (EditorButton(38105130915, 54, 4, 50, 19, "save code"))
-             {
-                 EditorState::ActiveEditorState()->codePage1 = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
-                 PrintLog.Message("Saved code changes...");
-             }
+            MesaGUI::UIRect codeEditorBorder = MesaGUI::UIRect(codeEditorTabLayout);
+            codeEditorBorder.y -= 6;
+            codeEditorBorder.h += 6;
+            MesaGUI::PrimitivePanel(codeEditorBorder, 8, borders_00.textureId, 0.4f);
 
             break;
         }
@@ -382,6 +331,8 @@ void EditorDoGUI()
             break;
         }
     }
+
+    EditorMainBar();
 
     // MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout), vec4(1,0,0,0.5));
     // //MesaGUI::PrimitivePanel(MesaGUI::UIRect(entityDesignerTabLayout), vec4(0,1,0,0.5));

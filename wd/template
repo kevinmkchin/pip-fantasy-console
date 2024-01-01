@@ -1,0 +1,8 @@
+
+fn init() {  }
+
+fn tick() {  }
+
+fn draw() {  }
+
+

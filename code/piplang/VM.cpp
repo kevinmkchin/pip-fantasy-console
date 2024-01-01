@@ -592,9 +592,7 @@ static InterpretResult Interpret(const char *source)
     Stack_Push(FUNCTION_VAL(script));
     PushCallFrame(script, 0);
 
-    double t = Time.TimeSinceProgramStartInSeconds();
     InterpretResult result = Run();
-    printf("vm took %lf\n", Time.TimeSinceProgramStartInSeconds() - t);
     return result;
 }
 
@@ -624,7 +622,7 @@ void PipLangVM_FreeVM()
 
 InterpretResult PipLangVM_RunGameFunction(const std::string& name)
 {
-    RCString *fnname = CopyString(name.c_str(), name.length(), true);
+    RCString *fnname = CopyString(name.c_str(), (int)name.length(), true);
     TValue fnv;
     if (!HashMapGet(&vm.globals, fnname, &fnv))
     {
@@ -816,7 +814,9 @@ InterpretResult PipLangVM_RunScript(const char *source)
     PipLangVM_DefineNativeFn(&vm.globals, "printglobals", PrintGlobals);
     PipLangVM_DefineNativeFn(&vm.globals, "enablepipunit", PipUnit_enablepipunittests);
 
+    double t = Time.TimeSinceProgramStartInSeconds();
     InterpretResult result = Interpret(source);
+    printf("compile and vm took %lf\n", Time.TimeSinceProgramStartInSeconds() - t);
 
     if (pipunitTestEnvironmentEnabled)
     {
