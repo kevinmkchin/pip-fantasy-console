@@ -1083,7 +1083,7 @@ static void TokenizeAll(const char *source)
 
         if (t.type == TokenType::ERROR)
         {
-            ErrorAtCurrent(t.start);
+            ErrorAt(&t, t.start);
             break;
         }
 
@@ -1102,13 +1102,14 @@ PipFunction *Compile(const char *source)
     tokensequence.Allocate();
 
     SetupParsingRules();
-    TokenizeAll(source);
-
-    Compiler compiler;
-    InitCompiler(&compiler, CompilingToType::TOPLEVELSCRIPT);
 
     parser.hadError = false;
     parser.panicMode = false;
+    TokenizeAll(source);
+    if (parser.hadError) return NULL;
+
+    Compiler compiler;
+    InitCompiler(&compiler, CompilingToType::TOPLEVELSCRIPT);
 
     Advance();
 

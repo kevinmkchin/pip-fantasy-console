@@ -589,7 +589,7 @@ static InterpretResult Interpret(const char *source)
     PipFunction *script = Compile(source);
     if (script == NULL) return InterpretResult::COMPILE_ERROR;
 
-    Stack_Push(FUNCTION_VAL(script)); // Why does first value of frame stack have to be the function itself?
+    Stack_Push(FUNCTION_VAL(script));
     PushCallFrame(script, 0);
 
     double t = Time.TimeSinceProgramStartInSeconds();
@@ -622,22 +622,32 @@ void PipLangVM_FreeVM()
     FreeHashMap(&vm.interned_strings);
 }
 
-static TValue PrintGlobals(int argc, TValue *argv)
+InterpretResult PipLangVM_RunGameFunction(const std::string& name)
 {
-
-    printf("======================\nPrinting GLOBALS\n");
-    for (int i = 0; i < vm.globals.capacity; ++i)
+    RCString *fnname = CopyString(name.c_str(), name.length(), true);
+    TValue fnv;
+    if (!HashMapGet(&vm.globals, fnname, &fnv))
     {
-        if (vm.globals.entries[i].key)
-        {
-            printf("    %-16s", vm.globals.entries[i].key->text.c_str());
-            PrintTValue(vm.globals.entries[i].value);
-            printf("\n");
-        }
+        printf("pip error! Game code does not define '%s' function!!!\n", name.c_str());
+        return InterpretResult::RUNTIME_ERROR;
     }
-    printf("======================\n");
+    if (!IS_FUNCTION(fnv))
+    {
+        printf("pip error! '%s' is not defined as a function in the game code!!!\n", name.c_str());
+        return InterpretResult::RUNTIME_ERROR;
+    }
 
-    return BOOL_VAL(false);
+    PipFunction *fn = AS_FUNCTION(fnv);
+    Stack_Push(fnv);
+    PushCallFrame(fn, 0);
+
+    InterpretResult result = Run();
+    return result;
+}
+
+InterpretResult PipLangVM_RunGameCode(const char *source)
+{
+    return Interpret(source);
 }
 
 /*
@@ -777,16 +787,34 @@ static TValue PipUnit_enablepipunittests(int argc, TValue *argv)
     pipUnitTestsRan = 0;
     pipunitTestsPassed = 0;
     pipunitTestsFailed = 0;
-    PipLangVM_DefineNativeFn("checkeq", PipUnit_checkeq);
-    PipLangVM_DefineNativeFn("checkerror", PipUnit_checkerror);
-    PipLangVM_DefineNativeFn("getrefcount", PipUnit_getrefcount);
+    PipLangVM_DefineNativeFn(&vm.globals, "checkeq", PipUnit_checkeq);
+    PipLangVM_DefineNativeFn(&vm.globals, "checkerror", PipUnit_checkerror);
+    PipLangVM_DefineNativeFn(&vm.globals, "getrefcount", PipUnit_getrefcount);
     return {};
+}
+
+static TValue PrintGlobals(int argc, TValue *argv)
+{
+
+    printf("======================\nPrinting GLOBALS\n");
+    for (int i = 0; i < vm.globals.capacity; ++i)
+    {
+        if (vm.globals.entries[i].key)
+        {
+            printf("    %-16s", vm.globals.entries[i].key->text.c_str());
+            PrintTValue(vm.globals.entries[i].value);
+            printf("\n");
+        }
+    }
+    printf("======================\n");
+
+    return BOOL_VAL(false);
 }
 
 InterpretResult PipLangVM_RunScript(const char *source)
 {
-    PipLangVM_DefineNativeFn("printglobals", PrintGlobals);
-    PipLangVM_DefineNativeFn("enablepipunit", PipUnit_enablepipunittests);
+    PipLangVM_DefineNativeFn(&vm.globals, "printglobals", PrintGlobals);
+    PipLangVM_DefineNativeFn(&vm.globals, "enablepipunit", PipUnit_enablepipunittests);
 
     InterpretResult result = Interpret(source);
 
@@ -800,7 +828,7 @@ InterpretResult PipLangVM_RunScript(const char *source)
     return result;
 }
 
-void PipLangVM_DefineNativeFn(const char *name, NativeFn fn)
+void PipLangVM_DefineNativeFn(HashMap *mapToAddTo, const char *name, NativeFn fn)
 {
     if (vm.globals.entries == NULL)
     {
@@ -810,7 +838,7 @@ void PipLangVM_DefineNativeFn(const char *name, NativeFn fn)
 
     Stack_Push(RCOBJ_VAL((RCObject*)CopyString(name, (int)strlen(name), true)));
     Stack_Push(NATIVEFN_VAL((void*)fn));
-    HashMapSet(&vm.globals, RCOBJ_AS_STRING(vm.sp[-2]), vm.sp[-1], NULL);
+    HashMapSet(mapToAddTo, RCOBJ_AS_STRING(vm.sp[-2]), vm.sp[-1], NULL);
     Stack_Pop();
     Stack_Pop();
 }

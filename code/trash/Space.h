@@ -1,5 +1,6 @@
 #pragma once
 
+/*
 #include "MesaCommon.h"
 #include "MesaMath.h"
 #include "GfxDataTypesAndUtility.h"
