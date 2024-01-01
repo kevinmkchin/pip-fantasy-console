@@ -160,6 +160,9 @@ static bool PushCallFrame(PipFunction *fn, u8 argc)
     return true;
 }
 
+static i32 DecrementRefButDontDestroy(TValue v);
+static void CheckRefCountAndDestroy(TValue v);
+static i32 DecrementRef(TValue v);
 static bool CallValue(TValue callee, u8 argc)
 {
     if (IS_FUNCTION(callee))
@@ -169,7 +172,20 @@ static bool CallValue(TValue callee, u8 argc)
     else if (IS_NATIVEFN(callee))
     {
         NativeFn native = AS_NATIVEFN(callee);
+        // Note(Kevin): Native functions should not retain or release any references to RCOBJs!!!
+        for (TValue *arg = vm.sp - argc; arg < vm.sp; ++arg)
+        {
+            // Note(Kevin): RCOBJ passed as arg will increment 1 ref count from being a fn arg so decrement 1
+            if (IS_RCOBJ(*arg))
+                DecrementRefButDontDestroy(*arg);
+        }
         TValue result = native(argc, vm.sp - argc);
+        for (TValue *arg = vm.sp - argc; arg < vm.sp; ++arg)
+        {
+            // Note(Kevin): Make sure transient RCOBJs passed as arg are destroyed
+            if (IS_RCOBJ(*arg))
+                CheckRefCountAndDestroy(*arg);
+        }
         if (nativeRuntimeErrorFiredFlag)
         {
             nativeRuntimeErrorFiredFlag = false;
@@ -193,7 +209,6 @@ static i32 DecrementRefButDontDestroy(TValue v)
     return --(AS_RCOBJ(v)->refCount);
 }
 
-static i32 DecrementRef(TValue v);
 static void CheckRefCountAndDestroy(TValue v)
 {
     RCObject *obj = AS_RCOBJ(v);
@@ -481,7 +496,7 @@ START_OF_OP_SWITCH:
                 }
                 HashMapDelete(RCOBJ_AS_MAP(m), RCOBJ_AS_STRING(k));
                 DecrementRef(k);
-                if (IS_RCOBJ(v)) IncrementRef(v);
+                if (IS_RCOBJ(v)) DecrementRef(v);
                 break;
             }
 
@@ -739,6 +754,23 @@ static TValue PipUnit_checkerror(int argc, TValue *argv)
     return {};
 }
 
+static TValue PipUnit_getrefcount(int argc, TValue *argv)
+{
+    if (argc != 1)
+    {
+        PipLangVM_NativeRuntimeError("getrefcount expects 1 argument.");
+        return NUMBER_VAL(-1);
+    }
+    TValue obj = argv[0];
+    if (!IS_RCOBJ(obj))
+    {
+        PipLangVM_NativeRuntimeError("getrefcount expects a reference-counted object as its argument.");
+        return NUMBER_VAL(-1);
+    }
+
+    return NUMBER_VAL(AS_RCOBJ(obj)->refCount);
+}
+
 static TValue PipUnit_enablepipunittests(int argc, TValue *argv)
 {
     pipunitTestEnvironmentEnabled = true;
@@ -747,6 +779,7 @@ static TValue PipUnit_enablepipunittests(int argc, TValue *argv)
     pipunitTestsFailed = 0;
     PipLangVM_DefineNativeFn("checkeq", PipUnit_checkeq);
     PipLangVM_DefineNativeFn("checkerror", PipUnit_checkerror);
+    PipLangVM_DefineNativeFn("getrefcount", PipUnit_getrefcount);
     return {};
 }
 

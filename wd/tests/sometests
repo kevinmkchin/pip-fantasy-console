@@ -143,45 +143,81 @@ while (i < n)
 checkeq(accumulateAge, 90 * n)
 
 
-/*
-
-fn StringIsPassedByValueTest()
+fn Helper_RefCountTests_DeeperScope(C)
 {
-    str = "string is passed by value test"
-    someList = [ str, str, str ]
-    someMap = {}
-    someMap["someIndex"] = str
-    ;at this point, there are 5 strings, and str still only has one refcount
-
-    checkeq(refcount(str), 0) ;refcount returns 0 because it checks the refcount of a str copy
-}
-StringIsPassedByValueTest();
-
-fn Helper_RefCountTests_DeeperScope(obj)
-{
-    checkeq(refcount(obj), 5);
-    a = obj;
-    b = obj;
-    c = obj;
-    checkeq(refcount(obj), 8);
+  checkeq(getrefcount(C), 5);
+  mut CA = C;
+  checkeq(getrefcount(C), 6);
+  mut CB = C;
+  mut CC = C;
+  checkeq(getrefcount(C), 8);
+  checkeq(getrefcount(CA), 8);
+  checkeq(getrefcount(CB), 8);
+  checkeq(getrefcount(CC), 8);
+  checkeq(getrefcount(C), 8);
 }
 
-fn RefCountTests()
+fn SomeRefCountTests()
 {
-    A = [ [1, 2, 3], 4, [5, 6] ]
-    B = A[2]
-    checkeq(refcount(B), 2)
+  mut A = { "first": {}, "second": 12345, "third": {} }
+  mut B = A.third
+  checkeq(getrefcount(A), 1)
+  checkeq(getrefcount(B), 2)
+  checkeq(getrefcount(A.third), 2)
 
-    someList = [ 1, 2, "hello", 32]
-    someListRef1 = someList
-    someListRef2 = someList
-    someListRef3 = someList
-
-    checkeq(refcount(someList), 4)
-    Helper_RefCountTests_DeeperScope(someList)
-    checkeq(refcount(someList), 4)
+  mut C = {}
+  mut CA = C
+  mut CB = C
+  mut CC = C
+  checkeq(getrefcount(C), 4)
+  Helper_RefCountTests_DeeperScope(C)
+  checkeq(getrefcount(C), 4)
 }
-RefCountTests()
+SomeRefCountTests()
 
 
-*/
+fn StringRefTest()
+{
+  checkeq(getrefcount("StringRefTest"), 1)
+  "StringRefTest"
+  "StringRefTest"
+  "StringRefTest"
+  checkeq(getrefcount("StringRefTest"), 1)
+
+  mut h = "hello"
+  mut w = " wor"
+  mut l = "ll"
+  h = h + w
+  checkeq(getrefcount(h), 1)
+  mut hw = "hello wor"
+  checkeq(getrefcount(h), 2)
+  mut hw1 = hw
+  mut hw2 = hw
+  checkeq(getrefcount(h), 4)
+  checkeq(hw == h, true)
+  checkeq(getrefcount(hw), 4)
+  h
+  hw
+  checkeq(getrefcount(h), 4)
+  checkeq(getrefcount(hw), 4)
+  hw1 = 0
+  hw2 = 0
+  checkeq(getrefcount(h), 2)
+  checkeq(getrefcount(hw), 2)
+  h = h + l
+  checkeq(getrefcount(h), 1)
+  checkeq(getrefcount(hw), 1)
+
+  mut x = { hw: h }
+  checkeq(getrefcount(hw), 2)
+  x.insert(h, 999)
+  checkeq(getrefcount(h), 3)
+  x.remove(hw)
+  checkeq(getrefcount(hw), 1)
+  checkeq(getrefcount(h), 2, "yo")
+
+  checkeq(getrefcount("hello"), 0, "'hello' is constant so doesn't get destroyed")
+  checkeq(getrefcount("hello"), 0, "'hello' is constant so doesn't get destroyed")
+}
+StringRefTest()
+
