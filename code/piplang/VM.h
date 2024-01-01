@@ -43,14 +43,26 @@ void PipLangVM_DefineNativeFn(const char *name, NativeFn fn);
 void PipLangVM_NativeRuntimeError(const char *format, ...);
 /*
 
-declaration : statement
-statement : expression
-expression : cond_or
+Declaration : Variable declaration
+              Function declaration
+              Statement
+
+Statement : Block
+            IfStatement
+            WhileStatement
+            ForStatement
+            ReturnStatement
+            PrintStatement
+            Effect
+
+Effect : Assignment
+         ExpressionEffect
+
+Expression : MesaScript "cond_or"
 
 TODO
 
 VM EPIC
- - Unit testing https://docs.racket-lang.org/rackunit/quick-start.html
  - Arrays
  - % BinOp
  - elif
@@ -60,12 +72,9 @@ VM EPIC
  - 'continue' and 'break' in while and for-loops
 
 PIPLANG GENERAL
- - RefCount Tests
- - Handle cyclic references https://en.wikipedia.org/wiki/Reference_counting
+ - More tests
  - math ops: flr, ceil, rnd -> all return integer
  - More string operations
- - Native function arity checking
- - Native function RuntimeErrors
  - Should we assert BOOLEAN type for JUMP_IF_FALSE?
 
 NOTES
@@ -78,11 +87,10 @@ Goal: faster than Lua
 
 If I remove C++isms from PipLang and fully switch VM to C, then I can make instruction pointer a register.
 
+Maybe I just dont handle cyclic references https://en.wikipedia.org/wiki/Reference_counting. Swift doesn't really.
+
 I want to support all of the following:
-
-map = {}
 list = []
-
 for (n in [1, 2, 3, 5, 7, 11])
 {
     // we want to provide a local var n which we update on every loop
@@ -94,15 +102,12 @@ for (k,v in [ a: 2, b: 3 ])
 for (,,)
 for (mut i = 0, i < 10, ++i)
 
-I don't think there's anything wrong with looking forward to inspect everything in the parentheses before compiling them...
-
 python del doesn't delete "the object" but rather that identifier
 https://docs.python.org/3/tutorial/datastructures.html#the-del-statement
     mylist = [ ... ]
     copy = mylist
     del mylist
     # copy is still valid at this point and retains the original list reference
-
 
 */ 
 
