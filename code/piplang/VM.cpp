@@ -221,12 +221,12 @@ static void CheckRefCountAndDestroy(TValue v)
             int cap = map->capacity;
             for (int i = 0; i < cap; ++i)
             {
-                if (entries->key)
+                if (entries[i].key)
                 {
-                    DecrementRef(RCOBJ_VAL((RCObject*)entries->key));
-                    if (IS_RCOBJ(entries->value))
+                    DecrementRef(RCOBJ_VAL((RCObject*)entries[i].key));
+                    if (IS_RCOBJ(entries[i].value))
                     {
-                        DecrementRef(entries->value);
+                        DecrementRef(entries[i].value);
                     }
                 }
             }

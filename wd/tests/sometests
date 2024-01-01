@@ -221,3 +221,21 @@ fn StringRefTest()
 }
 StringRefTest()
 
+fn __SomeNest_edRefTests()
+{
+  mut a = {}
+  mut b = {}
+  a.insert("b", b);
+  checkeq(getrefcount(a), 1)
+  checkeq(getrefcount(b), 2)
+  a = 0
+  checkeq(getrefcount(b), 1)
+
+  b.insert("c", { "d" : { "e" : { "f" : 999 } } })
+  checkeq(2 + b.c.d.e.f * 2, 2000)
+  mut copy = b.c.d.e;
+  checkeq(getrefcount(copy), 2);
+  b = {}
+  checkeq(getrefcount(copy), 1);
+}
+__SomeNest_edRefTests()
