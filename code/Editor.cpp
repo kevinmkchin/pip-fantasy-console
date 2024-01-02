@@ -2,7 +2,7 @@
 
 #include "FileSystem.h"
 #include "PrintLog.h"
-#include "EditorState.h"
+#include "GameData.h"
 #include "GfxDataTypesAndUtility.h"
 #include "GfxRenderer.h"
 #include "InputSystem.h"

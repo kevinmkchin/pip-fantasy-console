@@ -1,7 +1,7 @@
 #include "SpriteEditor.h"
 
 #include "Editor.h"
-#include "EditorState.h"
+#include "GameData.h"
 #include "MesaIMGUI.h"
 
 //#include <direct.h>

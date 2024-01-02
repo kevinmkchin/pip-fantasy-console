@@ -3,7 +3,7 @@
 #include "MesaCommon.h"
 #include "GfxShader.h"
 #include "GfxDataTypesAndUtility.h"
-#include "EditorState.h"
+#include "GameData.h"
 
 namespace Gfx
 {

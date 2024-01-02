@@ -1,6 +1,6 @@
-#include "EditorState.h"
+#include "GameData.h"
 
-GameEditorData gamedata;
+GameData gamedata;
 
 // int EditorState::FreshSpriteID()
 // {
