@@ -17,6 +17,8 @@ namespace Gfx
 
     void SetGameLayerClearColor(vec4 color);
 
+    void Primitive_DrawRect(float x, float y, float w, float h, vec4 color);
+
     enum class PixelPerfectRenderScale
     {
         OneHundredPercent = 1,
@@ -87,6 +89,7 @@ namespace Gfx
     private:
         Shader finalPassShader;
         Shader spriteShader;
+        Shader primitiveShader;
 
     private:
         Mesh screenSizeQuad;

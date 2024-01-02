@@ -4,11 +4,6 @@
 #include <fstream>
 #include <string>
 
-// Conventions
-// g_ prefix for extern declared global variable
-// TODO s_ prefix for 
-
-
 
 // Simple utility functions to avoid mistyping directory name
 // audio_path("audio.ogg") -> data/audio/audio.ogg

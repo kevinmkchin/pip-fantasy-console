@@ -18,14 +18,14 @@ static void PrintRCObject(TValue value)
     switch (RCOBJ_TYPE(value))
     {
         case RCObject::STRING:
-            printf("<'%s'", RCOBJ_AS_STRING(value)->text.c_str());
+            printf("%s", RCOBJ_AS_STRING(value)->text.c_str());
             break;
         case RCObject::MAP:
             // entries include tombstones
             printf("<map{%d entries}", RCOBJ_AS_MAP(value)->count);
+            printf(" : %d ref>", AS_RCOBJ(value)->refCount);
             break;
     }
-    printf(" : %d ref>", AS_RCOBJ(value)->refCount);
 }
 
 void PrintTValue(TValue value)
