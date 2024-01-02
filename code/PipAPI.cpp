@@ -31,31 +31,31 @@ static TValue GfxDrawRect(int argc, TValue *argv)
     TValue v;
     PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(rect, CopyString("x", 1, true), &v), "rect does not have x entry");
     PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "rect.x is not a number");
-    float x = AS_NUMBER(v);
+    float x = (float)AS_NUMBER(v);
     PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(rect, CopyString("y", 1, true), &v), "rect does not have y entry");
     PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "rect.y is not a number");
-    float y = AS_NUMBER(v);
+    float y = (float)AS_NUMBER(v);
     PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(rect, CopyString("w", 1, true), &v), "rect does not have w entry");
     PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "rect.w is not a number");
-    float w = AS_NUMBER(v);
+    float w = (float)AS_NUMBER(v);
     PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(rect, CopyString("h", 1, true), &v), "rect does not have h entry");
     PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "rect.h is not a number");
-    float h = AS_NUMBER(v);
+    float h = (float)AS_NUMBER(v);
 
     PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(color, CopyString("r", 1, true), &v), "color does not have r entry");
     PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.r is not a number");
-    float r = AS_NUMBER(v);
+    float r = (float)AS_NUMBER(v);
     PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(color, CopyString("g", 1, true), &v), "color does not have g entry");
     PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.g is not a number");
-    float g = AS_NUMBER(v);
+    float g = (float)AS_NUMBER(v);
     PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(color, CopyString("b", 1, true), &v), "color does not have b entry");
     PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.b is not a number");
-    float b = AS_NUMBER(v);
+    float b = (float)AS_NUMBER(v);
     float a = 255.f;
     if (HashMapGet(color, CopyString("a", 1, true), &v))
     {
         PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.a is not a number");
-        a = AS_NUMBER(v);
+        a = (float)AS_NUMBER(v);
     }
 
     Gfx::Primitive_DrawRect(x, y, w, h, vec4(r,g,b,a)/255.f);
@@ -87,18 +87,18 @@ static TValue GfxClearColor(int argc, TValue *argv)
     TValue v;
     PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(color, CopyString("r", 1, true), &v), "color does not have r entry");
     PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.r is not a number");
-    float r = AS_NUMBER(v);
+    float r = (float)AS_NUMBER(v);
     PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(color, CopyString("g", 1, true), &v), "color does not have g entry");
     PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.g is not a number");
-    float g = AS_NUMBER(v);
+    float g = (float)AS_NUMBER(v);
     PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(color, CopyString("b", 1, true), &v), "color does not have b entry");
     PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.b is not a number");
-    float b = AS_NUMBER(v);
+    float b = (float)AS_NUMBER(v);
     float a = 255.f;
     if (HashMapGet(color, CopyString("a", 1, true), &v))
     {
         PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.a is not a number");
-        a = AS_NUMBER(v);
+        a = (float)AS_NUMBER(v);
     }
 
     Gfx::SetGameLayerClearColor(vec4(r, g, b, a));
