@@ -1,14 +1,14 @@
 #include "Editor.h"
 
-#include "FileSystem.h"
-#include "PrintLog.h"
-#include "GameData.h"
-#include "GfxDataTypesAndUtility.h"
-#include "GfxRenderer.h"
-#include "InputSystem.h"
+#include "../FileSystem.h"
+#include "../PrintLog.h"
+#include "../GameData.h"
+#include "../GfxDataTypesAndUtility.h"
+#include "../GfxRenderer.h"
+#include "../Input.h"
 #include "CodeEditor.h"
 #include "SpriteEditor.h"
-#include "Console.h"
+#include "../Console.h"
 
 const static int s_ToolBarHeight = 26;
 const static vec4 s_EditorColor1 = vec4(RGBHEXTO1(0x414141), 1.f);
@@ -143,11 +143,11 @@ void Temp_LoadScript(std::string pathFromWd)
     }
 }
 
-#include "Timer.h"
+#include "../Timer.h"
 #include <sstream>
 #include <chrono>
 
-#include "piplang/VM.h"
+#include "../piplang/VM.h"
 
 void Temp_ExecCurrentScript()
 {

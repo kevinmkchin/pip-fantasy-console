@@ -1,10 +1,10 @@
 #pragma once
 
-#include <SDL.h>
+#include "SDL.h"
 
-#include "MesaCommon.h"
-#include "MesaMath.h"
-#include "MesaIMGUI.h"
+#include "../MesaCommon.h"
+#include "../MesaMath.h"
+#include "../MesaIMGUI.h"
 
 #define STB_TEXTEDIT_KEYTYPE    int
 #define STB_TEXTEDIT_CHARTYPE   char

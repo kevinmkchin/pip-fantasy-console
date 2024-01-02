@@ -1,11 +1,10 @@
 #include "SpriteEditor.h"
 
 #include "Editor.h"
-#include "GameData.h"
-#include "MesaIMGUI.h"
+#include "../GameData.h"
 
 //#include <direct.h>
-#include <shobjidl.h>
+#include <ShObjIdl.h>
 #include <codecvt>
 
 std::string OpenFilePrompt(u32 fileTypesCount, COMDLG_FILTERSPEC fileTypes[])

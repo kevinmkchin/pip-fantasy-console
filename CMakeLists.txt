@@ -16,60 +16,61 @@ endif()
 
 
 set(SOURCE_FILES
-    code/MesaCommon.h
-    code/MesaMath.h
-    code/MesaOpenGL.h
-    code/cmake_MesaProjectDefines.h.in
-    code/MesaMain.h
-    code/MesaMain.cpp
-    code/MesaUtility.h
-    code/MesaUtility.cpp
-    code/Timer.h
-    code/Timer.cpp
-    code/Console.h
-    code/Console.cpp
-    code/GfxRenderer.h
-    code/GfxRenderer.cpp
-    code/GfxDataTypesAndUtility.h
-    code/GfxDataTypesAndUtility.cpp
-    code/GfxShader.h
-    code/GfxShader.cpp
-    code/FileSystem.h
-    code/FileSystem.cpp
-    code/PrintLog.h
-    code/PrintLog.cpp
-    code/InputSystem.h
-    code/InputSystem.cpp
-    code/MesaIMGUI.h
-    code/MesaIMGUI.cpp
-    code/MemoryAllocator.h
-    code/MemoryAllocator.cpp
+        code/cmake_MesaProjectDefines.h.in
+        code/MesaCommon.h
+        code/MesaMath.h
+        code/MesaOpenGL.h
+        code/MesaMain.h
+        code/MesaMain.cpp
+        code/MesaUtility.h
+        code/MesaUtility.cpp
+        code/Timer.h
+        code/Timer.cpp
+        code/Console.h
+        code/Console.cpp
+        code/GfxRenderer.h
+        code/GfxRenderer.cpp
+        code/GfxDataTypesAndUtility.h
+        code/GfxDataTypesAndUtility.cpp
+        code/GfxShader.h
+        code/GfxShader.cpp
+        code/FileSystem.h
+        code/FileSystem.cpp
+        code/PrintLog.h
+        code/PrintLog.cpp
+        code/Input.h
+        code/Input.cpp
+        code/MesaIMGUI.h
+        code/MesaIMGUI.cpp
+        code/MemoryAllocator.h
+        code/MemoryAllocator.cpp
         code/GameData.h
         code/GameData.cpp
-    code/Editor.h
-    code/Editor.cpp
-    code/CodeEditor.h
-    code/CodeEditor.cpp
-    code/Game.h
-    code/Game.cpp
-    code/PipAPI.h
-    code/PipAPI.cpp
+        code/Game.h
+        code/Game.cpp
+        code/PipAPI.h
+        code/PipAPI.cpp
 
-    code/piplang/VM.h
-    code/piplang/VM.cpp
-    code/piplang/PipLangCommon.h
-    code/piplang/Scanner.h
-    code/piplang/Scanner.cpp
-    code/piplang/Compiler.h
-    code/piplang/Compiler.cpp
-    code/piplang/Chunk.h
-    code/piplang/Chunk.cpp
-    code/piplang/Object.h
-    code/piplang/Object.cpp
-    code/piplang/Debug.h
-    code/piplang/Debug.cpp
-        code/SpriteEditor.cpp
-        code/SpriteEditor.h
+        code/piplang/VM.h
+        code/piplang/VM.cpp
+        code/piplang/PipLangCommon.h
+        code/piplang/Scanner.h
+        code/piplang/Scanner.cpp
+        code/piplang/Compiler.h
+        code/piplang/Compiler.cpp
+        code/piplang/Chunk.h
+        code/piplang/Chunk.cpp
+        code/piplang/Object.h
+        code/piplang/Object.cpp
+        code/piplang/Debug.h
+        code/piplang/Debug.cpp
+
+        code/editor/Editor.h
+        code/editor/Editor.cpp
+        code/editor/SpriteEditor.h
+        code/editor/SpriteEditor.cpp
+        code/editor/CodeEditor.h
+        code/editor/CodeEditor.cpp
 )
 
 set(OTHER_FILES_FOR_IDE

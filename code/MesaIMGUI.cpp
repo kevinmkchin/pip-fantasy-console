@@ -16,7 +16,7 @@
 #include "GfxShader.h"
 #include "PrintLog.h"
 #include "FileSystem.h"
-#include "InputSystem.h"
+#include "Input.h"
 
 static ui_id freshIdCounter = 0;
 static ui_id FreshID()

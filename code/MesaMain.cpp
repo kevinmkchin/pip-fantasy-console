@@ -15,11 +15,11 @@
 #include "MesaUtility.h"
 #include "Timer.h"
 #include "GfxRenderer.h"
-#include "InputSystem.h"
+#include "Input.h"
 #include "Console.h"
 #include "PrintLog.h"
 #include "MesaIMGUI.h"
-#include "Editor.h"
+#include "editor/Editor.h"
 #include "Game.h"
 
 SDL_Window *g_SDLWindow;

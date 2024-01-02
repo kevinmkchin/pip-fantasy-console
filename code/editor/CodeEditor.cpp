@@ -1,12 +1,12 @@
 #include "CodeEditor.h"
 
-#include "MesaIMGUI.h"
-#include "MemoryAllocator.h"
+#include "../MesaIMGUI.h"
+#include "../MemoryAllocator.h"
 
 
 #include <ctype.h>  // isspace
 
-#include "singleheaders/stb_textedit.h"
+#include "../singleheaders/stb_textedit.h"
 
 #define FIXED_FONT_WIDTH_HACK 6
 #define FIXED_FONT_HEIGHT_HACK 9
@@ -111,7 +111,7 @@ STB_TEXTEDIT_CHARTYPE key_to_char(STB_TEXTEDIT_KEYTYPE key)
 #define STB_TEXTEDIT_INSERTCHARS       insert_chars
 
 #define STB_TEXTEDIT_IMPLEMENTATION
-#include "singleheaders/stb_textedit.h"
+#include "../singleheaders/stb_textedit.h"
 
 void GetCursorData(CodeEditorString code, int cursorpos, int *rowcount, int *row, int *col)
 {
