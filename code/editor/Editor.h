@@ -1,11 +1,11 @@
 #pragma once
 
-#include <SDL.h>
+#include "SDL.h"
 #include <vector>
 
-#include "MesaCommon.h"
-#include "MesaMath.h"
-#include "MesaIMGUI.h"
+#include "../MesaCommon.h"
+#include "../MesaMath.h"
+#include "../MesaIMGUI.h"
 
 
 bool Temp_StartGameOrEditorButton();
