@@ -44,8 +44,8 @@ set(SOURCE_FILES
     code/MesaIMGUI.cpp
     code/MemoryAllocator.h
     code/MemoryAllocator.cpp
-    code/EditorState.h
-    code/EditorState.cpp
+        code/GameData.h
+        code/GameData.cpp
     code/Editor.h
     code/Editor.cpp
     code/CodeEditor.h

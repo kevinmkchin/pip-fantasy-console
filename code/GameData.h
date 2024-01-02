@@ -28,7 +28,7 @@ struct EditorWorldViewInfo
 //     Gfx::TextureHandle sprite;
 // }
 
-struct GameEditorData
+struct GameData
 {
 public:
     std::vector<Gfx::TextureHandle> sprites;
@@ -37,7 +37,7 @@ public:
     std::string codePage1;
 };
 
-extern GameEditorData gamedata;
+extern GameData gamedata;
 
 
 

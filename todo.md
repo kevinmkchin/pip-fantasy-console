@@ -19,7 +19,6 @@
 - code editor: ctrl+d for duplicate line
 - code editor: insert mode + indicator (?)
 - code editor: SCROLLING
-- gfx api: draw rect function
 
 # Todo
 
@@ -29,7 +28,7 @@
 - code editor: ctrl+f
 
 ## piplang general
- - math ops: flr, ceil, rnd -> all return integer
+ - math ops: flr, ceil, rnd -> all return integer, max, min
  - More string operations
  - Should we assert BOOLEAN type for JUMP_IF_FALSE?
 
