@@ -14,15 +14,15 @@
 
 namespace Gfx
 {
-    static SDL_Window* s_ActiveSDLWindow = nullptr;
-    static CoreRenderer* s_TheGfxRenderer = nullptr;
+    static SDL_Window *s_ActiveSDLWindow = nullptr;
+    static CoreRenderer *s_TheGfxRenderer = nullptr;
 
-    CoreRenderer* GetCoreRenderer()
+    CoreRenderer *GetCoreRenderer()
     {
         return s_TheGfxRenderer;
     }
 
-    static const char* __finalpass_shader_vs =
+    static const char *__finalpass_shader_vs =
             "#version 330\n"
             "layout(location = 0) in vec2 pos;\n"
             "layout(location = 1) in vec2 uv;\n"
@@ -33,7 +33,7 @@ namespace Gfx
             "    texcoord = uv;\n"
             "}\n";
 
-    static const char* __finalpass_shader_fs =
+    static const char *__finalpass_shader_fs =
             "#version 330\n"
             "uniform sampler2D screen_texture;\n"
             "in vec2 texcoord;\n"
@@ -48,7 +48,7 @@ namespace Gfx
             "    color = in_color;\n"
             "}\n";
 
-    static const char* __sprite_shader_vs =
+    static const char *__sprite_shader_vs =
             "#version 330\n"
             "// Input attributes\n"
             "layout (location = 0) in vec2 vs_pos;\n"
@@ -66,7 +66,7 @@ namespace Gfx
             "    gl_Position = vec4(pos.xy, 0.0, 1.0);\n"
             "}\n";
 
-    static const char* __sprite_shader_fs =
+    static const char *__sprite_shader_fs =
             "#version 330\n"
             "// From vertex shader\n"
             "in vec2 fs_uv;\n"
@@ -80,9 +80,32 @@ namespace Gfx
             "    color = vec4(fragmentColor, 1.0) * texture(sampler0, fs_uv);\n"
             "}\n";
 
+    static const char *__primitive_shader_vs =
+            "#version 330\n"
+            "layout (location = 0) in vec2 vs_pos;\n"
+            "layout (location = 1) in vec4 vs_color;\n"
+            "out vec4 fs_color;"
+            "uniform mat3 model;"
+            "uniform mat3 view;"
+            "uniform mat3 projection;"
+            "void main() {"
+            "    fs_color = vs_color;"
+            "    vec3 pos = projection * view * model * vec3(vs_pos, 1.0);"
+            "    gl_Position = vec4(pos.xy, 0.0, 1.0);"
+            "}";
+
+    static const char *__primitive_shader_fs =
+            "#version 330\n"
+            "in vec4 fs_color;"
+            "layout (location = 0) out vec4 color;"
+            "void main() {"
+            "    color = fs_color;"
+            "}";
+
 
     static std::vector<RenderQueueData> gameLayer_RenderQueue;
     static vec4                         gameLayer_ClearColor    = vec4();
+    static std::vector<float>           gameLayer_PrimitiveVB;
 
     void QueueSpriteForRender(i64 spriteId, vec2 position)
     {
@@ -97,6 +120,50 @@ namespace Gfx
         gameLayer_ClearColor = color/255.f;
     }
 
+    void Primitive_DrawRect(float x, float y, float w, float h, vec4 color)
+    {
+        gameLayer_PrimitiveVB.push_back(x);
+        gameLayer_PrimitiveVB.push_back(y);
+        gameLayer_PrimitiveVB.push_back(color.x);
+        gameLayer_PrimitiveVB.push_back(color.y);
+        gameLayer_PrimitiveVB.push_back(color.z);
+        gameLayer_PrimitiveVB.push_back(color.w);
+
+        gameLayer_PrimitiveVB.push_back(x + w);
+        gameLayer_PrimitiveVB.push_back(y);
+        gameLayer_PrimitiveVB.push_back(color.x);
+        gameLayer_PrimitiveVB.push_back(color.y);
+        gameLayer_PrimitiveVB.push_back(color.z);
+        gameLayer_PrimitiveVB.push_back(color.w);
+
+        gameLayer_PrimitiveVB.push_back(x + w);
+        gameLayer_PrimitiveVB.push_back(y + h);
+        gameLayer_PrimitiveVB.push_back(color.x);
+        gameLayer_PrimitiveVB.push_back(color.y);
+        gameLayer_PrimitiveVB.push_back(color.z);
+        gameLayer_PrimitiveVB.push_back(color.w);
+
+        gameLayer_PrimitiveVB.push_back(x);
+        gameLayer_PrimitiveVB.push_back(y);
+        gameLayer_PrimitiveVB.push_back(color.x);
+        gameLayer_PrimitiveVB.push_back(color.y);
+        gameLayer_PrimitiveVB.push_back(color.z);
+        gameLayer_PrimitiveVB.push_back(color.w);
+
+        gameLayer_PrimitiveVB.push_back(x + w);
+        gameLayer_PrimitiveVB.push_back(y + h);
+        gameLayer_PrimitiveVB.push_back(color.x);
+        gameLayer_PrimitiveVB.push_back(color.y);
+        gameLayer_PrimitiveVB.push_back(color.z);
+        gameLayer_PrimitiveVB.push_back(color.w);
+
+        gameLayer_PrimitiveVB.push_back(x);
+        gameLayer_PrimitiveVB.push_back(y + h);
+        gameLayer_PrimitiveVB.push_back(color.x);
+        gameLayer_PrimitiveVB.push_back(color.y);
+        gameLayer_PrimitiveVB.push_back(color.z);
+        gameLayer_PrimitiveVB.push_back(color.w);
+    }
 
     bool CoreRenderer::Init()
     {
@@ -119,6 +186,7 @@ namespace Gfx
 
         GLCreateShaderProgram(finalPassShader, __finalpass_shader_vs, __finalpass_shader_fs);
         GLCreateShaderProgram(spriteShader, __sprite_shader_vs, __sprite_shader_fs);
+        GLCreateShaderProgram(primitiveShader, __primitive_shader_vs, __primitive_shader_fs);
 
         CreateMiscellaneous();
 
@@ -367,9 +435,42 @@ namespace Gfx
         }
 
 
+
+
+        // PRIMITIVE STUFF
+        UseShader(primitiveShader);
+        GLBindMatrix3fv(primitiveShader, "projection", 1, orthographicMatrix.ptr());
+        GLBindMatrix3fv(primitiveShader, "view", 1, identityMatrix.ptr());
+        modelMatrix = identityMatrix;
+        GLBindMatrix3fv(primitiveShader, "model", 1, modelMatrix.ptr());
+
+        static u32 prmVAO = 0;
+        static u32 prmVBO = 0;
+        if(!prmVAO)
+        {
+            glGenVertexArrays(1, &prmVAO);
+            glBindVertexArray(prmVAO);
+
+            glGenBuffers(1, &prmVBO);
+            glBindBuffer(GL_ARRAY_BUFFER, prmVBO);
+            glBufferData(GL_ARRAY_BUFFER, (int)sizeof(float) * 1, nullptr, GL_DYNAMIC_DRAW);
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 6, nullptr);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void*)(sizeof(float) * 2));
+            glEnableVertexAttribArray(1);
+        }
+
+        int prmvbsz = (int)gameLayer_PrimitiveVB.size();
+        glBindVertexArray(prmVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, prmVBO);
+        glBufferData(GL_ARRAY_BUFFER, (int)sizeof(float) * prmvbsz, gameLayer_PrimitiveVB.data(), GL_DYNAMIC_DRAW);
+        glDrawArrays(GL_TRIANGLES, 0, (int)(prmvbsz * 0.2));
+
+
         // RESET GAME FRAME RENDER DATA
         gameLayer_RenderQueue.clear();
         gameLayer_ClearColor = vec4(0.f, 0.f, 0.f, 0.f);
+        gameLayer_PrimitiveVB.clear();
     }
 
     void CoreRenderer::RenderGUILayer()
