@@ -169,21 +169,34 @@ void SetupCodeEditorString(CodeEditorString *code, const char *initString, u32 l
 }
 
 const ui_id g_CodeEditorUIID = 0xbc9526f97dff3dec;
-const int lineNumbersDisplayWidth = 15;
-const int textAnchorOffsetX = lineNumbersDisplayWidth + 8;
+
+const int defaultLineNumbersDisplayWidth = 15;
+const int extraLineNumberDigitWidth = FIXED_FONT_WIDTH_HACK;
+static int lineNumbersDisplayWidth = defaultLineNumbersDisplayWidth;
+int GetTextAnchorOffsetX() { return lineNumbersDisplayWidth + 8; }
 const int textAnchorOffsetY = 13;
+static int scrollX;
+static int scrollY;
+
+void SendMouseScrollToCodeEditor(int x, int y)
+{
+    scrollX -= x * 8;
+    scrollY -= y * 32;
+    if (scrollX < 0) scrollX = 0;
+    if (scrollY < 0) scrollY = 0;
+}
 
 void SendMouseDownToCodeEditor(CodeEditorString *code, int x, int y)
 {
-    float x_text = (float)x - textAnchorOffsetX;
-    float y_text = (float)y - textAnchorOffsetY;
+    float x_text = (float)(x - GetTextAnchorOffsetX() + scrollX);
+    float y_text = (float)y - textAnchorOffsetY + (float)scrollY;
     stb_textedit_click(code, &stbCodeEditorState, x_text, y_text);
 }
 
 void SendMouseMoveToCodeEditor(CodeEditorString *code, int x, int y)
 {
-    float x_text = (float)x - textAnchorOffsetX;
-    float y_text = (float)y - textAnchorOffsetY;
+    float x_text = (float)(x - GetTextAnchorOffsetX() + scrollX);
+    float y_text = (float)y - textAnchorOffsetY + (float)scrollY;
     stb_textedit_drag(code, &stbCodeEditorState, x_text, y_text);
 }
 
@@ -199,6 +212,16 @@ void SendKeyInputToCodeEditor(CodeEditorString *code, STB_TEXTEDIT_KEYTYPE key)
         if (c % 2 == 0) 
             stb_textedit_key(code, state, 0x20);
     }
+    else if (key == (STB_TEXTEDIT_K_CONTROL | STB_TEXTEDIT_K_UP))
+    {
+        scrollY -= FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK;
+        if (scrollY < 0) scrollY = 0;
+    }
+    else if (key == (STB_TEXTEDIT_K_CONTROL | STB_TEXTEDIT_K_DOWN))
+    {
+        scrollY += FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK;
+    }
+    // TODO(Kevin): upon input, ensure cursor is visible by updating scroll values
     else
     {
         stb_textedit_key(code, state, key);
@@ -209,11 +232,13 @@ static void DrawSelectionHighlightRect(int startCol, int endCol, int row, int zo
 {
     int highlight_x_text = startCol * FIXED_FONT_WIDTH_HACK;
     int highlight_y_text = (row - 1) * (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK) + 1;
-    int highlight_x_internal = highlight_x_text + textAnchorOffsetX + zone_x;
+    int highlight_x_internal = highlight_x_text + GetTextAnchorOffsetX() + zone_x;
     int highlight_y_internal = highlight_y_text + textAnchorOffsetY + zone_y;
+    int highlight_x = highlight_x_internal - scrollX;
+    int highlight_y = highlight_y_internal - scrollY;
     int highlight_w = (endCol - startCol) * FIXED_FONT_WIDTH_HACK;
     int highlight_h = (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK);
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(highlight_x_internal, highlight_y_internal, highlight_w, highlight_h), 3, vec4(0.95f, 0.95f, 0.95f, 0.3f));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(highlight_x, highlight_y, highlight_w, highlight_h), 3, vec4(0.95f, 0.95f, 0.95f, 0.3f));
 }
 
 static void GetRowStartAndEnd(const CodeEditorString code, int row, int *startIndex, int *endIndex)
@@ -268,7 +293,7 @@ void DoCodeEditorGUI(CodeEditorString code)
     //MesaGUI::PrimitivePanel(rectcopy, codeEditorRectCornerRadius, MesaGUI::IsActive(g_CodeEditorUIID) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
     //MesaGUI::PrimitivePanel(rectcopy, codeEditorRectCornerRadius, MesaGUI::IsActive(g_CodeEditorUIID) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
 
-    const int textBeginAnchorX = x + textAnchorOffsetX;
+    const int textBeginAnchorX = x + GetTextAnchorOffsetX();
     const int textBeginAnchorY = y + textAnchorOffsetY;
 
     int rowcount, crow, ccol;
@@ -278,9 +303,9 @@ void DoCodeEditorGUI(CodeEditorString code)
     if (MesaGUI::IsActive(g_CodeEditorUIID))
     {
         if (stbCodeEditorState.insert_mode)
-            MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX + ccol * 6, textBeginAnchorY - 2 + crow * 12, 5, 2), vec4(1,1,1,1));
+            MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX - scrollX + ccol * 6, textBeginAnchorY - scrollY - 2 + crow * 12, 5, 2), vec4(1,1,1,1));
         else
-            MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX - 1 + ccol * 6, textBeginAnchorY-12 + crow * 12, 1, 13), vec4(1,1,1,1));
+            MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX - scrollX - 1 + ccol * 6, textBeginAnchorY - scrollY - 12 + crow * 12, 1, 13), vec4(1,1,1,1));
     }
 
     // Draw code
@@ -292,7 +317,7 @@ void DoCodeEditorGUI(CodeEditorString code)
         uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 0.9f);
 //        uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 1.f);
         MesaGUI::PushUIStyle(uiss);
-        MesaGUI::PrimitiveText(textBeginAnchorX, textBeginAnchorY, 9, MesaGUI::TextAlignment::Left, std::string(code.string, code.stringlen).c_str());
+        MesaGUI::PrimitiveText(textBeginAnchorX - scrollX, textBeginAnchorY - scrollY, 9, MesaGUI::TextAlignment::Left, std::string(code.string, code.stringlen).c_str());
         MesaGUI::PopUIStyle();
     }
 
@@ -332,18 +357,34 @@ void DoCodeEditorGUI(CodeEditorString code)
     }
 
     // Draw line numbers
-    int countOfLineNumToDisplay = rowcount; //GM_min((int)rowcount, h / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK) + 1);
+    int countOfLineNumToDisplay = rowcount; //GM_min((int)rowcount, hackApproximateNumRowsFitInView);
     std::string lineNumbersBuf;
     for (int i = 1; i < countOfLineNumToDisplay + 1; ++i)
     {
         int lineNum = 0/* first line num to display*/ + i;
         lineNumbersBuf += std::to_string(lineNum) + '\n';
     }
+
+    // Set lineNumbersDisplayWidth based on what's drawn
+    {
+        int hackApproximateNumRowsFitInView = h / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK) + 1;
+        int hackApproximateNumRowsScrolledDown = scrollY / (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK);
+        int hackLargestDisplayedLineNum = hackApproximateNumRowsScrolledDown + hackApproximateNumRowsFitInView;
+        if (hackLargestDisplayedLineNum < 10000)
+            lineNumbersDisplayWidth = defaultLineNumbersDisplayWidth + extraLineNumberDigitWidth * 2;
+        if (hackLargestDisplayedLineNum < 1000)
+            lineNumbersDisplayWidth = defaultLineNumbersDisplayWidth + extraLineNumberDigitWidth;
+        if (hackLargestDisplayedLineNum < 100)
+            lineNumbersDisplayWidth = defaultLineNumbersDisplayWidth;
+    }
+
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(x, y - 32, lineNumbersDisplayWidth + 5, h + 64), vec4(RGBHEXTO1(0x414141), 1.f));
+
     uiss = MesaGUI::GetActiveUIStyleCopy();
     uiss.textColor = vec4(1.f, 1.f, 1.f, 0.38f);
     MesaGUI::PushUIStyle(uiss);
     //MesaGUI::PrimitiveTextMasked(textBeginAnchorX - 8, textBeginAnchorY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str(), codeEditorRect, codeEditorRectCornerRadius);
-    MesaGUI::PrimitiveText(textBeginAnchorX - 8, textBeginAnchorY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str());
+    MesaGUI::PrimitiveText(textBeginAnchorX - 5, textBeginAnchorY - scrollY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str());
     MesaGUI::PopUIStyle();
 }
 

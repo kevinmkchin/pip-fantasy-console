@@ -1,12 +1,21 @@
 # Quick thoughts
 
+Hotline Miami x Nuclear Throne kind of game
+- Not tile-baseddd
+- Lots of particles -> blood sprites
+- Do something interesting with the camera
+- Dodge to avoid bullets -> faster than NT but slower than HM
+
 # Known Bugs
 
 - GUI fresh ID is not great...will be buggy when number of elements change dynamically
   - should change to be managed by the window (elements in same window will persist the same ids).
+- code editor upon input, ensure cursor is visible by updating scroll values
 
 # Immediate next
 
+- Editor color theme needs to be colorful but pleasant https://cohost.org/noel/post/72223-tiny-game-making-too
+- math.lerp (different variations too) // exponential fall off of the speed
 - pl: Arrays
 - pl: % BinOp
 - pl: elif
@@ -22,6 +31,7 @@
 
 # Todo
 
+- save/load gamedata
 - boot sound (SDL_mixer)
 - Markdown reader - manual in markdown, toggled with F1
 - code editor: pg up pg down (maybe for functions?)
@@ -41,14 +51,24 @@
 - gui API
 - juice API
 - sfx & music API
-- Game file management
-  - meta data (Title, Cover art, Author, etc.)
-  - everything needed to play or edit the game
 - juice API
 - sfx & music API
 
 - Collision and dispatch system: Pixel perfect AABB Collision checks -> GJK&EPA
   - Select collider type from AABB, Sphere, and Convex point cloud
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # Way the fuck down the line
@@ -86,6 +106,7 @@ Gfx (probably don't make a module out of this)
 
 # Done
 
+- code editor scrolling
 - piplang VM EPIC
 - Fixed bug with "return 'string' or return MakeZoo()" where the transient object gets destroyed before being made transient at one scope higher.
 - code editor: draw selection highlighting

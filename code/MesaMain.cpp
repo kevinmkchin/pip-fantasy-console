@@ -178,7 +178,7 @@ void StartEditor()
     // TODO(Kevin): get editor w editor h editor s from cached editor data or .ini
     int winw = SDL_WINDOW_STARTING_SIZE_W;
     int winh = SDL_WINDOW_STARTING_SIZE_H;
-    int s = 4;
+    int s = 3;
     g_gfx.screenScaling = (Gfx::PixelPerfectRenderScale)s;
     SDL_SetWindowSize(g_SDLWindow, winw, winh);
     g_gfx.UpdateBackBufferAndGameSize();
@@ -210,7 +210,7 @@ static void LoadFantasyConsole()
     std::string welcome = std::string("type 'help'\n");
     SendMessageToConsole(welcome.c_str(), welcome.size());
 
-    g_gfx.screenScaling = (Gfx::PixelPerfectRenderScale)4; // TODO (Kevin): read from .ini
+    g_gfx.screenScaling = (Gfx::PixelPerfectRenderScale)3; // TODO (Kevin): read from .ini
     SDL_SetWindowSize(g_SDLWindow, SDL_WINDOW_STARTING_SIZE_W, SDL_WINDOW_STARTING_SIZE_H);
     g_gfx.UpdateBackBufferAndGameSize();
 }

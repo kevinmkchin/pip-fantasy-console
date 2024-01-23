@@ -39,7 +39,7 @@ static void LoadResourcesForEditorGUI()
     thBu01_normal = Gfx::CreateGPUTextureFromDisk(data_path("bu01.png").c_str());
     thBu01_hovered = Gfx::CreateGPUTextureFromDisk(data_path("bu01_hovered.png").c_str());
     thBu01_active = Gfx::CreateGPUTextureFromDisk(data_path("bu01_active.png").c_str());
-    borders_00 = Gfx::CreateGPUTextureFromDisk(data_path("borders_02.png").c_str());
+    borders_00 = Gfx::CreateGPUTextureFromDisk(data_path("borders_01.png").c_str());
 
     gamedata.sprites.push_back(thBu01_normal);
     gamedata.sprites.push_back(thBu01_active);
@@ -88,7 +88,7 @@ bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
 
 void EditorMainBar()
 {
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->x, mainbarLayout->y, mainbarLayout->w, mainbarLayout->h), vec4(RGBHEXTO1(0xc9c9ae),1)); // RGBHEXTO1(0xc6c6c6) RGBHEXTO1(0xd2cabd)
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->x, mainbarLayout->y, mainbarLayout->w, mainbarLayout->h), vec4(RGBHEXTO1(0xD0CABD),1)); // 0xc9c9ae RGBHEXTO1(0xc6c6c6) RGBHEXTO1(0xd2cabd)
 
     if(s_ActiveMode == EditorMode::ArtAndAnimation)
         MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
@@ -262,6 +262,21 @@ void EditorSDLProcessEvent(const SDL_Event event)
             break;
         }
 
+        case SDL_MOUSEWHEEL:
+        {
+            const SDL_MouseWheelEvent wheel = event.wheel;
+            const u8* keystate = SDL_GetKeyboardState(NULL);
+            int xscroll = wheel.x;
+            int yscroll = wheel.y;
+            if (keystate[SDL_SCANCODE_LSHIFT] | keystate[SDL_SCANCODE_RSHIFT])
+            {
+                xscroll = wheel.y;
+                yscroll = 0;
+            }
+            SendMouseScrollToCodeEditor(xscroll, yscroll);
+            break;
+        }
+
         case SDL_KEYDOWN:
         {
             SDL_KeyboardEvent keyevent = event.key;
@@ -307,7 +322,7 @@ void EditorDoGUI()
             editorLayout->Replace(1, codeEditorTabLayout);
             MesaGUI::UpdateMainCanvasALH(editorLayout);
 
-            MesaGUI::PrimitivePanel(MesaGUI::UIRect(codeEditorTabLayout), vec4(RGBHEXTO1(0x193342), 1.f));//s_EditorColor1);
+            MesaGUI::PrimitivePanel(MesaGUI::UIRect(codeEditorTabLayout), vec4(RGBHEXTO1(0x414141), 1.f));// 0x193342 //s_EditorColor1);
             MesaGUI::BeginZone(MesaGUI::UIRect(codeEditorTabLayout));
             DoCodeEditorGUI(tempCodeEditorStringA);
             gamedata.codePage1 = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
