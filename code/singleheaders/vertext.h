@@ -427,6 +427,11 @@ VTXT_DEF void vtxt_get_text_bounding_box_info(float* width_out,
                                               int text_height_px);
 
 
+// PIP HACKS
+
+VTXT_DEF void vtxt_append_line_vertex_color_hack(const char* line_of_text, vtxt_font* font, int text_height_px, float* char_index_to_color_stride_three);
+
+
 #endif // _INCLUDE_VERTEXT_H_
 
 
@@ -641,6 +646,8 @@ vtxt_new_line(int x, vtxt_font* font, int text_height_px)
 VTXT_DEF void
 __private_vtxt_append_glyph(const char in_glyph, vtxt_font* font, int text_height_px, float x_offset_from_cursor)
 {
+    // NOTE(Kevin): 2024-01-24 if ever I update this function again make sure to update the hack functions too
+
     if(in_glyph < VTXT_ASCII_FROM || in_glyph > VTXT_ASCII_TO) // Make sure we have the data for this glyph
     {
         return;
@@ -945,6 +952,145 @@ vtxt_clear_buffer()
     _vtxt_vertex_count = 0;
     _vtxt_index_count = 0;
 }
+
+
+
+// PIP HACKS
+
+struct vtxt_rgb
+{
+    float r;
+    float g;
+    float b;
+};
+
+VTXT_DEF void
+__private_vtxt_append_glyph_vertex_color_hack(const char in_glyph, vtxt_font* font, int text_height_px, float x_offset_from_cursor, vtxt_rgb glyph_color)
+{
+    if(in_glyph < VTXT_ASCII_FROM || in_glyph > VTXT_ASCII_TO) // Make sure we have the data for this glyph
+    {
+        return;
+    }
+
+    if(VTXT_MAX_CHAR_IN_BUFFER * 6 < _vtxt_vertex_count + 6) // Make sure we are not exceeding the array size
+    {
+        return;
+    }
+
+    float scale = (float)text_height_px / (float)font->font_height_px;
+    vtxt_glyph glyph = font->glyphs[in_glyph - VTXT_ASCII_FROM];
+    glyph.advance *= scale;
+    glyph.width *= scale; // NOTE(Kevin): 2022-06-15 scale was float, but width and height were integers so rounding was causing text to render strangely - fixed by just changing width and height to floats
+    glyph.height *= scale;
+    glyph.offset_x *= scale;
+    glyph.offset_y *= scale;
+
+    int STRIDE = 7;
+
+    float top = _vtxt_cursor_y + glyph.offset_y;
+    float bot = _vtxt_cursor_y + glyph.offset_y + glyph.height;
+    float left = _vtxt_cursor_x + glyph.offset_x + x_offset_from_cursor;
+    float right = _vtxt_cursor_x + glyph.offset_x + glyph.width + x_offset_from_cursor;
+
+    if(_vtxt_config & VTXT_FLIP_Y)
+    {
+        top = _vtxt_cursor_y - glyph.offset_y;
+        bot = _vtxt_cursor_y - glyph.offset_y - glyph.height;
+    }
+
+    if(_vtxt_config & VTXT_USE_CLIPSPACE_COORDS)
+    {
+        top = (1.f - ((top / _vtxt_screen_h_for_clipspace) * 2.f));
+        bot = (1.f - ((bot / _vtxt_screen_h_for_clipspace) * 2.f));
+        left = ((left / _vtxt_screen_w_for_clipspace) * 2.f) - 1.f;
+        right = ((right / _vtxt_screen_w_for_clipspace) * 2.f) - 1.f;
+    }
+
+    _vtxt_cursor_x += (int) glyph.advance; // Advance the cursor
+
+    if (in_glyph <= 32) return; // No need to append vertices for invisible characters
+
+    if(_vtxt_config & VTXT_CREATE_INDEX_BUFFER)
+    {
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 0] = left;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 1] = bot;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 2] = glyph.min_u;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 3] = glyph.min_v;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 4] = glyph_color.r;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 5] = glyph_color.g;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 6] = glyph_color.b;
+
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 7] = left;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 8] = top;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 9] = glyph.min_u;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 10] = glyph.max_v;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 11] = glyph_color.r;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 12] = glyph_color.g;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 13] = glyph_color.b;
+
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 14] = right;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 15] = top;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 16] = glyph.max_u;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 17] = glyph.max_v;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 18] = glyph_color.r;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 19] = glyph_color.g;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 20] = glyph_color.b;
+
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 21] = right;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 22] = bot;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 23] = glyph.max_u;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 24] = glyph.min_v;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 25] = glyph_color.r;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 26] = glyph_color.g;
+        _vtxt_vertex_buffer[_vtxt_vertex_count * STRIDE + 27] = glyph_color.b;
+
+        _vtxt_index_buffer[_vtxt_index_count + 0] = _vtxt_vertex_count + 0;
+        _vtxt_index_buffer[_vtxt_index_count + 1] = _vtxt_vertex_count + 2;
+        _vtxt_index_buffer[_vtxt_index_count + 2] = _vtxt_vertex_count + 1;
+        _vtxt_index_buffer[_vtxt_index_count + 3] = _vtxt_vertex_count + 0;
+        _vtxt_index_buffer[_vtxt_index_count + 4] = _vtxt_vertex_count + 3;
+        _vtxt_index_buffer[_vtxt_index_count + 5] = _vtxt_vertex_count + 2;
+
+        _vtxt_vertex_count += 4;
+        _vtxt_index_count += 6;
+    }
+    else
+    {
+        // just fucking crash whatever
+        assert(0);
+    }
+}
+
+VTXT_DEF void
+vtxt_append_line_vertex_color_hack(const char* line_of_text, vtxt_font* font, int text_height_px, float* char_index_to_color_stride_three)
+{
+    const char* const line_of_text_start_ptr = line_of_text;
+
+    int line_start_x = _vtxt_cursor_x;
+    while(*line_of_text != '\0')
+    {
+        if(*line_of_text != '\n')
+        {
+            if(VTXT_MAX_CHAR_IN_BUFFER * 6 < _vtxt_vertex_count + 6) // Make sure we are not exceeding the array size
+            {
+                break;
+            }
+
+            size_t char_index = line_of_text - line_of_text_start_ptr;
+            vtxt_rgb char_color;
+            char_color.r = char_index_to_color_stride_three[char_index * 3 + 0];
+            char_color.g = char_index_to_color_stride_three[char_index * 3 + 1];
+            char_color.b = char_index_to_color_stride_three[char_index * 3 + 2];
+            __private_vtxt_append_glyph_vertex_color_hack(*line_of_text, font, text_height_px, 0.f, char_color);
+        }
+        else
+        {
+            vtxt_new_line(line_start_x, font, text_height_px);
+        }
+        ++line_of_text;// next character
+    }
+}
+
 
 // clean up
 #undef VTXT_DEF

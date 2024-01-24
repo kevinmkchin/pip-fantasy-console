@@ -2,7 +2,7 @@
 
 #include "../MesaIMGUI.h"
 #include "../MemoryAllocator.h"
-
+#include "../piplang/Scanner.h"
 
 #include <ctype.h>  // isspace
 
@@ -317,7 +317,20 @@ void DoCodeEditorGUI(CodeEditorString code)
         uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 0.9f);
 //        uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 1.f);
         MesaGUI::PushUIStyle(uiss);
-        MesaGUI::PrimitiveText(textBeginAnchorX - scrollX, textBeginAnchorY - scrollY, 9, MesaGUI::TextAlignment::Left, std::string(code.string, code.stringlen).c_str());
+
+        // Note(Kevin): map each code character to a color here
+
+        std::string CodeStdStr = std::string(code.string, code.stringlen);
+        // Next step is to  populate CodeCharIndexToColor by scanning tokens and checking their type
+//        InitScanner(CodeStdStr.c_str());
+//        Token t = ScanToken();
+
+        MesaGUI::CodeCharIndexToColor[0] = vec3(1,0,0);
+        MesaGUI::CodeCharIndexToColor[1] = vec3(0,1,0);
+        MesaGUI::CodeCharIndexToColor[2] = vec3(0,0,1);
+        MesaGUI::PipCode(textBeginAnchorX - scrollX, textBeginAnchorY - scrollY, 9, CodeStdStr.c_str());
+        //MesaGUI::PrimitiveText(textBeginAnchorX - scrollX, textBeginAnchorY - scrollY, 9, MesaGUI::TextAlignment::Left, std::string(code.string, code.stringlen).c_str());
+
         MesaGUI::PopUIStyle();
     }
 
@@ -383,6 +396,7 @@ void DoCodeEditorGUI(CodeEditorString code)
     uiss = MesaGUI::GetActiveUIStyleCopy();
     uiss.textColor = vec4(1.f, 1.f, 1.f, 0.38f);
     MesaGUI::PushUIStyle(uiss);
+
     //MesaGUI::PrimitiveTextMasked(textBeginAnchorX - 8, textBeginAnchorY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str(), codeEditorRect, codeEditorRectCornerRadius);
     MesaGUI::PrimitiveText(textBeginAnchorX - 5, textBeginAnchorY - scrollY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str());
     MesaGUI::PopUIStyle();

@@ -2,6 +2,7 @@
 
 #include "MesaCommon.h"
 #include "FileSystem.h"
+#include "MesaUtility.h"
 
 namespace Gfx
 {
@@ -134,8 +135,11 @@ namespace Gfx
             return;
         }
         GLCompileShader(shader.idShaderProgram, vertexShaderStr, GL_VERTEX_SHADER); // Compile and attach the shaders
+        GLHasErrors();
         GLCompileShader(shader.idShaderProgram, fragmentShaderStr, GL_FRAGMENT_SHADER);
+        GLHasErrors();
         glLinkProgram(shader.idShaderProgram); // Actually create the exectuable shader program on the graphics card
+        GLHasErrors();
 
 #if INTERNAL_BUILD
         if (GLCheckErrorAndValidate(shader.idShaderProgram))

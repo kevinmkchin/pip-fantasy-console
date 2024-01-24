@@ -232,8 +232,80 @@ namespace MesaGUI
             "}\n"
             "";
 
+    static Gfx::Shader __colored_text_shader;
+    static const char* __colored_text_shader_vs =
+            "#version 330 core\n"
+            "uniform mat4 matrixModel;\n"
+            "uniform mat4 matrixOrtho;\n"
+            "layout (location = 0) in vec2 pos;\n"
+            "layout (location = 1) in vec2 uv;\n"
+            "layout (location = 2) in vec3 vcol;\n"
+            "out vec2 fragPos;\n"
+            "out vec2 texUV;\n"
+            "out vec3 vertColor;\n"
+            "void main() {\n"
+            "    fragPos = pos;\n"
+            "    gl_Position = matrixOrtho * matrixModel * vec4(pos, 0.0, 1.0);\n"
+            "    texUV = uv;\n"
+            "    vertColor = vcol;\n"
+            "}\n";
+    static const char* __colored_text_shader_fs =
+            "#version 330 core\n"
+            "uniform sampler2D textureSampler0;\n"
+            "uniform ivec4 rectMask;\n"
+            "uniform int rectMaskCornerRadius;\n"
+            "in vec2 fragPos;\n"
+            "in vec2 texUV;\n"
+            "in vec3 vertColor;\n"
+            "out vec4 colour;\n"
+            "void main() {\n"
+            "    float textAlpha = texture(textureSampler0, texUV).x;\n"
+            "    \n"
+            "    if (rectMaskCornerRadius < 0)\n"
+            "    {\n"
+            "        colour = vec4(vertColor, textAlpha);\n"
+            "    }\n"
+            "    else\n"
+            "    {\n"
+            "        vec4 frect = vec4(rectMask);\n"
+            "        float fradius = float(rectMaskCornerRadius);\n"
+            "\n"
+            "        bool xbad = fragPos.x < frect.x || (frect.x + frect.z) < fragPos.x;\n"
+            "        bool ybad = fragPos.y < frect.y || (frect.y + frect.w) < fragPos.y;\n"
+            "\n"
+            "        if (xbad || ybad) {\n"
+            "            colour = vec4(0.0, 0.0, 0.0, 0.0);\n"
+            "        } else {\n"
+            "            bool xokay = (frect.x + fradius) < fragPos.x && fragPos.x < (frect.x + frect.z - fradius);\n"
+            "            bool yokay = (frect.y + fradius) < fragPos.y && fragPos.y < (frect.y + frect.w - fradius);\n"
+            "\n"
+            "            if (xokay || yokay) { \n"
+            "                colour = vec4(vertColor, textAlpha);\n"
+            "            } else {\n"
+            "                vec2 cornerPoint;\n"
+            "                if (fragPos.x < frect.x + fradius && fragPos.y < frect.y + fradius) { // top left\n"
+            "                    cornerPoint = vec2(frect.x + fradius, frect.y + fradius);\n"
+            "                } else if (fragPos.x < frect.x + fradius && fragPos.y > frect.y + frect.w - fradius) { // bottom left\n"
+            "                    cornerPoint = vec2(frect.x + fradius, frect.y + frect.w - fradius);\n"
+            "                } else if (fragPos.x > frect.x + frect.z - fradius && fragPos.y < frect.y + fradius) { // top right\n"
+            "                    cornerPoint = vec2(frect.x + frect.z - fradius, frect.y + fradius);\n"
+            "                } else if (fragPos.x > frect.x + frect.z - fradius && fragPos.y > frect.y + frect.w - fradius) { // bottom right\n"
+            "                    cornerPoint = vec2(frect.x + frect.z - fradius, frect.y + frect.w - fradius);\n"
+            "                }\n"
+            "                if (distance(cornerPoint, fragPos) < fradius) {\n"
+            "                    colour = vec4(vertColor, textAlpha);\n"
+            "                } else {\n"
+            "                    colour = vec4(0.0, 0.0, 0.0, 0.0);\n"
+            "                }\n"
+            "            }\n"
+            "        }\n"
+            "    }\n"
+            "}\n"
+            "";
+
     static Gfx::Mesh __ui_mesh;
     static Gfx::Mesh __text_mesh;
+    static Gfx::Mesh __colored_text_mesh;
 
     static char __reservedTextMemory[16000000];
     static u32 __reservedTextMemoryIndexer = 0;
@@ -393,7 +465,7 @@ namespace MesaGUI
         UIRect rectMask = UIRect(0, 0, 9999, 9999);
         int rectMaskCornerRadius = -1;
 
-        void Draw()
+        void Draw() final
         {
             vtxt_setflags(VTXT_CREATE_INDEX_BUFFER);
             vtxt_clear_buffer();
@@ -427,6 +499,48 @@ namespace MesaGUI
             Gfx::GLBind1i(__text_shader, "rectMaskCornerRadius", rectMaskCornerRadius);
 
             RenderMesh(__text_mesh);
+        }
+    };
+
+    vec3 CodeCharIndexToColor[32000];
+    struct PipCodeDrawRequest : UIDrawRequest
+    {
+        const char* text = "";
+        int size = 8;
+        int x = 0;
+        int y = 0;
+        Font font;
+
+        UIRect rectMask = UIRect(0, 0, 9999, 9999);
+        int rectMaskCornerRadius = -1;
+
+        void Draw() final
+        {
+            vtxt_setflags(VTXT_CREATE_INDEX_BUFFER);
+            vtxt_clear_buffer();
+            vtxt_move_cursor(x, y);
+            vtxt_append_line_vertex_color_hack(text, font.ptr, size, (float*)CodeCharIndexToColor);
+            vtxt_vertex_buffer _txt = vtxt_grab_buffer();
+            _txt.vertices_array_count = _txt.vertex_count * 7;
+
+            if (_txt.vertices_array_count > 0)
+            {
+                RebindBufferObjects(__colored_text_mesh, _txt.vertex_buffer, _txt.index_buffer, _txt.vertices_array_count, _txt.indices_array_count, GL_DYNAMIC_DRAW);
+
+                mat4 matrixModel = mat4();
+                Gfx::UseShader(__colored_text_shader);
+                Gfx::GLBindMatrix4fv(__colored_text_shader, "matrixModel", 1, matrixModel.ptr());
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, font.textureId);
+                Gfx::GLBind1i(__colored_text_shader, "textureSampler0", 0);
+
+                Gfx::GLBind4i(__colored_text_shader, "rectMask", rectMask.x, rectMask.y, rectMask.w, rectMask.h);
+                Gfx::GLBind1i(__colored_text_shader, "rectMaskCornerRadius", rectMaskCornerRadius);
+
+                RenderMesh(__colored_text_mesh);
+            }
+
+            vtxt_clear_buffer();
         }
     };
 
@@ -518,6 +632,35 @@ namespace MesaGUI
         }
 
         return result;
+    }
+
+
+    void PipCode(int x, int y, int size, const char* text)
+    {
+        if (text == NULL) return;
+
+#if INTERNAL_BUILD
+        // Giving 500,000 bytes of free space in the frame text buffer to be safe
+        if (__reservedTextMemoryIndexer >= ARRAY_COUNT(__reservedTextMemory) - 500000)
+        {
+            PrintLog.Warning("Attempting to draw text in GUI.cpp but not enough reserved memory to store text.");
+            return;
+        }
+#endif
+
+        char* textBuffer = __reservedTextMemory + __reservedTextMemoryIndexer;
+        strcpy(textBuffer, text);
+        int numCharactersWritten = (int)strlen(text);
+        __reservedTextMemoryIndexer += numCharactersWritten + 1;
+
+        PipCodeDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(PipCodeDrawRequest);
+        drawRequest->text = textBuffer;
+        drawRequest->size = size;
+        drawRequest->x = x;
+        drawRequest->y = y;
+        drawRequest->font = ui_ss.top().textFont;
+
+        drawQueue.push_back(drawRequest);
     }
 
 
@@ -1253,8 +1396,10 @@ namespace MesaGUI
         Gfx::GLCreateShaderProgram(__main_ui_shader, __main_ui_shader_vs, __main_ui_shader_fs);
         Gfx::GLCreateShaderProgram(__rounded_corner_rect_shader, __rounded_corner_rect_shader_vs, __rounded_corner_rect_shader_fs);
         Gfx::GLCreateShaderProgram(__text_shader, __text_shader_vs, __text_shader_fs);
+        Gfx::GLCreateShaderProgram(__colored_text_shader, __colored_text_shader_vs, __colored_text_shader_fs);
         MeshCreate(__ui_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
         MeshCreate(__text_mesh, nullptr, nullptr, 0, 0, 2, 2, 0, GL_DYNAMIC_DRAW);
+        MeshCreate(__colored_text_mesh, nullptr, nullptr, 0, 0, 2, 2, 3, GL_DYNAMIC_DRAW);
 
         // __default_font = FontCreateFromFile(data_path("Baskic8.otf"), 32, true);
         // __fonts[1] = FontCreateFromFile(data_path("Baskic8.otf"), 16, true);
@@ -1372,6 +1517,9 @@ namespace MesaGUI
 
         Gfx::UseShader(__text_shader);
         Gfx::GLBindMatrix4fv(__text_shader, "matrixOrtho", 1, matrixOrtho.ptr());
+
+        Gfx::UseShader(__colored_text_shader);
+        Gfx::GLBindMatrix4fv(__colored_text_shader, "matrixOrtho", 1, matrixOrtho.ptr());
 
         for (int i = 0; i < drawQueue.size(); ++i)
         {

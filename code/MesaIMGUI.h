@@ -90,6 +90,9 @@ namespace MesaGUI
 
     bool ImageButton(UIRect rect, u32 normalTexId, u32 hoveredTexId, u32 activeTexId);
 
+    extern vec3 CodeCharIndexToColor[];
+    void PipCode(int x, int y, int size, const char* text);
+
 
     // Primitive "building block" GUI elements with the most parameters
     void PrimitivePanel(UIRect rect, vec4 colorRGBA);
