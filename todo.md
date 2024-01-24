@@ -106,6 +106,7 @@ Gfx (probably don't make a module out of this)
 
 # Done
 
+- fixed bug where primitive drawing was doing vb size * 0.2 instead of divide by 6...
 - code editor scrolling
 - piplang VM EPIC
 - Fixed bug with "return 'string' or return MakeZoo()" where the transient object gets destroyed before being made transient at one scope higher.

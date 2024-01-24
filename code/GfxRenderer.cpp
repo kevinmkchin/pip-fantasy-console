@@ -464,8 +464,7 @@ namespace Gfx
         glBindVertexArray(prmVAO);
         glBindBuffer(GL_ARRAY_BUFFER, prmVBO);
         glBufferData(GL_ARRAY_BUFFER, (int)sizeof(float) * prmvbsz, gameLayer_PrimitiveVB.data(), GL_DYNAMIC_DRAW);
-        glDrawArrays(GL_TRIANGLES, 0, (int)(prmvbsz * 0.2));
-
+        glDrawArrays(GL_TRIANGLES, 0, prmvbsz/6);
 
         // RESET GAME FRAME RENDER DATA
         gameLayer_RenderQueue.clear();
