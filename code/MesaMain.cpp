@@ -49,7 +49,7 @@ static bool InitializeEverything()
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
-    g_SDLWindow = SDL_CreateWindow("Mesa GCS",
+    g_SDLWindow = SDL_CreateWindow("pip",
                                    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                    SDL_WINDOW_STARTING_SIZE_W,
                                    SDL_WINDOW_STARTING_SIZE_H,
@@ -144,7 +144,7 @@ static void ProcessSDLEvents()
                     g_gfx.UpdateBackBufferAndGameSize();
                 }
 
-                if (CurrentProgramMode() == MesaProgramMode::Editor && event.key.keysym.sym == SDLK_BACKQUOTE)
+                if ((CurrentProgramMode() == MesaProgramMode::Editor || CurrentProgramMode() == MesaProgramMode::Game) && event.key.keysym.sym == SDLK_BACKQUOTE)
                 {
                     consoleActive = !consoleActive;
                     continue;
@@ -168,6 +168,9 @@ static void ProcessSDLEvents()
 
 void StartEditor()
 {
+    if (consoleActive)
+        consoleActive = false;
+
     if (g_ProgramMode == MesaProgramMode::Game)
     {
         TemporaryGameShutdown();
@@ -187,6 +190,9 @@ void StartEditor()
 //static void StartGameFile()
 void StartGameSpace()
 {
+    if (consoleActive)
+        consoleActive = false;
+
     g_ProgramMode = MesaProgramMode::Game;
 
     // get game w game h game s from game file
@@ -241,23 +247,14 @@ int main(int argc, char* argv[])
                 break;
         }
 
-        // static float lastFPSShowTime = Time.time;
-        // static float framerate = 0.f;
-        // if (Time.time - lastFPSShowTime > 0.25f)
-        // {
-        //     framerate = (1.f / Time.deltaTime);
-        //     lastFPSShowTime = Time.time;
-        // }
-        // MesaGUI::PrimitiveTextFmt(0, 18, 18, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
-
-        if (g_ProgramMode == MesaProgramMode::Editor && Temp_StartGameOrEditorButton())
-        {
-            StartGameSpace();
-        }
-        else if (g_ProgramMode == MesaProgramMode::Game && Temp_StartGameOrEditorButton())
-        {
-            StartEditor();
-        }
+         static float lastFPSShowTime = Time.time;
+         static float framerate = 0.f;
+         if (Time.time - lastFPSShowTime > 0.25f)
+         {
+             framerate = (1.f / Time.deltaTime);
+             lastFPSShowTime = Time.time;
+         }
+         MesaGUI::PrimitiveTextFmt(0, 9, 9, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
 
         if (consoleActive)
             DoSingleCommandLine();

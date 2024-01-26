@@ -258,6 +258,121 @@ static void GetRowStartAndEnd(const CodeEditorString code, int row, int *startIn
     }
 }
 
+static const vec3 CodeColorBraces = vec3(RGBHEXTO1(0xb6b8b9));
+static const vec3 CodeColorNumberLiteral = vec3(RGBHEXTO1(0xb6b8b9));
+static const vec3 CodeColorStringLiteral = vec3(RGBHEXTO1(0xb6b8b9));
+
+static void ColorCode(const char *code)
+{
+    std::vector<Token> tokens;
+    InitScanner(code);
+
+    for (int i = 0; i < 4096 /*TODO(Kevin): too few*/; ++i)
+    {
+        Token t = PipEditor_ScanToken();
+
+        tokens.push_back(t);
+
+        if (t.type == TokenType::END_OF_FILE)
+            break;
+    }
+
+    // Note(Kevin): I could do shit like check the next token e.g. if identifier and next token is DOT then identifier is a table
+    for (Token t : tokens)
+    {
+        vec3 color = vec3(0.95f, 0.95f, 0.95f);
+
+        switch (t.type)
+        {
+            case TokenType::LESS:
+            case TokenType::LESS_EQUAL:
+            case TokenType::GREATER:
+            case TokenType::GREATER_EQUAL:
+            case TokenType::EQUAL:
+            case TokenType::BANG_EQUAL:
+            case TokenType::EQUAL_EQUAL:
+            case TokenType::BANG:
+            case TokenType::PLUS:
+            case TokenType::MINUS:
+            case TokenType::ASTERISK:
+            case TokenType::FORWARDSLASH:
+                color = vec3(RGBHEXTO1(0xffffff));
+                break;
+            case TokenType::COMMA:
+            case TokenType::DOT:
+            case TokenType::COLON:
+                color = vec3(RGBHEXTO1(0xffffff));
+                break;
+
+            case TokenType::LSQBRACK:
+            case TokenType::RSQBRACK:
+                color = vec3(RGBHEXTO1(0xbcbcbc));
+                break;
+            case TokenType::LPAREN:
+            case TokenType::RPAREN:
+                color = vec3(RGBHEXTO1(0xbcbcbc));
+                break;
+            case TokenType::LBRACE:
+            case TokenType::RBRACE:
+                color = vec3(RGBHEXTO1(0xbcbcbc));
+                break;
+
+            case TokenType::STRING_LITERAL:
+                color = vec3(RGBHEXTO1(0xadd09d));
+                break;
+            case TokenType::NUMBER_LITERAL:
+            case TokenType::TRUE:
+            case TokenType::FALSE:
+                color = vec3(RGBHEXTO1(0x6be6dd));
+                break;
+
+            case TokenType::IDENTIFIER:
+                color = vec3(RGBHEXTO1(0xcad6e5));
+                break;
+
+            case TokenType::AND:
+            case TokenType::OR:
+            case TokenType::IF:
+            case TokenType::ELSE:
+            case TokenType::WHILE:
+            case TokenType::FOR:
+            case TokenType::FN:
+            case TokenType::MUT:
+            case TokenType::RETURN:
+                color = vec3(RGBHEXTO1(0xffaed7));
+                break;
+
+            case TokenType::PRINT:
+                color = vec3(RGBHEXTO1(0xffaed7));
+                break;
+
+            case TokenType::ERROR:
+                if (std::string(t.errormsg) == std::string("Unterminated string."))
+                {
+                    color = vec3(RGBHEXTO1(0xadd09d));
+                }
+                else if (std::string(t.errormsg) == std::string("comment"))
+                {
+                    color = vec3(RGBHEXTO1(0x336530));
+                }
+                else
+                {
+                    color = vec3(RGBHEXTO1(0xff0000));
+                }
+                break;
+
+            case TokenType::END_OF_FILE:
+                break;
+        }
+
+        size_t startIndex = t.start - code;
+        for (size_t i = startIndex; i < startIndex + t.length; ++i)
+        {
+            MesaGUI::CodeCharIndexToColor[i] = color;
+        }
+    }
+}
+
 void DoCodeEditorGUI(CodeEditorString code)
 {
     int x, y, w, h;
@@ -310,28 +425,14 @@ void DoCodeEditorGUI(CodeEditorString code)
 
     // Draw code
     // I could make each type of text to highlight a different primitive text that is rendered
-    // so all keywords are rendered as one set of text batch with one color, all variables rendered as one set with one color, functions, etc. 
-    MesaGUI::UIStyle uiss = MesaGUI::GetActiveUIStyleCopy();
+    // so all keywords are rendered as one set of text batch with one color, all variables rendered as one set with one color, functions, etc.
     if (code.stringlen > 0)
     {
-        uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 0.9f);
-//        uiss.textColor = vec4(0.95f, 0.95f, 0.95f, 1.f);
-        MesaGUI::PushUIStyle(uiss);
-
-        // Note(Kevin): map each code character to a color here
-
         std::string CodeStdStr = std::string(code.string, code.stringlen);
-        // Next step is to  populate CodeCharIndexToColor by scanning tokens and checking their type
-//        InitScanner(CodeStdStr.c_str());
-//        Token t = ScanToken();
-
-        MesaGUI::CodeCharIndexToColor[0] = vec3(1,0,0);
-        MesaGUI::CodeCharIndexToColor[1] = vec3(0,1,0);
-        MesaGUI::CodeCharIndexToColor[2] = vec3(0,0,1);
+        // Note(Kevin): map each code character to a color here
+        ColorCode(CodeStdStr.c_str());
         MesaGUI::PipCode(textBeginAnchorX - scrollX, textBeginAnchorY - scrollY, 9, CodeStdStr.c_str());
         //MesaGUI::PrimitiveText(textBeginAnchorX - scrollX, textBeginAnchorY - scrollY, 9, MesaGUI::TextAlignment::Left, std::string(code.string, code.stringlen).c_str());
-
-        MesaGUI::PopUIStyle();
     }
 
     // Draw selection highlight
@@ -393,7 +494,7 @@ void DoCodeEditorGUI(CodeEditorString code)
 
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(x, y - 32, lineNumbersDisplayWidth + 5, h + 64), vec4(RGBHEXTO1(0x414141), 1.f));
 
-    uiss = MesaGUI::GetActiveUIStyleCopy();
+    MesaGUI::UIStyle uiss = MesaGUI::GetActiveUIStyleCopy();
     uiss.textColor = vec4(1.f, 1.f, 1.f, 0.38f);
     MesaGUI::PushUIStyle(uiss);
 

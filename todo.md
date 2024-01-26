@@ -14,7 +14,6 @@ Hotline Miami x Nuclear Throne kind of game
 
 # Immediate next
 
-- Editor color theme needs to be colorful but pleasant https://cohost.org/noel/post/72223-tiny-game-making-too
 - math.lerp (different variations too) // exponential fall off of the speed
 - pl: Arrays
 - pl: % BinOp
@@ -106,6 +105,7 @@ Gfx (probably don't make a module out of this)
 
 # Done
 
+- Editor code coloring with text vertex colors
 - fixed bug where primitive drawing was doing vb size * 0.2 instead of divide by 6...
 - code editor scrolling
 - piplang VM EPIC

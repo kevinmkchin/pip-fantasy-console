@@ -1077,7 +1077,7 @@ static void TokenizeAll(const char *source)
 {
     InitScanner(source);
 
-    for (int i = 0; i < 4096; ++i)
+    for (int i = 0; i < 4096/*TODO(Kevin): too few*/; ++i)
     {
         Token t = ScanToken();
 

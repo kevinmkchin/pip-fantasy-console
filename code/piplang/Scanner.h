@@ -53,6 +53,9 @@ struct Token
     TokenType type;
     u16 length;
     u16 line;
+
+    const char *errormsg;
+    u16 errormsglen;
 };
 
 struct Scanner
@@ -65,4 +68,6 @@ struct Scanner
 void InitScanner(const char *source);
 Token ScanToken();
 void Debug_ScanPrintTokens(const char *source);
+
+Token PipEditor_ScanToken();
 
