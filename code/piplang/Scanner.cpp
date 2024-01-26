@@ -24,11 +24,9 @@ static Token MakeToken(TokenType type)
 
 static Token ErrorToken(const char *msg)
 {
-    Token token;
-    token.type = TokenType::ERROR;
-    token.start = msg;
-    token.length = (int)strlen(msg);
-    token.line = scanner.line;
+    Token token = MakeToken(TokenType::ERROR);
+    token.errormsg = msg;
+    token.errormsglen = (int)strlen(msg);
     return token;
 }
 
@@ -52,8 +50,10 @@ static char PeekNext()
     return *(scanner.current + 1);
 }
 
+static bool encounteredCommentsSkippingWhiteSpace = false;
 static void SkipWhiteSpace()
 {
+    encounteredCommentsSkippingWhiteSpace = false;
     for (;;)
     {
         char c = *scanner.current;
@@ -63,6 +63,7 @@ static void SkipWhiteSpace()
         {
             while (*scanner.current != '\n' && *scanner.current != '\0')
                 Advance();
+            encounteredCommentsSkippingWhiteSpace = true;
             break;
         }
         case '/':
@@ -75,6 +76,7 @@ static void SkipWhiteSpace()
                     Advance();
                 Advance();
                 Advance();
+                encounteredCommentsSkippingWhiteSpace = true;
             }
             else
             {
@@ -173,6 +175,53 @@ static Token IdentifierToken()
 Token ScanToken()
 {
     SkipWhiteSpace();
+    scanner.start = scanner.current;
+
+    if (*scanner.current == '\0') return MakeToken(TokenType::END_OF_FILE);
+
+    char c = Advance();
+
+    if (IsDigit(c)) return NumberToken();
+    if (IsNamingAlphabet(c)) return IdentifierToken();
+    switch (c)
+    {
+        case '(': return MakeToken(TokenType::LPAREN);
+        case ')': return MakeToken(TokenType::RPAREN);
+        case '{': return MakeToken(TokenType::LBRACE);
+        case '}': return MakeToken(TokenType::RBRACE);
+        case '[': return MakeToken(TokenType::LSQBRACK);
+        case ']': return MakeToken(TokenType::RSQBRACK);
+        case ',': return MakeToken(TokenType::COMMA);
+        case '.': return MakeToken(TokenType::DOT);
+        case '-': return MakeToken(TokenType::MINUS);
+        case '+': return MakeToken(TokenType::PLUS);
+        case '/': return MakeToken(TokenType::FORWARDSLASH);
+        case '*': return MakeToken(TokenType::ASTERISK);
+        case ':': return MakeToken(TokenType::COLON);
+        case '!':
+            return MakeToken(Match('=') ? TokenType::BANG_EQUAL : TokenType::BANG);
+        case '=':
+            return MakeToken(Match('=') ? TokenType::EQUAL_EQUAL : TokenType::EQUAL);
+        case '<':
+            return MakeToken(Match('=') ? TokenType::LESS_EQUAL : TokenType::LESS);
+        case '>':
+            return MakeToken(Match('=') ? TokenType::GREATER_EQUAL : TokenType::GREATER);
+        case '"': return StringToken(true);
+        case '\'': return StringToken(false);
+    }
+
+    return ErrorToken("Scanned unexpected character.");
+}
+
+Token PipEditor_ScanToken()
+{
+    scanner.start = scanner.current;
+    SkipWhiteSpace();
+    if (encounteredCommentsSkippingWhiteSpace)
+    {
+        return ErrorToken("comment");
+    }
+
     scanner.start = scanner.current;
 
     if (*scanner.current == '\0') return MakeToken(TokenType::END_OF_FILE);

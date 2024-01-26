@@ -366,6 +366,8 @@ namespace noclip
                     os << std::endl;
                     os << "help : outputs help message" << std::endl;
                     os << "editor : loads the editor" << std::endl;
+                    os << "play : play the loaded game" << std::endl;
+                    os << "listCmds : list all console commands" << std::endl;
                     os << "---------- end help -----------" << std::endl;
                     os << std::endl;
 

@@ -165,6 +165,7 @@ void ElephantJPG()
 void SetupConsoleCommands()
 {
     sNoclipConsole.bind_cmd("editor", StartEditor);
+    sNoclipConsole.bind_cmd("play", StartGameSpace);
     sNoclipConsole.bind_cmd("elephant", ElephantJPG);
 
     PrintLog.Message("Boot menu initialized...");
