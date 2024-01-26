@@ -278,8 +278,11 @@ static void ColorCode(const char *code)
     }
 
     // Note(Kevin): I could do shit like check the next token e.g. if identifier and next token is DOT then identifier is a table
-    for (Token t : tokens)
+    for (size_t i = 0; i < tokens.size(); ++i)
     {
+        bool notLastToken = i + 1 < tokens.size();
+        bool notFirstToken = i != 0;
+        Token t = tokens[i];
         vec3 color = vec3(0.95f, 0.95f, 0.95f);
 
         switch (t.type)
@@ -327,7 +330,29 @@ static void ColorCode(const char *code)
                 break;
 
             case TokenType::IDENTIFIER:
-                color = vec3(RGBHEXTO1(0xcad6e5));
+//                if (notFirstToken && tokens[i - 1].type == TokenType::MUT)
+//                {
+//                    // new variable declaration
+//                    color = vec3(RGBHEXTO1(0x9dffdf));
+//                } else
+                if (notFirstToken && tokens[i - 1].type == TokenType::FN)
+                {
+                    // new fn declaration
+                    color = vec3(RGBHEXTO1(0x9dffdf));
+                }
+                else if (notFirstToken && tokens[i - 1].type == TokenType::DOT)
+                {
+                    color = vec3(RGBHEXTO1(0xa4c4d9));
+                }
+                else if (notLastToken && tokens[i + 1].type == TokenType::LPAREN)
+                {
+                    // call
+                    color = vec3(RGBHEXTO1(0x9dffdf));
+                }
+                else
+                {
+                    color = vec3(RGBHEXTO1(0xcad6e5));
+                }
                 break;
 
             case TokenType::AND:
@@ -339,11 +364,11 @@ static void ColorCode(const char *code)
             case TokenType::FN:
             case TokenType::MUT:
             case TokenType::RETURN:
-                color = vec3(RGBHEXTO1(0xffaed7));
+                color = vec3(RGBHEXTO1(0xd77bba));
                 break;
 
             case TokenType::PRINT:
-                color = vec3(RGBHEXTO1(0xffaed7));
+                color = vec3(RGBHEXTO1(0xd77bba));//0xffaed7));
                 break;
 
             case TokenType::ERROR:
