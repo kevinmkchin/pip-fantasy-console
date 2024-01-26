@@ -144,7 +144,11 @@ void InitializePipAPI()
     HashMapSet(&PipAPI_input, CopyString("up", 2, true), BOOL_VAL(false), NULL);
     HashMapSet(&PipAPI_input, CopyString("down", 4, true), BOOL_VAL(false), NULL);
     HashMapSet(&PipAPI_input, CopyString("w", 1, true), BOOL_VAL(false), NULL);
+    HashMapSet(&PipAPI_input, CopyString("a", 1, true), BOOL_VAL(false), NULL);
     HashMapSet(&PipAPI_input, CopyString("s", 1, true), BOOL_VAL(false), NULL);
+    HashMapSet(&PipAPI_input, CopyString("d", 1, true), BOOL_VAL(false), NULL);
+    HashMapSet(&PipAPI_input, CopyString("mousex", 6, true), NUMBER_VAL(0), NULL);
+    HashMapSet(&PipAPI_input, CopyString("mousey", 6, true), NUMBER_VAL(0), NULL);
 
     PipAPI_gfx = HashMap();
     AllocateHashMap(&PipAPI_gfx);
@@ -173,7 +177,11 @@ void UpdatePipAPI()
     HashMapSet(&PipAPI_input, CopyString("up", 2, true), BOOL_VAL(Input.KeyPressed(SDL_SCANCODE_UP)), NULL);
     HashMapSet(&PipAPI_input, CopyString("down", 4, true), BOOL_VAL(Input.KeyPressed(SDL_SCANCODE_DOWN)), NULL);
     HashMapSet(&PipAPI_input, CopyString("w", 1, true), BOOL_VAL(Input.KeyPressed(SDL_SCANCODE_W)), NULL);
+    HashMapSet(&PipAPI_input, CopyString("a", 1, true), BOOL_VAL(Input.KeyPressed(SDL_SCANCODE_A)), NULL);
     HashMapSet(&PipAPI_input, CopyString("s", 1, true), BOOL_VAL(Input.KeyPressed(SDL_SCANCODE_S)), NULL);
+    HashMapSet(&PipAPI_input, CopyString("d", 1, true), BOOL_VAL(Input.KeyPressed(SDL_SCANCODE_D)), NULL);
+    HashMapSet(&PipAPI_input, CopyString("mousex", 6, true), NUMBER_VAL(Input.mousePos.x), NULL);
+    HashMapSet(&PipAPI_input, CopyString("mousey", 6, true), NUMBER_VAL(Input.mousePos.y), NULL);
 }
 
 void TeardownPipAPI()
