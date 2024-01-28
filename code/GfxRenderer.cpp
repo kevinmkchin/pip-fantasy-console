@@ -102,10 +102,12 @@ namespace Gfx
             "    color = fs_color;"
             "}";
 
+    static Mesh __final_render_output_quad;
 
     static std::vector<RenderQueueData> gameLayer_RenderQueue;
-    static vec4                         gameLayer_ClearColor    = vec4();
-    static std::vector<float>           gameLayer_PrimitiveVB;
+    static bool gameLayer_ClearFlag = false;
+    static vec4 gameLayer_ClearColor = vec4();
+    static std::vector<float> gameLayer_PrimitiveVB;
 
     void QueueSpriteForRender(i64 spriteId, vec2 position)
     {
@@ -117,7 +119,8 @@ namespace Gfx
 
     void SetGameLayerClearColor(vec4 color)
     {
-        gameLayer_ClearColor = color/255.f;
+        gameLayer_ClearFlag = true;
+        gameLayer_ClearColor = color / 255.f;
     }
 
     void Primitive_DrawRect(float x, float y, float w, float h, vec4 color)
@@ -167,14 +170,14 @@ namespace Gfx
 
     bool CoreRenderer::Init()
     {
-    #ifdef MESA_USING_GL3W
+#ifdef MESA_USING_GL3W
         if (gl3w_init())
         {
             fprintf(stderr, "Failed to initialize OpenGL\n");
             return false;
         }
         //PrintLog.Message("--OpenGL initialized.");
-    #endif
+#endif
         s_ActiveSDLWindow = SDL_GL_GetCurrentWindow();
 
         // alpha blending func: (srcRGB) * srcA + (dstRGB) * (1 - srcA)  = final color output
@@ -190,7 +193,7 @@ namespace Gfx
 
         CreateMiscellaneous();
 
-        UpdateBackBufferAndGameSize();
+        UpdateBackBufferAndGUILayerSizeToMatchWindowSizeIntegerScaled();
 
         s_TheGfxRenderer = this;
 
@@ -287,7 +290,7 @@ namespace Gfx
     //     //     ib[3] = 2;
     //     //     ib[4] = 3;
     //     //     ib[5] = 1;
-            
+
     //     //     modelMatrix[2][0] = (float)eai.spaceX;
     //     //     modelMatrix[2][1] = (float)eai.spaceY;
     //     //     // int eaid = eai.entityAssetId;
@@ -315,32 +318,40 @@ namespace Gfx
     //     return worldEditorView;
     // }
 
-    void CoreRenderer::Render()
+    void CoreRenderer::RenderEditor()
     {
-        if (CurrentProgramMode() == MesaProgramMode::Game)
-        {
-            RenderGameLayer();            
-        }
         RenderGUILayer();
-        //RenderDebugUILayer();
+        FinalRenderToBackBuffer();
+    }
 
+
+    void CoreRenderer::RenderGame()
+    {
+        RenderGameLayer();
+        RenderGUILayer();
         FinalRenderToBackBuffer();
     }
 
     void CoreRenderer::RenderGameLayer()
     {
-        glBindFramebuffer(GL_FRAMEBUFFER, gameLayer.FBO);
-        glViewport(0, 0, gameLayer.width, gameLayer.height);
-        glClearColor(gameLayer_ClearColor.x, gameLayer_ClearColor.y, gameLayer_ClearColor.z, gameLayer_ClearColor.w);
-        //RGBHEXTO1(0x6495ed), 1.f);//(RGB255TO1(211, 203, 190), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindFramebuffer(GL_FRAMEBUFFER, renderTargetGame.FBO);
+        glViewport(0, 0, renderTargetGame.width, renderTargetGame.height);
+        if (gameLayer_ClearFlag)
+        {
+            gameLayer_ClearFlag = false;
+            glClearColor(gameLayer_ClearColor.x, gameLayer_ClearColor.y, gameLayer_ClearColor.z,
+                         gameLayer_ClearColor.w);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            //RGBHEXTO1(0x6495ed), 1.f);//(RGB255TO1(211, 203, 190), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
+        }
         glEnable(GL_BLEND);
         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
         glDisable(GL_DEPTH_TEST);
 
         UseShader(spriteShader);
 
-        static mat3 orthographicMatrix = mat3(ProjectionMatrixOrthographic2D(0.f, float(internalGameResolutionW), 0.f, float(internalGameResolutionH)));
+        static mat3 orthographicMatrix = mat3(ProjectionMatrixOrthographic2D(0.f, float(renderTargetGame.width), 0.f,
+                                                                             float(renderTargetGame.height)));
         static mat3 identityMatrix = mat3();
 
         GLBindMatrix3fv(spriteShader, "projection", 1, orthographicMatrix.ptr());
@@ -358,7 +369,7 @@ namespace Gfx
         static u32 spriteBatchVAO = 0;
         static u32 spriteBatchVBO = 0;
         static u32 spriteBatchIBO = 0;
-        if(!spriteBatchVAO)
+        if (!spriteBatchVAO)
         {
             glGenVertexArrays(1, &spriteBatchVAO);
             glBindVertexArray(spriteBatchVAO);
@@ -368,7 +379,8 @@ namespace Gfx
             glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 16, nullptr, GL_DYNAMIC_DRAW);
             glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, nullptr);
             glEnableVertexAttribArray(0);
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4, (void*)(sizeof(float) * 2)); // i really feel like this can be nullptr
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 4,
+                                  (void *) (sizeof(float) * 2)); // i really feel like this can be nullptr
             glEnableVertexAttribArray(1);
 
             glGenBuffers(1, &spriteBatchIBO);
@@ -378,10 +390,10 @@ namespace Gfx
 
         mat3 modelMatrix = identityMatrix;
 
-        for (RenderQueueData renderData : gameLayer_RenderQueue)
+        for (RenderQueueData renderData: gameLayer_RenderQueue)
         {
-            float sprw = (float)renderData.sprite.width;
-            float sprh = (float)renderData.sprite.height;
+            float sprw = (float) renderData.sprite.width;
+            float sprh = (float) renderData.sprite.height;
             int sprtexid = renderData.sprite.textureId;
             if (sprtexid == 0) sprtexid = mushroom.textureId;
 
@@ -411,10 +423,10 @@ namespace Gfx
             ib[3] = 2;
             ib[4] = 3;
             ib[5] = 1;
-            
+
             modelMatrix[2][0] = renderData.position.x;
             modelMatrix[2][1] = renderData.position.y;
-        
+
             GLBindMatrix3fv(spriteShader, "model", 1, modelMatrix.ptr());
 
             glBindVertexArray(spriteBatchVAO);
@@ -435,8 +447,6 @@ namespace Gfx
         }
 
 
-
-
         // PRIMITIVE STUFF
         UseShader(primitiveShader);
         GLBindMatrix3fv(primitiveShader, "projection", 1, orthographicMatrix.ptr());
@@ -446,25 +456,25 @@ namespace Gfx
 
         static u32 prmVAO = 0;
         static u32 prmVBO = 0;
-        if(!prmVAO)
+        if (!prmVAO)
         {
             glGenVertexArrays(1, &prmVAO);
             glBindVertexArray(prmVAO);
 
             glGenBuffers(1, &prmVBO);
             glBindBuffer(GL_ARRAY_BUFFER, prmVBO);
-            glBufferData(GL_ARRAY_BUFFER, (int)sizeof(float) * 1, nullptr, GL_DYNAMIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, (int) sizeof(float) * 1, nullptr, GL_DYNAMIC_DRAW);
             glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 6, nullptr);
             glEnableVertexAttribArray(0);
-            glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void*)(sizeof(float) * 2));
+            glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void *) (sizeof(float) * 2));
             glEnableVertexAttribArray(1);
         }
 
-        int prmvbsz = (int)gameLayer_PrimitiveVB.size();
+        int prmvbsz = (int) gameLayer_PrimitiveVB.size();
         glBindVertexArray(prmVAO);
         glBindBuffer(GL_ARRAY_BUFFER, prmVBO);
-        glBufferData(GL_ARRAY_BUFFER, (int)sizeof(float) * prmvbsz, gameLayer_PrimitiveVB.data(), GL_DYNAMIC_DRAW);
-        glDrawArrays(GL_TRIANGLES, 0, prmvbsz/6);
+        glBufferData(GL_ARRAY_BUFFER, (int) sizeof(float) * prmvbsz, gameLayer_PrimitiveVB.data(), GL_DYNAMIC_DRAW);
+        glDrawArrays(GL_TRIANGLES, 0, prmvbsz / 6);
 
         // RESET GAME FRAME RENDER DATA
         gameLayer_RenderQueue.clear();
@@ -474,10 +484,10 @@ namespace Gfx
 
     void CoreRenderer::RenderGUILayer()
     {
-        glBindFramebuffer(GL_FRAMEBUFFER, guiLayer.FBO);
-        glViewport(0, 0, guiLayer.width, guiLayer.height);
+        glBindFramebuffer(GL_FRAMEBUFFER, renderTargetGUI.FBO);
+        glViewport(0, 0, renderTargetGUI.width, renderTargetGUI.height);
         glDepthRange(0.00001f, 10.f);
-        glClearColor(RGB255TO1(244,194,194), 0.0f);
+        glClearColor(RGB255TO1(244, 194, 194), 0.0f);
         glClearDepth(10.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glEnable(GL_BLEND);
@@ -487,30 +497,52 @@ namespace Gfx
         MesaGUI::Draw();
     }
 
-    //void CoreRenderer::RenderDebugUILayer()
-    //{
-    //    glBindFramebuffer(GL_FRAMEBUFFER, debugUILayer.FBO);
-    //    glViewport(0, 0, debugUILayer.width, debugUILayer.height);
-    //    glDepthRange(0.00001f, 10.f);
-    //    glClearColor(0.674f, 0.847f, 1.0f, 0.0f);
-    //    glClearDepth(10.f);
-    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    //    glEnable(GL_BLEND);
-    //    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    //
-    //    // CONSOLE RENDERING
-    //    glDisable(GL_DEPTH_TEST);
-    //    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    //    console_render();
-    //    glEnable(GL_DEPTH_TEST);
-    //}
+    void CoreRenderer::ConfigureViewportForFinalRender() const
+    {
+        if (CurrentProgramMode() == MesaProgramMode::Game)
+        {
+            int viewportX, viewportY, viewportWidth, viewportHeight;
+            GetViewportValuesForFixedGameResolution(&viewportX, &viewportY, &viewportWidth, &viewportHeight);
+            glViewport(viewportX, viewportY, viewportWidth, viewportHeight);
+        } else
+        {
+            glViewport(0, windowDrawableHeight - backBufferHeight, backBufferWidth, backBufferHeight);
+        }
+    }
+
+    void CoreRenderer::GetViewportValuesForFixedGameResolution(int *viewportX, int *viewportY, int *viewportW, int *viewportH) const
+    {
+        // Note(Kevin): Provides viewport region to uniformly upscale the game render. This
+        // is basically what Celeste does in windowed mode. It adds black borders horizontally
+        // or vertically to maintain the fixed aspect ratio of the game. It is inevitable that
+        // some pixels are going to be rendered across more screen pixels than others
+        // (e.g. 5 screen pixels for pixel A vs 4 for B).
+
+        *viewportW = backBufferWidth;
+        *viewportH = backBufferHeight;
+
+        double bw = (double) backBufferWidth;
+        double bh = (double) backBufferHeight;
+        double internalRatio = (double) renderTargetGame.width / (double) renderTargetGame.height;
+        double screenRatio = (double) bw / (double) bh;
+        if (screenRatio > internalRatio)
+        {
+            *viewportW = int(backBufferHeight * internalRatio);
+        } else if (screenRatio < internalRatio)
+        {
+            *viewportH = int(backBufferWidth / internalRatio);
+        }
+
+        *viewportX = (backBufferWidth - *viewportW) / 2;
+        *viewportY = (backBufferHeight - *viewportH) / 2;
+    }
 
     void CoreRenderer::FinalRenderToBackBuffer()
     {
         UseShader(finalPassShader);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, windowDrawableHeight - backBufferHeight, backBufferWidth, backBufferHeight);
+        ConfigureViewportForFinalRender();
         glDepthRange(0, 10);
         glClearColor(RGB255TO1(0, 0, 0), 1.f);
         glClearDepth(1.f);
@@ -519,72 +551,79 @@ namespace Gfx
         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
         glDisable(GL_DEPTH_TEST);
 
-
         if (CurrentProgramMode() == MesaProgramMode::Game)
         {
             // Draw game frame
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, gameLayer.colorTexId);
-            RenderMesh(screenSizeQuad);
+            glBindTexture(GL_TEXTURE_2D, renderTargetGame.colorTexId);
+            RenderMesh(__final_render_output_quad);
         }
 
         // Draw GUI frame
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, guiLayer.colorTexId);
-        RenderMesh(screenSizeQuad);
+        glBindTexture(GL_TEXTURE_2D, renderTargetGUI.colorTexId);
+        RenderMesh(__final_render_output_quad);
 
-    //    // Draw Debug UI frame
-    //    glActiveTexture(GL_TEXTURE0);
-    //    glBindTexture(GL_TEXTURE_2D, debugUILayer.colorTexId);
-    //    RenderMesh(screenSizeQuad);
+        //    // Draw Debug UI frame
+        //    glActiveTexture(GL_TEXTURE0);
+        //    glBindTexture(GL_TEXTURE_2D, debugUILayer.colorTexId);
+        //    RenderMesh(screenSizeQuad);
 
         GLHasErrors();
     }
 
-    void CoreRenderer::UpdateBackBufferAndGameSize()
-    {
-        SDL_GL_GetDrawableSize(s_ActiveSDLWindow, &windowDrawableWidth, &windowDrawableHeight);
 
-        backBufferWidth = GM_max(windowDrawableWidth - (windowDrawableWidth % (int)screenScaling), 160);
-        backBufferHeight = GM_max(windowDrawableHeight - (windowDrawableHeight % (int)screenScaling), 160);
-
-        internalGameResolutionW = backBufferWidth / (int)screenScaling;
-        internalGameResolutionH = backBufferHeight / (int)screenScaling;
-
-        UpdateFrameBuffersSize();
-        UpdateScreenSizeQuad();
-    }
-
-    void CoreRenderer::GetBackBufferSize(i32* widthOutput, i32* heightOutput)
+    void CoreRenderer::GetBackBufferSize(i32 *widthOutput, i32 *heightOutput) const
     {
         *widthOutput = backBufferWidth;
         *heightOutput = backBufferHeight;
     }
-    
-    void CoreRenderer::GetInternalRenderSize(i32 *widthOutput, i32 *heightOutput)
+
+    void CoreRenderer::WindowSizeChanged()
     {
-        *widthOutput = internalGameResolutionW;
-        *heightOutput = internalGameResolutionH;
+        if (CurrentProgramMode() == MesaProgramMode::Game)
+        {
+            // Note(Kevin): For games, GUI render target size is not driven by window size.
+            //              I just need to update the window size i.e. the actual back buffer size.
+            SDL_GL_GetDrawableSize(s_ActiveSDLWindow, &windowDrawableWidth, &windowDrawableHeight);
+            backBufferWidth = GM_max(windowDrawableWidth, 160);
+            backBufferHeight = GM_max(windowDrawableHeight, 160);
+        } else
+        {
+            UpdateBackBufferAndGUILayerSizeToMatchWindowSizeIntegerScaled();
+        }
     }
+
+    void CoreRenderer::ChangeEditorIntegerScaleAndInvokeWindowSizeChanged(PixelPerfectRenderScale scale)
+    {
+        editorIntegerScale = scale;
+        WindowSizeChanged();
+    }
+
+    void CoreRenderer::UpdateBackBufferAndGUILayerSizeToMatchWindowSizeIntegerScaled()
+    {
+        SDL_GL_GetDrawableSize(s_ActiveSDLWindow, &windowDrawableWidth, &windowDrawableHeight);
+
+        // Note (Kevin): Window size minus some pixels so it's divisible by screen integer scale
+        backBufferWidth = GM_max(windowDrawableWidth - (windowDrawableWidth % (int) editorIntegerScale), 160);
+        backBufferHeight = GM_max(windowDrawableHeight - (windowDrawableHeight % (int) editorIntegerScale), 160);
+
+        // Note (Kevin): Update GUI render target size
+        const i32 renderTargetGUIDesiredWidth = backBufferWidth / (int) editorIntegerScale;
+        const i32 renderTargetGUIDesiredHeight = backBufferHeight / (int) editorIntegerScale;
+        UpdateBasicFrameBufferSize(&renderTargetGUI, renderTargetGUIDesiredWidth, renderTargetGUIDesiredHeight);
+    }
+
 
     void CoreRenderer::CreateFrameBuffers()
     {
-        gameLayer.width = internalGameResolutionW;
-        gameLayer.height = internalGameResolutionH;
-        CreateBasicFrameBuffer(&gameLayer);
-        guiLayer.width = internalGameResolutionW;
-        guiLayer.height = internalGameResolutionH;
-        CreateBasicFrameBuffer(&guiLayer);
-    //    debugUILayer.width = internalGameResolutionW;
-    //    debugUILayer.height = internalGameResolutionH;
-    //    CreateBasicFrameBuffer(&debugUILayer);
-    }
-
-    void CoreRenderer::UpdateFrameBuffersSize()
-    {
-        UpdateBasicFrameBufferSize(&gameLayer, internalGameResolutionW, internalGameResolutionH);
-        UpdateBasicFrameBufferSize(&guiLayer, internalGameResolutionW, internalGameResolutionH); // TODO(Kevin): gui layer should use different resolution to game
-    //    UpdateBasicFrameBufferSize(&debugUILayer, backBufferWidth, backBufferHeight);
+        // Note(Kevin): dummy values for initialization
+        renderTargetGame.width = 800;
+        renderTargetGame.height = 600;
+        CreateBasicFrameBuffer(&renderTargetGame);
+        renderTargetGUI.width = 800;
+        renderTargetGUI.height = 600;
+        CreateBasicFrameBuffer(&renderTargetGUI);
     }
 
     void CoreRenderer::CreateMiscellaneous()
@@ -600,64 +639,18 @@ namespace Gfx
                 -1.f, 1.f, 0.f, 1.f,
                 1.f, 1.f, 1.f, 1.f
         };
-
-        MeshCreate(screenSizeQuad, refQuadVertices, refQuadIndices, 16, 6, 2, 2, 0, GL_STATIC_DRAW);
+        MeshCreate(__final_render_output_quad, refQuadVertices, refQuadIndices, 16, 6, 2, 2, 0, GL_STATIC_DRAW);
 
         worldEditorView.width = 450;
         worldEditorView.height = 450;
         CreateBasicFrameBuffer(&worldEditorView);
     }
 
-    void CoreRenderer::UpdateScreenSizeQuad()
-    {
-        // 2023-10-03 (Kevin): No need anymore.
-
-        //// 2023-08-08 (Kevin): This is basically what Celeste does in windowed mode. It
-        //// adds black borders horizontally or vertically to maintain the fixed aspect ratio
-        //// of the game. It is inevitable that some pixels are going to be rendered across 
-        //// more screen pixels than others (e.g. 5 screen pixels for pixel A vs 4 for B).
-
-        //u32 refQuadIndices[6] = {
-        //        0, 1, 3,
-        //        0, 3, 2
-        //};
-        //double bw = (double)backBufferWidth;
-        //double bh = (double)backBufferHeight;
-        //double internal_ratio = (double)internalGameResolutionW / (double)internalGameResolutionH;
-        //double screen_ratio = (double)bw / (double)bh;
-        //float finalOutputQuadVertices[16] = {
-        //        -1.f, -1.f, 0.f, 0.f,
-        //        1.f, -1.f, 1.f, 0.f,
-        //        -1.f, 1.f, 0.f, 1.f,
-        //        1.f, 1.f, 1.f, 1.f
-        //};
-        //if(screen_ratio > internal_ratio)
-        //{
-        //    double w = bh * internal_ratio;
-        //    float f = float((bw - w) / bw);
-        //    finalOutputQuadVertices[0] = -1.f + f;
-        //    finalOutputQuadVertices[4] = 1.f - f;
-        //    finalOutputQuadVertices[8] = -1.f + f;
-        //    finalOutputQuadVertices[12] = 1.f - f;
-        //}
-        //else
-        //{
-        //    double h = bw / internal_ratio;
-        //    float f = float((bh - h) / bh);
-        //    finalOutputQuadVertices[1] = -1.f + f;
-        //    finalOutputQuadVertices[5] = -1.f + f;
-        //    finalOutputQuadVertices[9] = 1.f - f;
-        //    finalOutputQuadVertices[13] = 1.f - f;
-        //}
-        //RebindBufferObjects(screenSizeQuad, finalOutputQuadVertices, refQuadIndices, 16, 6);
-    }
-
-    ivec2 CoreRenderer::TransformWindowCoordinateToInternalCoordinate(ivec2 winCoord)
+    ivec2 CoreRenderer::TransformWindowCoordinateToEditorGUICoordinateSpace(ivec2 winCoord) const
     {
         if (winCoord.x >= backBufferWidth || winCoord.y >= backBufferHeight)
-            return ivec2(-1, -1);
-
-        return ivec2(winCoord.x / (int)screenScaling, winCoord.y / (int)screenScaling);
+            return {-1, -1};
+        return {winCoord.x / (int)editorIntegerScale, winCoord.y / (int)editorIntegerScale};
     }
 }
 

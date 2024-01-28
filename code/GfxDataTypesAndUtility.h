@@ -5,7 +5,7 @@
 
 namespace Gfx
 {
-
+    // Don't write to this directly. Use a function that updates the FBO.
     struct BasicFrameBuffer
     {
         u32 FBO;

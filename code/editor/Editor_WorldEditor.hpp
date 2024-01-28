@@ -73,7 +73,7 @@ static void WorldDesigner()
 
     // if (Input.mouseLeftHasBeenPressed)
     // {
-    //     ivec2 clickedInternalCoord = Gfx::GetCoreRenderer()->TransformWindowCoordinateToInternalCoordinate(Input.mousePos);
+    //     ivec2 clickedInternalCoord = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(Input.mousePos);
     //     // transform internal coordinate to world viewer coordinate accounting for view zoom pan etc.
     //     ivec2 clickedViewCoord = ivec2(clickedInternalCoord.x - worldEditorArea.absx, clickedInternalCoord.y - worldEditorArea.absy);
     //     if (0 <= clickedViewCoord.x && clickedViewCoord.x < worldEditorArea.absw && 0 <= clickedViewCoord.y && clickedViewCoord.y < worldEditorArea.absh)

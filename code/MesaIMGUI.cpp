@@ -1349,8 +1349,8 @@ namespace MesaGUI
     {
         layout->x = 0;
         layout->y = 0;
-        Gfx::GetCoreRenderer()->GetInternalRenderSize(&layout->w, &layout->h);
-
+        layout->w = Gfx::GetCoreRenderer()->renderTargetGUI.width;
+        layout->h = Gfx::GetCoreRenderer()->renderTargetGUI.height;
         UpdateALHContainer(layout);
     }
 
@@ -1364,13 +1364,13 @@ namespace MesaGUI
         ALH *alh = new ALH();
         
         alh->x = absX;
-        alh->xauto = alh->x < 0 ? true : false;
+        alh->xauto = alh->x < 0;
         alh->y = absY;
-        alh->yauto = alh->y < 0 ? true : false;
+        alh->yauto = alh->y < 0;
         alh->w = absW;
-        alh->wauto = alh->w < 0 ? true : false;
+        alh->wauto = alh->w < 0;
         alh->h = absH;
-        alh->hauto = alh->h < 0 ? true : false;
+        alh->hauto = alh->h < 0;
         
         alh->vertical = vertical;
         
@@ -1483,8 +1483,8 @@ namespace MesaGUI
                 Gfx::CoreRenderer *renderer = Gfx::GetCoreRenderer();
                 i32 winW, winH = 0;
                 renderer->GetBackBufferSize(&winW, &winH);
-                mousePosX = int(float(event.motion.x) * (float(renderer->guiLayer.width) / float(winW)));
-                mousePosY = int(float(event.motion.y) * (float(renderer->guiLayer.height) / float(winH)));
+                mousePosX = int(float(event.motion.x) * (float(renderer->renderTargetGUI.width) / float(winW)));
+                mousePosY = int(float(event.motion.y) * (float(renderer->renderTargetGUI.height) / float(winH)));
             }break;
             case SDL_KEYDOWN:
             {
@@ -1505,8 +1505,8 @@ namespace MesaGUI
         //     fontAtlasDebugY += __fonts[i].ptr->font_atlas.height + 5;
         // }
 
-        i32 kevGuiScreenWidth = Gfx::GetCoreRenderer()->guiLayer.width;
-        i32 kevGuiScreenHeight = Gfx::GetCoreRenderer()->guiLayer.height;
+        i32 kevGuiScreenWidth = Gfx::GetCoreRenderer()->renderTargetGUI.width;
+        i32 kevGuiScreenHeight = Gfx::GetCoreRenderer()->renderTargetGUI.height;
         mat4 matrixOrtho = ProjectionMatrixOrthographic2D(0.f, (float)kevGuiScreenWidth, (float)kevGuiScreenHeight, 0.f);
 
         Gfx::UseShader(__main_ui_shader);

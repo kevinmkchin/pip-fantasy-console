@@ -199,7 +199,7 @@ static bool IsPointInLayoutRect(ivec2 point, MesaGUI::ALH *layout)
 
 static ivec2 WindowCoordinateToCodeEditorCoordinate(ivec2 xy_win)
 {
-    ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToInternalCoordinate(xy_win);
+    ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(xy_win);
     MesaGUI::BeginZone(MesaGUI::UIRect(codeEditorTabLayout));
     ivec2 xy_in_zone;
     MesaGUI::GetXYInZone(&xy_in_zone.x, &xy_in_zone.y);
@@ -224,7 +224,8 @@ void EditorSDLProcessEvent(const SDL_Event event)
                 if (MesaGUI::IsActive(g_CodeEditorUIID))
                 {
                     ivec2 point_windowcoords = ivec2(event.button.x, event.button.y);
-                    ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToInternalCoordinate(point_windowcoords);
+                    ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(
+                            point_windowcoords);
                     if (IsPointInLayoutRect(xy_internal, codeEditorTabLayout))
                     {
                         ivec2 xy_codeeditorgui = WindowCoordinateToCodeEditorCoordinate(point_windowcoords);
@@ -251,7 +252,8 @@ void EditorSDLProcessEvent(const SDL_Event event)
             if (MesaGUI::IsActive(g_CodeEditorUIID) && leftMouseDown)
             {
                 ivec2 point_windowcoords = ivec2(event.button.x, event.button.y);
-                ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToInternalCoordinate(point_windowcoords);
+                ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(
+                        point_windowcoords);
                 if (IsPointInLayoutRect(xy_internal, codeEditorTabLayout))
                 {
                     ivec2 xy_codeeditorgui = WindowCoordinateToCodeEditorCoordinate(point_windowcoords);
