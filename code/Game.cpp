@@ -25,6 +25,7 @@ void TemporaryGameLoop()
     PipLangVM_RunGameFunction("tick");
 //    PipLangVM_RunGameFunction("posttick");
 //    PipLangVM_RunGameFunction("draw");
+    ReadBackGfxValues();
 }
 
 void TemporaryGameShutdown()

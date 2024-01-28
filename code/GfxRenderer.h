@@ -12,12 +12,10 @@ namespace Gfx
         Gfx::TextureHandle sprite;
         vec2 position;
     };
-
     void QueueSpriteForRender(i64 spriteId, vec2 position);
-
     void SetGameLayerClearColor(vec4 color);
-
     void Primitive_DrawRect(float x, float y, float w, float h, vec4 color);
+    extern ivec2 gameCamera0Position;
 
     enum class PixelPerfectRenderScale
     {
@@ -42,6 +40,7 @@ namespace Gfx
         void GetBackBufferSize(i32 *widthOutput, i32 *heightOutput) const;
 
     public:
+        ivec2 TransformWindowCoordinateToGameWorldSpace(ivec2 winCoord) const;
         ivec2 TransformWindowCoordinateToEditorGUICoordinateSpace(ivec2 winCoord) const;
 
     private:
