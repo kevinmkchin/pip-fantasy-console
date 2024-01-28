@@ -7,4 +7,5 @@
 
 void InitializePipAPI();
 void UpdatePipAPI();
+void ReadBackGfxValues();
 void TeardownPipAPI();

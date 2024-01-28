@@ -37,11 +37,14 @@ mut px = 100
 mut py = 100
 
 fn tick()
-{  
+{
   if (ctrl.w) py = py - 1
   if (ctrl.a) px = px - 1
   if (ctrl.s) py = py + 1
   if (ctrl.d) px = px + 1
+
+  gfx.camx = (ctrl.mouseworldx - px) / 2 + px
+  gfx.camy = (ctrl.mouseworldy - py) / 2 + py
 
   gfx.clear({ "r":100, "g":149, "b":237 })
   
@@ -53,7 +56,7 @@ fn tick()
   gfx.drawrect({"x": px, "y": py, "w": 20, "h": 20 }, 
                {"r":255, "g":255, "b":255 })
 
-  gfx.drawrect({"x": ctrl.mousex-5, "y": ctrl.mousey-5, "w": 10, "h": 10},
+  gfx.drawrect({"x": ctrl.mouseworldx-5, "y": ctrl.mouseworldy-5, "w": 10, "h": 10},
                {"r":255, "g":255, "b":255 }) 
 
 }

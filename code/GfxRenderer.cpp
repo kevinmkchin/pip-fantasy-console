@@ -104,9 +104,10 @@ namespace Gfx
 
     static Mesh __final_render_output_quad;
 
-    static std::vector<RenderQueueData> gameLayer_RenderQueue;
-    static bool gameLayer_ClearFlag = false;
-    static vec4 gameLayer_ClearColor = vec4();
+    static std::vector<RenderQueueData> gameRenderQueue;
+    ivec2 gameCamera0Position = ivec2();
+    static bool gameClearFlag = false;
+    static vec4 gameClearColor = vec4();
     static std::vector<float> gameLayer_PrimitiveVB;
 
     void QueueSpriteForRender(i64 spriteId, vec2 position)
@@ -114,13 +115,13 @@ namespace Gfx
         RenderQueueData dat;
         dat.sprite = gamedata.sprites.at(spriteId);
         dat.position = position;
-        gameLayer_RenderQueue.push_back(dat);
+        gameRenderQueue.push_back(dat);
     }
 
     void SetGameLayerClearColor(vec4 color)
     {
-        gameLayer_ClearFlag = true;
-        gameLayer_ClearColor = color / 255.f;
+        gameClearFlag = true;
+        gameClearColor = color / 255.f;
     }
 
     void Primitive_DrawRect(float x, float y, float w, float h, vec4 color)
@@ -336,11 +337,11 @@ namespace Gfx
     {
         glBindFramebuffer(GL_FRAMEBUFFER, renderTargetGame.FBO);
         glViewport(0, 0, renderTargetGame.width, renderTargetGame.height);
-        if (gameLayer_ClearFlag)
+        if (gameClearFlag)
         {
-            gameLayer_ClearFlag = false;
-            glClearColor(gameLayer_ClearColor.x, gameLayer_ClearColor.y,
-                         gameLayer_ClearColor.z, gameLayer_ClearColor.w);
+            gameClearFlag = false;
+            glClearColor(gameClearColor.x, gameClearColor.y,
+                         gameClearColor.z, gameClearColor.w);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             //RGBHEXTO1(0x6495ed), 1.f);//(RGB255TO1(211, 203, 190), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
         }
@@ -351,10 +352,12 @@ namespace Gfx
         UseShader(spriteShader);
 
         static mat3 projectionMatrix = ProjectionMatrixOrthographic2D(0.f, float(renderTargetGame.width), float(renderTargetGame.height), 0.f);
-        static mat3 identityMatrix = mat3();
+        static mat3 viewMatrix = mat3();
+        viewMatrix[2][0] = (float)-gameCamera0Position.x;
+        viewMatrix[2][1] = (float)-gameCamera0Position.y;
 
         GLBindMatrix3fv(spriteShader, "projection", 1, projectionMatrix.ptr());
-        GLBindMatrix3fv(spriteShader, "view", 1, identityMatrix.ptr());
+        GLBindMatrix3fv(spriteShader, "view", 1, viewMatrix.ptr());
 
         static TextureHandle mushroom = CreateGPUTextureFromDisk(data_path("mushroom.png").c_str());
 
@@ -387,9 +390,9 @@ namespace Gfx
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * 6, nullptr, GL_DYNAMIC_DRAW);
         }
 
-        mat3 modelMatrix = identityMatrix;
+        mat3 modelMatrix = mat3();
 
-        for (RenderQueueData renderData: gameLayer_RenderQueue)
+        for (RenderQueueData renderData: gameRenderQueue)
         {
             float sprw = (float) renderData.sprite.width;
             float sprh = (float) renderData.sprite.height;
@@ -449,8 +452,8 @@ namespace Gfx
         // PRIMITIVE STUFF
         UseShader(primitiveShader);
         GLBindMatrix3fv(primitiveShader, "projection", 1, projectionMatrix.ptr());
-        GLBindMatrix3fv(primitiveShader, "view", 1, identityMatrix.ptr());
-        modelMatrix = identityMatrix;
+        GLBindMatrix3fv(primitiveShader, "view", 1, viewMatrix.ptr());
+        modelMatrix = mat3();
         GLBindMatrix3fv(primitiveShader, "model", 1, modelMatrix.ptr());
 
         static u32 prmVAO = 0;
@@ -476,8 +479,8 @@ namespace Gfx
         glDrawArrays(GL_TRIANGLES, 0, prmvbsz / 6);
 
         // RESET GAME FRAME RENDER DATA
-        gameLayer_RenderQueue.clear();
-        gameLayer_ClearColor = vec4(0.f, 0.f, 0.f, 0.f);
+        gameRenderQueue.clear();
+        gameClearColor = vec4(0.f, 0.f, 0.f, 0.f);
         gameLayer_PrimitiveVB.clear();
     }
 
@@ -650,6 +653,21 @@ namespace Gfx
         if (winCoord.x >= backBufferWidth || winCoord.y >= backBufferHeight)
             return {-1, -1};
         return {winCoord.x / (int)editorIntegerScale, winCoord.y / (int)editorIntegerScale};
+    }
+
+    ivec2 CoreRenderer::TransformWindowCoordinateToGameWorldSpace(ivec2 winCoord) const
+    {
+        int vx, vy, vw, vh;
+        GetViewportValuesForFixedGameResolution(&vx, &vy, &vw, &vh);
+        int vyTopRelative = backBufferHeight - vy - vh;
+        int mouseXRelativeToGameViewport_InWindowSpace = winCoord.x - vx;
+        int mouseYRelativeToGameViewport_InWindowSpace = winCoord.y - vyTopRelative;
+        double gameViewportScale = (double) renderTargetGame.height / (double)vh;
+        int mouseXUntranslated_InWorldSpace = int((double)mouseXRelativeToGameViewport_InWindowSpace * gameViewportScale);
+        int mouseYUntranslated_InWorldSpace = int((double)mouseYRelativeToGameViewport_InWindowSpace * gameViewportScale);
+        int mouseX_InWorldSpace = mouseXUntranslated_InWorldSpace + gameCamera0Position.x;
+        int mouseY_InWorldSpace = mouseYUntranslated_InWorldSpace + gameCamera0Position.y;
+        return { mouseX_InWorldSpace, mouseY_InWorldSpace };
     }
 }
 

@@ -1483,6 +1483,8 @@ namespace MesaGUI
                 Gfx::CoreRenderer *renderer = Gfx::GetCoreRenderer();
                 i32 winW, winH = 0;
                 renderer->GetBackBufferSize(&winW, &winH);
+                // TODO(Kevin): For game GUI where window aspect ratio does not match game aspect ratio, must
+                //              map from window mouse pos to gui canvas mouse pos
                 mousePosX = int(float(event.motion.x) * (float(renderer->renderTargetGUI.width) / float(winW)));
                 mousePosY = int(float(event.motion.y) * (float(renderer->renderTargetGUI.height) / float(winH)));
             }break;

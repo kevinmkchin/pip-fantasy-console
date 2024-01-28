@@ -147,8 +147,10 @@ void InitializePipAPI()
     HashMapSet(&PipAPI_input, CopyString("a", 1, true), BOOL_VAL(false), NULL);
     HashMapSet(&PipAPI_input, CopyString("s", 1, true), BOOL_VAL(false), NULL);
     HashMapSet(&PipAPI_input, CopyString("d", 1, true), BOOL_VAL(false), NULL);
-    HashMapSet(&PipAPI_input, CopyString("mousex", 6, true), NUMBER_VAL(0), NULL);
-    HashMapSet(&PipAPI_input, CopyString("mousey", 6, true), NUMBER_VAL(0), NULL);
+    HashMapSet(&PipAPI_input, CopyString("mousewindowx", 12, true), NUMBER_VAL(0), NULL);
+    HashMapSet(&PipAPI_input, CopyString("mousewindowy", 12, true), NUMBER_VAL(0), NULL);
+    HashMapSet(&PipAPI_input, CopyString("mouseworldx", 11, true), NUMBER_VAL(0), NULL);
+    HashMapSet(&PipAPI_input, CopyString("mouseworldy", 11, true), NUMBER_VAL(0), NULL);
 
     PipAPI_gfx = HashMap();
     AllocateHashMap(&PipAPI_gfx);
@@ -158,6 +160,8 @@ void InitializePipAPI()
     PipLangVM_DefineNativeFn(&PipAPI_gfx, "clear", GfxClearColor);
     PipLangVM_DefineNativeFn(&PipAPI_gfx, "sprite", GfxRequestSpriteDraw);
     PipLangVM_DefineNativeFn(&PipAPI_gfx, "drawrect", GfxDrawRect);
+    HashMapSet(&PipAPI_gfx, CopyString("camx", 4, true), NUMBER_VAL(0), NULL);
+    HashMapSet(&PipAPI_gfx, CopyString("camy", 4, true), NUMBER_VAL(0), NULL);
 
     PipAPI_math = HashMap();
     AllocateHashMap(&PipAPI_math);
@@ -180,8 +184,28 @@ void UpdatePipAPI()
     HashMapSet(&PipAPI_input, CopyString("a", 1, true), BOOL_VAL(Input.KeyPressed(SDL_SCANCODE_A)), NULL);
     HashMapSet(&PipAPI_input, CopyString("s", 1, true), BOOL_VAL(Input.KeyPressed(SDL_SCANCODE_S)), NULL);
     HashMapSet(&PipAPI_input, CopyString("d", 1, true), BOOL_VAL(Input.KeyPressed(SDL_SCANCODE_D)), NULL);
-    HashMapSet(&PipAPI_input, CopyString("mousex", 6, true), NUMBER_VAL(Input.mousePos.x), NULL);
-    HashMapSet(&PipAPI_input, CopyString("mousey", 6, true), NUMBER_VAL(Input.mousePos.y), NULL);
+    ivec2 mouseWindowPos = Input.mousePos;
+    ivec2 mouseGameWorldPos = Gfx::GetCoreRenderer()->TransformWindowCoordinateToGameWorldSpace(mouseWindowPos);
+    HashMapSet(&PipAPI_input, CopyString("mousewindowx", 12, true), NUMBER_VAL(mouseWindowPos.x), NULL);
+    HashMapSet(&PipAPI_input, CopyString("mousewindowy", 12, true), NUMBER_VAL(mouseWindowPos.y), NULL);
+    HashMapSet(&PipAPI_input, CopyString("mouseworldx", 11, true), NUMBER_VAL(mouseGameWorldPos.x), NULL);
+    HashMapSet(&PipAPI_input, CopyString("mouseworldy", 11, true), NUMBER_VAL(mouseGameWorldPos.y), NULL);
+
+    HashMapSet(&PipAPI_gfx, CopyString("camy", 4, true), NUMBER_VAL(Gfx::gameCamera0Position.x), NULL);
+    HashMapSet(&PipAPI_gfx, CopyString("camy", 4, true), NUMBER_VAL(Gfx::gameCamera0Position.y), NULL);
+}
+
+void ReadBackGfxValues()
+{
+    TValue value;
+    HashMapGet(&PipAPI_gfx, CopyString("camx", 4, true), &value);
+    if (!IS_NUMBER(value))
+        PipLangVM_NativeRuntimeError("gfx.camx is not set to a number");
+    Gfx::gameCamera0Position.x = (int)AS_NUMBER(value);
+    HashMapGet(&PipAPI_gfx, CopyString("camy", 4, true), &value);
+    if (!IS_NUMBER(value))
+        PipLangVM_NativeRuntimeError("gfx.camy is not set to a number");
+    Gfx::gameCamera0Position.y = (int)AS_NUMBER(value);
 }
 
 void TeardownPipAPI()
