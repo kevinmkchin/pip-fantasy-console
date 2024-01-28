@@ -1507,19 +1507,19 @@ namespace MesaGUI
 
         i32 kevGuiScreenWidth = Gfx::GetCoreRenderer()->renderTargetGUI.width;
         i32 kevGuiScreenHeight = Gfx::GetCoreRenderer()->renderTargetGUI.height;
-        mat4 matrixOrtho = ProjectionMatrixOrthographic2D(0.f, (float)kevGuiScreenWidth, (float)kevGuiScreenHeight, 0.f);
+        mat4 projectionMatrix = ProjectionMatrixOrthographicNoZ(0.f, (float)kevGuiScreenWidth, (float)kevGuiScreenHeight, 0.f);
 
         Gfx::UseShader(__main_ui_shader);
-        Gfx::GLBindMatrix4fv(__main_ui_shader, "matrixOrtho", 1, matrixOrtho.ptr());
+        Gfx::GLBindMatrix4fv(__main_ui_shader, "matrixOrtho", 1, projectionMatrix.ptr());
 
         Gfx::UseShader(__rounded_corner_rect_shader);
-        Gfx::GLBindMatrix4fv(__rounded_corner_rect_shader, "matrixOrtho", 1, matrixOrtho.ptr());
+        Gfx::GLBindMatrix4fv(__rounded_corner_rect_shader, "matrixOrtho", 1, projectionMatrix.ptr());
 
         Gfx::UseShader(__text_shader);
-        Gfx::GLBindMatrix4fv(__text_shader, "matrixOrtho", 1, matrixOrtho.ptr());
+        Gfx::GLBindMatrix4fv(__text_shader, "matrixOrtho", 1, projectionMatrix.ptr());
 
         Gfx::UseShader(__colored_text_shader);
-        Gfx::GLBindMatrix4fv(__colored_text_shader, "matrixOrtho", 1, matrixOrtho.ptr());
+        Gfx::GLBindMatrix4fv(__colored_text_shader, "matrixOrtho", 1, projectionMatrix.ptr());
 
         for (int i = 0; i < drawQueue.size(); ++i)
         {
