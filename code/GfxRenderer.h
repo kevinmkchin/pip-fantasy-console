@@ -32,57 +32,46 @@ namespace Gfx
     public:
         bool Init();
 
-        void Render();
+        void RenderEditor();
+        void RenderGame();
 
         //BasicFrameBuffer RenderTheFuckingWorldEditor(SpaceAsset *worldToView, EditorState *state, EditorWorldViewInfo worldViewInfo);
 
-        void UpdateBackBufferAndGameSize();
-        void GetBackBufferSize(i32 *widthOutput, i32 *heightOutput);
-        void GetInternalRenderSize(i32 *widthOutput, i32 *heightOutput);
+        void WindowSizeChanged();
+        void ChangeEditorIntegerScaleAndInvokeWindowSizeChanged(PixelPerfectRenderScale scale);
+        void GetBackBufferSize(i32 *widthOutput, i32 *heightOutput) const;
 
     public:
-        ivec2 TransformWindowCoordinateToInternalCoordinate(ivec2 winCoord);
+        ivec2 TransformWindowCoordinateToEditorGUICoordinateSpace(ivec2 winCoord) const;
 
     private:
-
         void RenderGameLayer();
-
         void RenderGUILayer();
 
-        // void RenderDebugUILayer();
-
         void FinalRenderToBackBuffer();
+        void ConfigureViewportForFinalRender() const;
+        void GetViewportValuesForFixedGameResolution(int *viewportX, int *viewportY, int *viewportW, int *viewportH) const;
 
     private:
-
         void CreateFrameBuffers();
-
-        void UpdateFrameBuffersSize();
-
-        void UpdateScreenSizeQuad();
-
         void CreateMiscellaneous();
-
-    public:
-        PixelPerfectRenderScale screenScaling = PixelPerfectRenderScale::OneHundredPercent;
 
     private:
         // actual window size
         i32 windowDrawableWidth = -1;
         i32 windowDrawableHeight = -1;
-
         // window size minus whatever epsilon to make render pixel perfect
         i32 backBufferWidth = -1;
         i32 backBufferHeight = -1;
+        // integer scale to use in editor for nice drawing without distortions
+        PixelPerfectRenderScale editorIntegerScale = PixelPerfectRenderScale::OneHundredPercent;
 
-        // backbuffer size divided by screen/render scaling
-        i32 internalGameResolutionW = 800;
-        i32 internalGameResolutionH = 600;
+    private:
+        void UpdateBackBufferAndGUILayerSizeToMatchWindowSizeIntegerScaled();
 
     public:
-        BasicFrameBuffer gameLayer;
-        BasicFrameBuffer guiLayer;
-        //BasicFrameBuffer debugUILayer;
+        BasicFrameBuffer renderTargetGame;
+        BasicFrameBuffer renderTargetGUI;
 
         BasicFrameBuffer worldEditorView;
 
@@ -90,12 +79,9 @@ namespace Gfx
         Shader finalPassShader;
         Shader spriteShader;
         Shader primitiveShader;
-
-    private:
-        Mesh screenSizeQuad;
-
     };
 
+    // todo remove probably make an extern variable
     CoreRenderer* GetCoreRenderer();
 
 }

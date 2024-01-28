@@ -101,7 +101,7 @@ static void ProcessSDLEvents()
                     case SDL_WINDOWEVENT_SIZE_CHANGED:
                     case SDL_WINDOWEVENT_RESIZED:
                     {
-                        g_gfx.UpdateBackBufferAndGameSize();
+                        g_gfx.WindowSizeChanged();
                         break;
                     }
                 }
@@ -124,25 +124,17 @@ static void ProcessSDLEvents()
                 }
 
                 if (event.key.keysym.sym == SDLK_F5)
-                {
-                    g_gfx.screenScaling = Gfx::PixelPerfectRenderScale::OneHundredPercent;
-                    g_gfx.UpdateBackBufferAndGameSize();
-                }
+                    g_gfx.ChangeEditorIntegerScaleAndInvokeWindowSizeChanged(
+                            Gfx::PixelPerfectRenderScale::OneHundredPercent);
                 if (event.key.keysym.sym == SDLK_F6)
-                {
-                    g_gfx.screenScaling = Gfx::PixelPerfectRenderScale::TwoHundredPercent;
-                    g_gfx.UpdateBackBufferAndGameSize();
-                }
+                    g_gfx.ChangeEditorIntegerScaleAndInvokeWindowSizeChanged(
+                            Gfx::PixelPerfectRenderScale::TwoHundredPercent);
                 if (event.key.keysym.sym == SDLK_F7)
-                {
-                    g_gfx.screenScaling = Gfx::PixelPerfectRenderScale::ThreeHundredPercent;
-                    g_gfx.UpdateBackBufferAndGameSize();
-                }
+                    g_gfx.ChangeEditorIntegerScaleAndInvokeWindowSizeChanged(
+                            Gfx::PixelPerfectRenderScale::ThreeHundredPercent);
                 if (event.key.keysym.sym == SDLK_F8)
-                {
-                    g_gfx.screenScaling = Gfx::PixelPerfectRenderScale::FourHundredPercent;
-                    g_gfx.UpdateBackBufferAndGameSize();
-                }
+                    g_gfx.ChangeEditorIntegerScaleAndInvokeWindowSizeChanged(
+                            Gfx::PixelPerfectRenderScale::FourHundredPercent);
 
                 if ((CurrentProgramMode() == MesaProgramMode::Editor || CurrentProgramMode() == MesaProgramMode::Game) && event.key.keysym.sym == SDLK_BACKQUOTE)
                 {
@@ -182,9 +174,8 @@ void StartEditor()
     int winw = SDL_WINDOW_STARTING_SIZE_W;
     int winh = SDL_WINDOW_STARTING_SIZE_H;
     int s = 3;
-    g_gfx.screenScaling = (Gfx::PixelPerfectRenderScale)s;
     SDL_SetWindowSize(g_SDLWindow, winw, winh);
-    g_gfx.UpdateBackBufferAndGameSize();
+    g_gfx.ChangeEditorIntegerScaleAndInvokeWindowSizeChanged((Gfx::PixelPerfectRenderScale)s);
 }
 
 //static void StartGameFile()
@@ -198,10 +189,10 @@ void StartGameSpace()
     // get game w game h game s from game file
     int w = 320;
     int h = 180;
-    int s = 4;
-    g_gfx.screenScaling = (Gfx::PixelPerfectRenderScale)s;
-    SDL_SetWindowSize(g_SDLWindow, w*(int)g_gfx.screenScaling, h*(int)g_gfx.screenScaling);
-    g_gfx.UpdateBackBufferAndGameSize();
+    SDL_SetWindowSize(g_SDLWindow, 1280, 720);
+    g_gfx.WindowSizeChanged();
+    Gfx::UpdateBasicFrameBufferSize(&g_gfx.renderTargetGame, 320, 180);
+    Gfx::UpdateBasicFrameBufferSize(&g_gfx.renderTargetGUI, 320, 180);
 
     if (!TemporaryGameInit())
     {
@@ -215,10 +206,9 @@ static void LoadFantasyConsole()
     g_ProgramMode = MesaProgramMode::Editor;//MesaProgramMode::BootScreen;
     std::string welcome = std::string("type 'help'\n");
     SendMessageToConsole(welcome.c_str(), welcome.size());
-
-    g_gfx.screenScaling = (Gfx::PixelPerfectRenderScale)3; // TODO (Kevin): read from .ini
+    // TODO (Kevin): read settings from .ini
     SDL_SetWindowSize(g_SDLWindow, SDL_WINDOW_STARTING_SIZE_W, SDL_WINDOW_STARTING_SIZE_H);
-    g_gfx.UpdateBackBufferAndGameSize();
+    g_gfx.ChangeEditorIntegerScaleAndInvokeWindowSizeChanged((Gfx::PixelPerfectRenderScale)3);
 }
 
 int main(int argc, char* argv[])
@@ -247,27 +237,41 @@ int main(int argc, char* argv[])
                 break;
         }
 
-         static float lastFPSShowTime = Time.time;
-         static float framerate = 0.f;
-         if (Time.time - lastFPSShowTime > 0.25f)
-         {
-             framerate = (1.f / Time.deltaTime);
-             lastFPSShowTime = Time.time;
-         }
-         MesaGUI::PrimitiveTextFmt(0, 9, 9, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
+        static float lastFPSShowTime = Time.time;
+        static float framerate = 0.f;
+        if (Time.time - lastFPSShowTime > 0.25f)
+        {
+            framerate = (1.f / Time.deltaTime);
+            lastFPSShowTime = Time.time;
+        }
+        MesaGUI::PrimitiveTextFmt(0, 9, 9, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
 
         if (consoleActive)
             DoSingleCommandLine();
 
-        // DrawProfilerGUI();
-        g_gfx.Render();
-        SDL_GL_SwapWindow(g_SDLWindow);
-#if MESA_WINDOWS
-        if (SDL_GL_GetSwapInterval() == 1) 
+        // RENDER
         {
-            DwmFlush(); // https://github.com/love2d/love/blob/5175b0d1b599ea4c7b929f6b4282dd379fa116b8/src/modules/window/sdl/Window.cpp#L1024
-        }
+            switch (g_ProgramMode)
+            {
+                case MesaProgramMode::BootScreen:
+                    g_gfx.RenderEditor();
+                    break;
+                case MesaProgramMode::Editor:
+                    g_gfx.RenderEditor();
+                    break;
+                case MesaProgramMode::Game:
+                    g_gfx.RenderGame();
+                    break;
+            }
+            SDL_GL_SwapWindow(g_SDLWindow);
+#if MESA_WINDOWS
+            if (SDL_GL_GetSwapInterval() == 1)
+            {
+                DwmFlush(); // https://github.com/love2d/love/blob/5175b0d1b599ea4c7b929f6b4282dd379fa116b8/src/modules/window/sdl/Window.cpp#L1024
+            }
 #endif
+        }
+
         Input.ResetInputStatesAtEndOfFrame();
     }
 
