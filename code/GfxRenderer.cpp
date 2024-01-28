@@ -339,8 +339,8 @@ namespace Gfx
         if (gameLayer_ClearFlag)
         {
             gameLayer_ClearFlag = false;
-            glClearColor(gameLayer_ClearColor.x, gameLayer_ClearColor.y, gameLayer_ClearColor.z,
-                         gameLayer_ClearColor.w);
+            glClearColor(gameLayer_ClearColor.x, gameLayer_ClearColor.y,
+                         gameLayer_ClearColor.z, gameLayer_ClearColor.w);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             //RGBHEXTO1(0x6495ed), 1.f);//(RGB255TO1(211, 203, 190), 1.f);//(0.674f, 0.847f, 1.0f, 1.f); //RGB255TO1(46, 88, 120)
         }
@@ -350,11 +350,10 @@ namespace Gfx
 
         UseShader(spriteShader);
 
-        static mat3 orthographicMatrix = mat3(ProjectionMatrixOrthographic2D(0.f, float(renderTargetGame.width), 0.f,
-                                                                             float(renderTargetGame.height)));
+        static mat3 projectionMatrix = ProjectionMatrixOrthographic2D(0.f, float(renderTargetGame.width), float(renderTargetGame.height), 0.f);
         static mat3 identityMatrix = mat3();
 
-        GLBindMatrix3fv(spriteShader, "projection", 1, orthographicMatrix.ptr());
+        GLBindMatrix3fv(spriteShader, "projection", 1, projectionMatrix.ptr());
         GLBindMatrix3fv(spriteShader, "view", 1, identityMatrix.ptr());
 
         static TextureHandle mushroom = CreateGPUTextureFromDisk(data_path("mushroom.png").c_str());
@@ -449,7 +448,7 @@ namespace Gfx
 
         // PRIMITIVE STUFF
         UseShader(primitiveShader);
-        GLBindMatrix3fv(primitiveShader, "projection", 1, orthographicMatrix.ptr());
+        GLBindMatrix3fv(primitiveShader, "projection", 1, projectionMatrix.ptr());
         GLBindMatrix3fv(primitiveShader, "view", 1, identityMatrix.ptr());
         modelMatrix = identityMatrix;
         GLBindMatrix3fv(primitiveShader, "model", 1, modelMatrix.ptr());

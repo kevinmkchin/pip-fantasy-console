@@ -33,22 +33,22 @@ fn iscolliding(rect1, rect2)
   return (colliding)
 }
 
-mut px = -10
-mut py = -10
+mut px = 100
+mut py = 100
 
 fn tick()
 {  
-  if (ctrl.w) py = py + 1
+  if (ctrl.w) py = py - 1
   if (ctrl.a) px = px - 1
-  if (ctrl.s) py = py - 1
+  if (ctrl.s) py = py + 1
   if (ctrl.d) px = px + 1
 
   gfx.clear({ "r":100, "g":149, "b":237 })
   
-  for (mut i = -10, i < 10, i = i + 1)
-    for (mut j = -10, j < 10, j = j + 1)
+  for (mut i = 0, i < 20, i = i + 1)
+    for (mut j = 0, j < 20, j = j + 1)
       gfx.drawrect({"x": i*10, "y": j*10, "w":10, "h":10}, 
-                   {"r": (i+10)*10, "g": (j+10)*10, "b":0})
+                   {"r": i*10, "g": j*10, "b":0})
 
   gfx.drawrect({"x": px, "y": py, "w": 20, "h": 20 }, 
                {"r":255, "g":255, "b":255 })
