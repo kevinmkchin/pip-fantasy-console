@@ -392,7 +392,7 @@ namespace Gfx
 
         mat3 modelMatrix = mat3();
 
-        for (RenderQueueData renderData: gameRenderQueue)
+        for (RenderQueueData renderData : gameRenderQueue)
         {
             float sprw = (float) renderData.sprite.width;
             float sprh = (float) renderData.sprite.height;
@@ -410,12 +410,12 @@ namespace Gfx
             vb[7] = 1;
 
             vb[8] = 0;
-            vb[9] = -sprh;
+            vb[9] = sprh;
             vb[10] = 0;
             vb[11] = 0;
 
             vb[12] = sprw;
-            vb[13] = -sprh;
+            vb[13] = sprh;
             vb[14] = 1;
             vb[15] = 0;
 

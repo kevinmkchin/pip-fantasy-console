@@ -14,6 +14,7 @@ bool TemporaryGameInit()
     {
         return false;
     }
+    ReadBackGfxValues();
 
     return true;
 }

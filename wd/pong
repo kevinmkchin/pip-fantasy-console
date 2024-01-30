@@ -59,14 +59,14 @@ fn calculateballdirection(collidedplayer)
 fn moveplayers()
 {
   if (ctrl.up)
-    player2.y = player2.y + paddlespeed
-  if (ctrl.down)
     player2.y = player2.y - paddlespeed
+  if (ctrl.down)
+    player2.y = player2.y + paddlespeed
 
   if (ctrl.w)
-    player1.y = player1.y + paddlespeed
-  if (ctrl.s)
     player1.y = player1.y - paddlespeed
+  if (ctrl.s)
+    player1.y = player1.y + paddlespeed
 }
 
 fn moveball()
@@ -74,9 +74,9 @@ fn moveball()
   ball.x = ball.x + ball.xvel * time.dt
   ball.y = ball.y + ball.yvel * time.dt
 
-  if (ball.y > 90)
+  if (ball.y > 120)
     ball.yvel = -ball.yvel
-  if (ball.y < -90)
+  if (ball.y < -120)
     ball.yvel = -ball.yvel
 
   if (ball.x > 140)
@@ -107,6 +107,9 @@ fn moveball()
   if (ball.xvel > 0 and iscolliding(ball, player2))
     calculateballdirection(player2)
 }
+
+gfx.camx = -160
+gfx.camy = -120
 
 fn tick()
 {
