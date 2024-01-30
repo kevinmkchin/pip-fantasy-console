@@ -81,27 +81,33 @@ static TValue GfxRequestSpriteDraw(int argc, TValue *argv)
 
 static TValue GfxClearColor(int argc, TValue *argv)
 {
-    PIPVM_THROW_RUNTIME_ERROR(argc != 1, "expect 1 color arg");
-    PIPVM_THROW_RUNTIME_ERROR(!RCOBJ_IS_MAP(argv[0]), "expect color as arg");
-    HashMap *color = RCOBJ_AS_MAP(argv[0]);
-    TValue v;
-    PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(color, CopyString("r", 1, true), &v), "color does not have r entry");
-    PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.r is not a number");
-    float r = (float)AS_NUMBER(v);
-    PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(color, CopyString("g", 1, true), &v), "color does not have g entry");
-    PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.g is not a number");
-    float g = (float)AS_NUMBER(v);
-    PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(color, CopyString("b", 1, true), &v), "color does not have b entry");
-    PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.b is not a number");
-    float b = (float)AS_NUMBER(v);
-    float a = 255.f;
-    if (HashMapGet(color, CopyString("a", 1, true), &v))
+    vec4 clearColor = vec4(0.f,0.f,0.f,1.f);
+
+    PIPVM_THROW_RUNTIME_ERROR(argc > 1, "expect only 1 color arg");
+    if (argc == 1)
     {
-        PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.a is not a number");
-        a = (float)AS_NUMBER(v);
+        PIPVM_THROW_RUNTIME_ERROR(!RCOBJ_IS_MAP(argv[0]), "expect color as arg");
+        HashMap *color = RCOBJ_AS_MAP(argv[0]);
+        TValue v;
+        PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(color, CopyString("r", 1, true), &v), "color does not have r entry");
+        PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.r is not a number");
+        float r = (float)AS_NUMBER(v);
+        PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(color, CopyString("g", 1, true), &v), "color does not have g entry");
+        PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.g is not a number");
+        float g = (float)AS_NUMBER(v);
+        PIPVM_THROW_RUNTIME_ERROR(!HashMapGet(color, CopyString("b", 1, true), &v), "color does not have b entry");
+        PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.b is not a number");
+        float b = (float)AS_NUMBER(v);
+        float a = 255.f;
+        if (HashMapGet(color, CopyString("a", 1, true), &v))
+        {
+            PIPVM_THROW_RUNTIME_ERROR(!IS_NUMBER(v), "color.a is not a number");
+            a = (float)AS_NUMBER(v);
+        }
+        clearColor = vec4(r, g, b, a);
     }
 
-    Gfx::SetGameLayerClearColor(vec4(r, g, b, a));
+    Gfx::SetGameLayerClearColor(clearColor);
     return BOOL_VAL(true);
 }
 

@@ -189,10 +189,10 @@ void StartGameSpace()
     // get game w game h game s from game file
     int w = 320;
     int h = 180;
-    SDL_SetWindowSize(g_SDLWindow, 1280, 720);
+    SDL_SetWindowSize(g_SDLWindow, 800, 600);
     g_gfx.WindowSizeChanged();
-    Gfx::UpdateBasicFrameBufferSize(&g_gfx.renderTargetGame, 320, 180);
-    Gfx::UpdateBasicFrameBufferSize(&g_gfx.renderTargetGUI, 320, 180);
+    Gfx::UpdateBasicFrameBufferSize(&g_gfx.renderTargetGame, 320, 240);
+    Gfx::UpdateBasicFrameBufferSize(&g_gfx.renderTargetGUI, 320, 240);
 
     if (!TemporaryGameInit())
     {

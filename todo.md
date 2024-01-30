@@ -14,10 +14,6 @@ Hotline Miami x Nuclear Throne kind of game
 
 # Immediate next
 
-- camera api (but intimiately integrated with native e.g. I can access camera world position. rotation might be goofy and fun. what about zoom? camera shake?)
-- ctrl.mousexy world pos etc. and do hotline miami / nuclear throne style camera
-
-
 - math.lerp (different variations too) // exponential fall off of the speed
 - pl: Arrays
 - pl: % BinOp
