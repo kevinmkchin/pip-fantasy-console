@@ -27,6 +27,10 @@ MesaGUI::ALH *mainbarLayout = NULL;
 
 MesaGUI::ALH *codeEditorTabLayout = NULL;
 MesaGUI::ALH *alh_sprite_editor = NULL;
+MesaGUI::ALH *alh_sprite_editor_left_panel = NULL;
+MesaGUI::ALH *alh_sprite_editor_right_panel = NULL;
+MesaGUI::ALH *alh_sprite_editor_right_panel_top = NULL;
+MesaGUI::ALH *alh_sprite_editor_right_panel_bot = NULL;
 
 static CodeEditorString tempCodeEditorStringA;
 
@@ -182,9 +186,18 @@ void InitEditorGUI()
     mainbarLayout = MesaGUI::NewALH(-1, -1, -1, s_ToolBarHeight, false);
     codeEditorTabLayout = MesaGUI::NewALH(false);
     alh_sprite_editor = MesaGUI::NewALH(false);
+    alh_sprite_editor_left_panel = MesaGUI::NewALH(-1, -1, 140, -1, false);
+    alh_sprite_editor_right_panel = MesaGUI::NewALH(true);
+    alh_sprite_editor_right_panel_top = MesaGUI::NewALH(false);
+    alh_sprite_editor_right_panel_bot = MesaGUI::NewALH(-1, -1, -1, 100, false);
 
     editorLayout->Insert(mainbarLayout);
     editorLayout->Insert(codeEditorTabLayout);
+
+    alh_sprite_editor->Insert(alh_sprite_editor_left_panel);
+    alh_sprite_editor->Insert(alh_sprite_editor_right_panel);
+    alh_sprite_editor_right_panel->Insert(alh_sprite_editor_right_panel_top);
+    alh_sprite_editor_right_panel->Insert(alh_sprite_editor_right_panel_bot);
 
     tempCodeEditorStringA = GiveMeNewCodeEditorString();
     SetupCodeEditorString(&tempCodeEditorStringA, gamedata.codePage1.c_str(), (u32)gamedata.codePage1.size());
