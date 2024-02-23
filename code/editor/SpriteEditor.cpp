@@ -52,8 +52,54 @@ std::string OpenLoadImageDialog()
     return imagepath;
 }
 
+#include "../GfxRenderer.h"
+#include "../Input.h"
+
+
+//       row  byte in row
+u8 bitmap[32][32*4];
+
 void DoSpriteEditorGUI()
 {
+    // https://stackoverflow.com/questions/9863969/updating-a-texture-in-opengl-with-glteximage2d
+    static bool test = true;
+    static Gfx::TextureHandle bt;
+    if (test)
+    {
+        test = false;
+
+        for (int i = 0; i < 32; ++i)
+        {
+            for (int j = 0; j < 32; ++j)
+            {
+                bitmap[i][j * 4 + 0] = u8((float)i / 32.f * 255);
+                bitmap[i][j * 4 + 1] = u8((float)j / 32.f * 255);
+                bitmap[i][j * 4 + 2] = 0xff;
+                bitmap[i][j * 4 + 3] = 0xff;
+                //vec4((float)i / 32.f, (float)j / 32.f, 0.f, 1.f);
+            }
+        }
+
+        bt = Gfx::CreateGPUTextureFromBitmap((unsigned char*)bitmap, 32, 32, GL_RGBA, GL_RGBA, GL_NEAREST);
+    }
+
+    MesaGUI::PrimitivePanel(alh_sprite_editor_right_panel_top, vec4(0.2,0.2,0.2,1));
+
+    MesaGUI::PrimtiveImage(MesaGUI::UIRect(alh_sprite_editor_right_panel_top->x, alh_sprite_editor_right_panel_top->y, 256, 256), bt.textureId);
+
+    static std::vector<ivec2> fuck;
+
+    if (Input.mouseLeftHasBeenPressed)
+    {
+        ivec2 click_guispace = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(Input.mousePos);
+        //ivec2 click = ivec2(click_guispace.x - alh_sprite_editor_right_panel_top->x, click_guispace.y - alh_sprite_editor_right_panel_top->y);
+        fuck.push_back(click_guispace);
+    }
+
+    for (ivec2 a : fuck)
+    {
+        MesaGUI::PrimitivePanel(MesaGUI::UIRect(a.x, a.y, 10, 10), vec4(0,0,0,1));
+    }
 
     MesaGUI::BeginZone(alh_sprite_editor);
     if (MesaGUI::EditorLabelledButton("Load a new sprite"))
