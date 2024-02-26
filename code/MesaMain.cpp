@@ -60,7 +60,7 @@ static bool InitializeEverything()
     if (g_SDLWindow == nullptr || g_SDLGLContext == nullptr) return false;
 
     SDL_SetWindowMinimumSize(g_SDLWindow, 100, 30);
-    SDL_GL_SetSwapInterval(1);
+    SDL_GL_SetSwapInterval(0);
     //SDL_SetWindowFullscreen(g_SDLWindow, SDL_WINDOW_FULLSCREEN);
 
     PrintLog.Message("MesaBIOS (" + std::string(PROJECT_BUILD_VERSION) + ")");

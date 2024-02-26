@@ -201,4 +201,25 @@ namespace Gfx
         return texture;
     }
 
+    void UpdateGPUTextureFromBitmap(TextureHandle *tex, unsigned char *bitmap, i32 w, i32 h)
+    {
+        ASSERT(tex->textureId != 0);
+
+        tex->width = w;
+        tex->height = h;
+
+        glBindTexture(GL_TEXTURE_2D, tex->textureId);
+        glTexImage2D(
+                GL_TEXTURE_2D,            // texture target type
+                0,                        // level-of-detail number n = n-th mipmap reduction image
+                tex->format,              // format of data to store (target): num of color components
+                w,                        // texture width
+                h,                        // texture height
+                0,                        // must be 0 (legacy)
+                tex->format,              // format of data being loaded (source)
+                GL_UNSIGNED_BYTE,         // data type of the texture data
+                bitmap);                  // data
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
 }

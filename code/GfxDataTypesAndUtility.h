@@ -77,4 +77,6 @@ namespace Gfx
     
     TextureHandle CreateGPUTextureFromDisk(const char* filePath, GLenum targetFormat = GL_RGBA);
 
+    void UpdateGPUTextureFromBitmap(TextureHandle *tex, unsigned char* bitmap, i32 w, i32 h);
+
 }

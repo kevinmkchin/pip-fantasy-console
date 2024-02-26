@@ -56,52 +56,37 @@ std::string OpenLoadImageDialog()
 #include "../Input.h"
 
 
-spredit_Color *PixelAt(spredit_Frame *frame, i32 x, i32 y)
+static spredit_Color *PixelAt(spredit_Frame *frame, i32 x, i32 y)
 {
-    if (x >= frame->w || y >= frame->h)
+    if (x >= frame->w || y >= frame->h || x < 0 || y < 0)
         return NULL;
+    // Note(Kevin): flip y in access so in data first pixel is bottom left,
+    // but access is from top left which is nicer
+    y = frame->h - y - 1;
     return frame->pixels + (frame->w*y + x);
+}
+
+static void UpdateGPUTex(spredit_Frame *frame)
+{
+    if (frame->gputex.textureId == 0)
+    {
+        frame->gputex = Gfx::CreateGPUTextureFromBitmap(
+                (unsigned char*)frame->pixels, frame->w, frame->h,
+                GL_RGBA, GL_RGBA, GL_NEAREST);
+    }
+    else
+    {
+        Gfx::UpdateGPUTextureFromBitmap(&frame->gputex, (unsigned char*)frame->pixels, frame->w, frame->h);
+    }
+}
+
+static void DeleteGPUTex(spredit_Frame *frame)
+{
+    // TODO(Kevin): delete gpu texture function in GfxDataTypesAndUtility
 }
 
 void DoSpriteEditorGUI()
 {
-    static spredit_Frame testsprite{};
-    testsprite.w = 32;
-    testsprite.h = 32;
-    if (testsprite.pixels == 0)
-        testsprite.pixels = (spredit_Color*)calloc(testsprite.w * testsprite.h, sizeof(spredit_Color));
-
-    for (int i = 0; i < testsprite.w; ++i)
-    {
-        for (int j = 0; j < testsprite.h; ++j)
-        {
-            spredit_Color *p = PixelAt(&testsprite, i, j);
-            p->r = u8((float)i / 32.f * 255);
-            p->g = u8((float)j / 32.f * 255);
-            p->b = 0xff;
-            p->a = 0xff;
-        }
-    }
-    static Gfx::TextureHandle bt = Gfx::CreateGPUTextureFromBitmap((unsigned char*)testsprite.pixels, testsprite.w, testsprite.h, GL_RGBA, GL_RGBA, GL_NEAREST);
-
-    MesaGUI::PrimitivePanel(alh_sprite_editor_right_panel_top, vec4(0.2,0.2,0.2,1));
-
-    MesaGUI::PrimtiveImage(MesaGUI::UIRect(alh_sprite_editor_right_panel_top->x, alh_sprite_editor_right_panel_top->y, 256, 256), bt.textureId);
-
-//    static std::vector<ivec2> fuck;
-//
-//    if (Input.mouseLeftHasBeenPressed)
-//    {
-//        ivec2 click_guispace = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(Input.mousePos);
-//        //ivec2 click = ivec2(click_guispace.x - alh_sprite_editor_right_panel_top->x, click_guispace.y - alh_sprite_editor_right_panel_top->y);
-//        fuck.push_back(click_guispace);
-//    }
-//
-//    for (ivec2 a : fuck)
-//    {
-//        MesaGUI::PrimitivePanel(MesaGUI::UIRect(a.x, a.y, 10, 10), vec4(0,0,0,1));
-//    }
-
     MesaGUI::BeginZone(alh_sprite_editor);
     if (MesaGUI::EditorLabelledButton("Load a new sprite"))
     {
@@ -122,7 +107,65 @@ void DoSpriteEditorGUI()
     }
     MesaGUI::EditorEndListBox();
 
+    static float userR = 0.f;
+    static float userG = 0.f;
+    static float userB = 0.f;
+    static float userA = 1.f;
+    MesaGUI::EditorIncrementableFloatField("r", &userR);
+    MesaGUI::EditorIncrementableFloatField("g", &userG);
+    MesaGUI::EditorIncrementableFloatField("b", &userB);
+    MesaGUI::EditorIncrementableFloatField("a", &userA);
+
+    int showUserColorX;
+    int showUserColorY;
+    MesaGUI::GetXYInZone(&showUserColorX, &showUserColorY);
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(showUserColorX, showUserColorY, 32, 32), vec4(userR, userG, userB, userA));
+
     MesaGUI::EndZone();
+
+
+    static spredit_Frame testsprite{};
+    testsprite.w = 128;
+    testsprite.h = 128;
+    if (testsprite.pixels == 0)
+    {
+        testsprite.pixels = (spredit_Color*)calloc(testsprite.w * testsprite.h, sizeof(spredit_Color));
+
+        for (int i = 0; i < testsprite.w; ++i)
+        {
+            for (int j = 0; j < testsprite.h; ++j)
+            {
+                spredit_Color *p = PixelAt(&testsprite, i, j);
+                //p->r = u8((float)i / 32.f * 255);
+                //p->g = u8((float)j / 32.f * 255);
+                p->r = 0xff;
+                p->g = 0xff;
+                p->b = 0xff;
+                p->a = 0xff;
+            }
+        }
+    }
+
+    UpdateGPUTex(&testsprite);
+
+    MesaGUI::PrimitivePanel(alh_sprite_editor_right_panel_top, vec4(0.2,0.2,0.2,1));
+    MesaGUI::PrimtiveImage(MesaGUI::UIRect(alh_sprite_editor_right_panel_top->x, alh_sprite_editor_right_panel_top->y, 256, 256), testsprite.gputex.textureId);
+
+    if (Input.mouseLeftPressed)
+    {
+        ivec2 click_guispace = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(Input.mousePos);
+        ivec2 click = ivec2(click_guispace.x - alh_sprite_editor_right_panel_top->x, click_guispace.y - alh_sprite_editor_right_panel_top->y);
+
+        printf("%d, %d\n", click.x, click.y);
+        spredit_Color *p = PixelAt(&testsprite, click.x/(256/testsprite.w), click.y/(256/testsprite.h));
+        if (p)
+        {
+            p->r = GM_clamp(userR, 0, 1) * 255;
+            p->g = GM_clamp(userG, 0, 1) * 255;
+            p->b = GM_clamp(userB, 0, 1) * 255;
+            p->a = GM_clamp(userA, 0, 1) * 255;
+        }
+    }
 
 }
 

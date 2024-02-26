@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../MesaCommon.h"
+#include "../GfxDataTypesAndUtility.h"
 
 struct spredit_Color
 {
@@ -15,6 +16,8 @@ struct spredit_Frame
     spredit_Color *pixels;
     i32 w;
     i32 h;
+
+    Gfx::TextureHandle gputex;
 };
 
 void DoSpriteEditorGUI();
