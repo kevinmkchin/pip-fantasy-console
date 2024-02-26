@@ -54,13 +54,13 @@ static void LoadResourcesForEditorGUI()
 
 enum class EditorMode
 {
-    ArtAndAnimation,
-    EntityDesigner,
-    WorldDesigner,
+    SpritesEditor,
+    CodeEditor,
+    SpacesEditor,
     SoundAndMusic
 };
 
-static EditorMode s_ActiveMode = EditorMode::EntityDesigner;
+static EditorMode s_ActiveMode = EditorMode::SpritesEditor;
 
 // I select an entity template: it's code shows up in the code editor -> a code editor state is created
 // I can keep multiple code editor states open at once (multiple tabs, one tab for each entity code)
@@ -92,33 +92,48 @@ bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
 
 #include "Editor_WorldEditor.hpp"
 
-void EditorMainBar()
+//void EditorMainBar()
+//{
+//    MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->x, mainbarLayout->y, mainbarLayout->w, mainbarLayout->h), vec4(RGBHEXTO1(0xD0CABD),1)); // 0xc9c9ae RGBHEXTO1(0xc6c6c6) RGBHEXTO1(0xd2cabd)
+//
+//    if(s_ActiveMode == EditorMode::SpritesEditor)
+//        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+//    else
+//        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F1) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+//            s_ActiveMode = EditorMode::SpritesEditor;
+//
+//    if(s_ActiveMode == EditorMode::CodeEditor)
+//        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 102, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+//    else
+//        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F2) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 102, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+//            s_ActiveMode = EditorMode::CodeEditor;
+//
+//    if(s_ActiveMode == EditorMode::SpacesEditor)
+//        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 68, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+//    else
+//        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F3) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 68, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+//            s_ActiveMode = EditorMode::SpacesEditor;
+//
+//    if(s_ActiveMode == EditorMode::SoundAndMusic)
+//        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 34, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+//    else
+//        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F4) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 34, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+//            s_ActiveMode = EditorMode::SoundAndMusic;
+//}
+
+void SwitchToSpritesEditor()
 {
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->x, mainbarLayout->y, mainbarLayout->w, mainbarLayout->h), vec4(RGBHEXTO1(0xD0CABD),1)); // 0xc9c9ae RGBHEXTO1(0xc6c6c6) RGBHEXTO1(0xd2cabd)
+    s_ActiveMode = EditorMode::SpritesEditor;
+}
 
-    if(s_ActiveMode == EditorMode::ArtAndAnimation)
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
-    else
-        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F1) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
-            s_ActiveMode = EditorMode::ArtAndAnimation;
+void SwitchToCodeEditor()
+{
+    s_ActiveMode = EditorMode::CodeEditor;
+}
 
-    if(s_ActiveMode == EditorMode::EntityDesigner)
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 102, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
-    else
-        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F2) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 102, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
-            s_ActiveMode = EditorMode::EntityDesigner;
-
-    if(s_ActiveMode == EditorMode::WorldDesigner)
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 68, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
-    else
-        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F3) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 68, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
-            s_ActiveMode = EditorMode::WorldDesigner;
-
-    if(s_ActiveMode == EditorMode::SoundAndMusic)
-        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 34, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
-    else
-        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F4) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 34, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
-            s_ActiveMode = EditorMode::SoundAndMusic;
+void SwitchToSpacesEditor()
+{
+    s_ActiveMode = EditorMode::SpacesEditor;
 }
 
 bool Temp_StartGameOrEditorButton()
@@ -173,6 +188,9 @@ void InitEditorGUI()
     GiveMeTheConsole()->bind_cmd("save", Temp_SaveScript);
     GiveMeTheConsole()->bind_cmd("open", Temp_LoadScript);
     GiveMeTheConsole()->bind_cmd("run", Temp_ExecCurrentScript);
+    GiveMeTheConsole()->bind_cmd("sprites", SwitchToSpritesEditor);
+    GiveMeTheConsole()->bind_cmd("code", SwitchToCodeEditor);
+    GiveMeTheConsole()->bind_cmd("spaces", SwitchToSpacesEditor);
 
 
     //EditorState *activeEditorState = EditorState::ActiveEditorState();
@@ -183,7 +201,7 @@ void InitEditorGUI()
     SetupWorldDesigner();
 
     editorLayout = MesaGUI::NewALH(true);
-    mainbarLayout = MesaGUI::NewALH(-1, -1, -1, s_ToolBarHeight, false);
+    mainbarLayout = MesaGUI::NewALH(-1, -1, -1, 0, false);
     codeEditorTabLayout = MesaGUI::NewALH(false);
     alh_sprite_editor = MesaGUI::NewALH(false);
     alh_sprite_editor_left_panel = MesaGUI::NewALH(-1, -1, 140, -1, false);
@@ -326,7 +344,7 @@ void EditorDoGUI()
 
     switch (s_ActiveMode)
     {
-        case EditorMode::ArtAndAnimation:
+        case EditorMode::SpritesEditor:
         {
             editorLayout->Replace(1, alh_sprite_editor);
             MesaGUI::UpdateMainCanvasALH(editorLayout);
@@ -334,7 +352,7 @@ void EditorDoGUI()
 //            MesaGUI::PrimitiveText(20, 100, 9, MesaGUI::TextAlignment::Left, "Art and animation creator coming soon");
             break;
         }
-        case EditorMode::EntityDesigner: 
+        case EditorMode::CodeEditor:
         {
             editorLayout->Replace(1, codeEditorTabLayout);
             MesaGUI::UpdateMainCanvasALH(editorLayout);
@@ -345,14 +363,14 @@ void EditorDoGUI()
             gamedata.codePage1 = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
             MesaGUI::EndZone();
 
-            MesaGUI::UIRect codeEditorBorder = MesaGUI::UIRect(codeEditorTabLayout);
-            codeEditorBorder.y -= 6;
-            codeEditorBorder.h += 6;
-            MesaGUI::PrimitivePanel(codeEditorBorder, 8, borders_00.textureId, 0.4f);
+//            MesaGUI::UIRect codeEditorBorder = MesaGUI::UIRect(codeEditorTabLayout);
+//            codeEditorBorder.y -= 6;
+//            codeEditorBorder.h += 6;
+//            MesaGUI::PrimitivePanel(codeEditorBorder, 8, borders_00.textureId, 0.4f);
 
             break;
         }
-        case EditorMode::WorldDesigner:
+        case EditorMode::SpacesEditor:
         {
             WorldDesigner();
             break;
@@ -364,7 +382,7 @@ void EditorDoGUI()
         }
     }
 
-    EditorMainBar();
+//    EditorMainBar();
 
     // MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout), vec4(1,0,0,0.5));
     // //MesaGUI::PrimitivePanel(MesaGUI::UIRect(entityDesignerTabLayout), vec4(0,1,0,0.5));
