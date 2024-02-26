@@ -107,6 +107,9 @@ void DoSpriteEditorGUI()
     }
     MesaGUI::EditorEndListBox();
 
+    static int brushSz = 9;
+    MesaGUI::EditorIncrementableIntegerField("brush size", &brushSz);
+
     static float userR = 0.f;
     static float userG = 0.f;
     static float userB = 0.f;
@@ -125,8 +128,8 @@ void DoSpriteEditorGUI()
 
 
     static spredit_Frame testsprite{};
-    testsprite.w = 128;
-    testsprite.h = 128;
+    testsprite.w = 256;
+    testsprite.h = 256;
     if (testsprite.pixels == 0)
     {
         testsprite.pixels = (spredit_Color*)calloc(testsprite.w * testsprite.h, sizeof(spredit_Color));
@@ -146,26 +149,55 @@ void DoSpriteEditorGUI()
         }
     }
 
-    UpdateGPUTex(&testsprite);
-
     MesaGUI::PrimitivePanel(alh_sprite_editor_right_panel_top, vec4(0.2,0.2,0.2,1));
     MesaGUI::PrimtiveImage(MesaGUI::UIRect(alh_sprite_editor_right_panel_top->x, alh_sprite_editor_right_panel_top->y, 256, 256), testsprite.gputex.textureId);
 
     if (Input.mouseLeftPressed)
     {
         ivec2 click_guispace = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(Input.mousePos);
-        ivec2 click = ivec2(click_guispace.x - alh_sprite_editor_right_panel_top->x, click_guispace.y - alh_sprite_editor_right_panel_top->y);
 
-        printf("%d, %d\n", click.x, click.y);
-        spredit_Color *p = PixelAt(&testsprite, click.x/(256/testsprite.w), click.y/(256/testsprite.h));
-        if (p)
+        if (click_guispace.x < alh_sprite_editor_right_panel_top->x) return;
+
+        ivec2 click = ivec2(click_guispace.x - alh_sprite_editor_right_panel_top->x, click_guispace.y - alh_sprite_editor_right_panel_top->y);
+        //printf("%d, %d\n", click.x, click.y);
+
+        i32 x = click.x/(256/testsprite.w);
+        i32 y = click.y/(256/testsprite.h);
+        i32 mx = x - brushSz/2;
+        i32 my = y - brushSz/2;
+
+        float brushRadius = (float)brushSz/2.f;
+
+        for (int i = 0; i < brushSz; ++i)
         {
-            p->r = GM_clamp(userR, 0, 1) * 255;
-            p->g = GM_clamp(userG, 0, 1) * 255;
-            p->b = GM_clamp(userB, 0, 1) * 255;
-            p->a = GM_clamp(userA, 0, 1) * 255;
+            for (int j = 0; j < brushSz; ++j)
+            {
+                float fx = (float)x;
+                float fy = (float)y;
+                if (brushSz % 2 == 1)
+                {
+                    fx += 0.5f;
+                    fy += 0.5f;
+                }
+                float cx = -brushRadius + (float)i + 0.5f;
+                float cy = -brushRadius + (float)j + 0.5f;
+
+                if (sqrtf(float(cx*cx + cy*cy)) < float(brushSz/2) + (brushSz % 2 == 1 ? 0.24f : -0.1f))
+                {
+                    spredit_Color *p = PixelAt(&testsprite, mx+i, my+j);
+                    if (p)
+                    {
+                        p->r = GM_clamp(userR, 0, 1) * 255;
+                        p->g = GM_clamp(userG, 0, 1) * 255;
+                        p->b = GM_clamp(userB, 0, 1) * 255;
+                        p->a = GM_clamp(userA, 0, 1) * 255;
+                    }
+                }
+            }
         }
     }
+
+    UpdateGPUTex(&testsprite);
 
 }
 
