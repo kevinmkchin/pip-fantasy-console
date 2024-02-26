@@ -244,7 +244,7 @@ int main(int argc, char* argv[])
             framerate = (1.f / Time.deltaTime);
             lastFPSShowTime = Time.time;
         }
-        MesaGUI::PrimitiveTextFmt(0, 9, 9, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
+        //MesaGUI::PrimitiveTextFmt(0, 9, 9, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
 
         if (consoleActive)
             DoSingleCommandLine();
