@@ -1200,7 +1200,7 @@ namespace MesaGUI
         int x, y;
         GetXYInZone(&x, &y);
 
-        int w = 120;
+        int w = 80;
         int h = 20;
         int paddingAbove = uistyle.paddingTop;
         int paddingBelow = uistyle.paddingBottom;
