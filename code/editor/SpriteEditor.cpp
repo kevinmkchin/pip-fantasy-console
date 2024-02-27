@@ -107,7 +107,7 @@ void DoSpriteEditorGUI()
     }
     MesaGUI::EditorEndListBox();
 
-    static int brushSz = 9;
+    static int brushSz = 1;
     MesaGUI::EditorIncrementableIntegerField("brush size", &brushSz);
 
     static float userR = 0.f;
@@ -123,13 +123,21 @@ void DoSpriteEditorGUI()
     int showUserColorY;
     MesaGUI::GetXYInZone(&showUserColorX, &showUserColorY);
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(showUserColorX, showUserColorY, 32, 32), vec4(userR, userG, userB, userA));
+    MesaGUI::MoveXYInZone(0, 32);
+
+    static float panxf = 20;
+    static float panyf = 20;
+    static i32 zoom = 1;
+    //MesaGUI::EditorIncrementableIntegerField()
+    MesaGUI::EditorText((std::to_string(zoom*100) + std::string(".0%")).c_str());
 
     MesaGUI::EndZone();
 
 
+
     static spredit_Frame testsprite{};
-    testsprite.w = 256;
-    testsprite.h = 256;
+    testsprite.w = 16;
+    testsprite.h = 16;
     if (testsprite.pixels == 0)
     {
         testsprite.pixels = (spredit_Color*)calloc(testsprite.w * testsprite.h, sizeof(spredit_Color));
@@ -149,20 +157,54 @@ void DoSpriteEditorGUI()
         }
     }
 
-    MesaGUI::PrimitivePanel(alh_sprite_editor_right_panel_top, vec4(0.2,0.2,0.2,1));
-    MesaGUI::PrimtiveImage(MesaGUI::UIRect(alh_sprite_editor_right_panel_top->x, alh_sprite_editor_right_panel_top->y, 256, 256), testsprite.gputex.textureId);
-
-    if (Input.mouseLeftPressed)
+    if (Input.mouseYScroll)
     {
-        ivec2 click_guispace = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(Input.mousePos);
+        if (Input.mouseYScroll > 0)
+        {
+            switch (zoom)
+            {
+                case 8: zoom = 12; break;
+                case 12: zoom = 16; break;
+                case 16: zoom = 24; break;
+                case 24: zoom = 32; break;
+                case 32: zoom = 48; break;
+                case 48: zoom = 64; break;
+                default: zoom = GM_min(zoom + 1, 64);
+            }
+        }
+        else
+        {
+            switch (zoom)
+            {
+                case 12: zoom = 8; break;
+                case 16: zoom = 12; break;
+                case 24: zoom = 16; break;
+                case 32: zoom = 24; break;
+                case 48: zoom = 32; break;
+                case 64: zoom = 48; break;
+                default: zoom = GM_max(zoom - 1, 1);
+            }
+        }
+    }
 
-        if (click_guispace.x < alh_sprite_editor_right_panel_top->x) return;
+    if (Input.mouseMiddlePressed)
+    {
+        vec2 scaledMDelta = Input.mouseDelta / (float)Gfx::GetCoreRenderer()->GetEditorIntegerScale();
+        panxf += scaledMDelta.x;
+        panyf += scaledMDelta.y;
+    }
 
-        ivec2 click = ivec2(click_guispace.x - alh_sprite_editor_right_panel_top->x, click_guispace.y - alh_sprite_editor_right_panel_top->y);
+    ivec2 click_guispace = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(Input.mousePos);
+    bool mouseOverViewport = click_guispace.x > alh_sprite_editor_right_panel_top->x && click_guispace.y < alh_sprite_editor_right_panel_top->h;
+    if (Input.mouseLeftPressed && mouseOverViewport)
+    {
+        ivec2 click = ivec2(
+                click_guispace.x - alh_sprite_editor_right_panel_top->x - (int)panxf,
+                click_guispace.y - alh_sprite_editor_right_panel_top->y - (int)panyf);
         //printf("%d, %d\n", click.x, click.y);
 
-        i32 x = click.x/(256/testsprite.w);
-        i32 y = click.y/(256/testsprite.h);
+        i32 x = click.x/zoom;
+        i32 y = click.y/zoom;
         i32 mx = x - brushSz/2;
         i32 my = y - brushSz/2;
 
@@ -198,6 +240,12 @@ void DoSpriteEditorGUI()
     }
 
     UpdateGPUTex(&testsprite);
+
+    MesaGUI::PrimitivePanel(alh_sprite_editor_right_panel_top, vec4(0.2,0.2,0.2,1));
+    MesaGUI::PrimtiveImage(MesaGUI::UIRect(
+            alh_sprite_editor_right_panel_top->x + (int)panxf,
+            alh_sprite_editor_right_panel_top->y + (int)panyf,
+            testsprite.w * zoom, testsprite.h * zoom), testsprite.gputex.textureId);
 
 }
 

@@ -6,6 +6,11 @@ Hotline Miami x Nuclear Throne kind of game
 - Do something interesting with the camera
 - Dodge to avoid bullets -> faster than NT but slower than HM
 
+- additive
+- preview
+- layers
+- undo/redo
+
 # Known Bugs
 
 - GUI fresh ID is not great...will be buggy when number of elements change dynamically

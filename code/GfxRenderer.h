@@ -42,6 +42,7 @@ namespace Gfx
     public:
         ivec2 TransformWindowCoordinateToGameWorldSpace(ivec2 winCoord) const;
         ivec2 TransformWindowCoordinateToEditorGUICoordinateSpace(ivec2 winCoord) const;
+        i32 GetEditorIntegerScale() const { return (i32)editorIntegerScale; };
 
     private:
         void RenderGameLayer();
