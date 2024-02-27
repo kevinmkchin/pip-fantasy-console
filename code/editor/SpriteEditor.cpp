@@ -1,7 +1,10 @@
 #include "SpriteEditor.h"
 
 #include "Editor.h"
+#include "SpriteEditorActions.h"
 #include "../GameData.h"
+#include "../GfxRenderer.h"
+#include "../Input.h"
 
 //#include <direct.h>
 #include <ShObjIdl.h>
@@ -52,9 +55,8 @@ std::string OpenLoadImageDialog()
     return imagepath;
 }
 
-#include "../GfxRenderer.h"
-#include "../Input.h"
 
+SpriteEditorState spreditState;
 
 static spredit_Color *PixelAt(spredit_Frame *frame, i32 x, i32 y)
 {
@@ -134,19 +136,19 @@ void DoSpriteEditorGUI()
     MesaGUI::EndZone();
 
 
-
-    static spredit_Frame testsprite{};
-    testsprite.w = 16;
-    testsprite.h = 16;
-    if (testsprite.pixels == 0)
+    spreditState.frame.w = 64;
+    spreditState.frame.h = 64;
+    if (spreditState.frame.pixels == 0)
     {
-        testsprite.pixels = (spredit_Color*)calloc(testsprite.w * testsprite.h, sizeof(spredit_Color));
+        InitSpriteEditorActionBuffers();
+        spreditState.frame.pixels = (spredit_Color*)
+                calloc(spreditState.frame.w * spreditState.frame.h, sizeof(spredit_Color));
 
-        for (int i = 0; i < testsprite.w; ++i)
+        for (int i = 0; i < spreditState.frame.w; ++i)
         {
-            for (int j = 0; j < testsprite.h; ++j)
+            for (int j = 0; j < spreditState.frame.h; ++j)
             {
-                spredit_Color *p = PixelAt(&testsprite, i, j);
+                spredit_Color *p = PixelAt(&spreditState.frame, i, j);
                 //p->r = u8((float)i / 32.f * 255);
                 //p->g = u8((float)j / 32.f * 255);
                 p->r = 0xff;
@@ -196,6 +198,33 @@ void DoSpriteEditorGUI()
 
     ivec2 click_guispace = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(Input.mousePos);
     bool mouseOverViewport = click_guispace.x > alh_sprite_editor_right_panel_top->x && click_guispace.y < alh_sprite_editor_right_panel_top->h;
+
+
+    if (Input.KeyHasBeenPressed(SDL_SCANCODE_Z))
+    {
+        Undo(&spreditState);
+    }
+
+    if (Input.KeyHasBeenPressed(SDL_SCANCODE_Y))
+    {
+        Redo(&spreditState);
+    }
+
+    static spredit_Color *pixelsBeforeAction = nullptr;
+    if (Input.mouseLeftHasBeenPressed && mouseOverViewport)
+    {
+        if (pixelsBeforeAction) delete pixelsBeforeAction;
+        size_t sz = sizeof(spredit_Color) * spreditState.frame.w * spreditState.frame.h;
+        pixelsBeforeAction = (spredit_Color*)malloc(sz);
+        memcpy(pixelsBeforeAction, spreditState.frame.pixels, sz);
+    }
+
+    if (Input.mouseLeftHasBeenReleased && mouseOverViewport)
+    {
+        RecordPixelsWrite(pixelsBeforeAction, spreditState.frame.pixels, spreditState.frame.w, spreditState.frame.h);
+        ClearRedoBuffer();
+    }
+
     if (Input.mouseLeftPressed && mouseOverViewport)
     {
         ivec2 click = ivec2(
@@ -226,7 +255,7 @@ void DoSpriteEditorGUI()
 
                 if (sqrtf(float(cx*cx + cy*cy)) < float(brushSz/2) + (brushSz % 2 == 1 ? 0.24f : -0.1f))
                 {
-                    spredit_Color *p = PixelAt(&testsprite, mx+i, my+j);
+                    spredit_Color *p = PixelAt(&spreditState.frame, mx+i, my+j);
                     if (p)
                     {
                         p->r = GM_clamp(userR, 0, 1) * 255;
@@ -239,97 +268,12 @@ void DoSpriteEditorGUI()
         }
     }
 
-    UpdateGPUTex(&testsprite);
+    UpdateGPUTex(&spreditState.frame);
 
     MesaGUI::PrimitivePanel(alh_sprite_editor_right_panel_top, vec4(0.2,0.2,0.2,1));
     MesaGUI::PrimtiveImage(MesaGUI::UIRect(
             alh_sprite_editor_right_panel_top->x + (int)panxf,
             alh_sprite_editor_right_panel_top->y + (int)panyf,
-            testsprite.w * zoom, testsprite.h * zoom), testsprite.gputex.textureId);
+            spreditState.frame.w * zoom, spreditState.frame.h * zoom), spreditState.frame.gputex.textureId);
 
 }
-
-
-
-
-
-/* Trash down here
-
-
-
-// static void ChooseEntityForCodeEditor(EntityAsset *entityAsset)
-// {
-//     InitializeCodeEditorState(&s_ActiveCodeEditorState, false, entityAsset->code.c_str(), (u32)entityAsset->code.size());
-// }
-
-
-    // MesaGUI::PrimitivePanel(MesaGUI::UIRect(entitySelectorLayout), s_EditorColor1);
-    // MesaGUI::BeginZone(MesaGUI::UIRect(entitySelectorLayout));
-
-    // EditorState *activeEditorState = EditorState::ActiveEditorState();
-
-    // MesaGUI::EditorBeginListBox();
-    // const std::vector<int> entityAssetIdsList = *activeEditorState->RetrieveAllEntityAssetIds();
-    // for (size_t i = 0; i < entityAssetIdsList.size(); ++i)
-    // {
-    //     int entityAssetId = entityAssetIdsList.at(i);
-    //     EntityAsset *e = activeEditorState->RetrieveEntityAssetById(entityAssetId);
-    //     bool selected = entityAssetId == s_SelectedEntityAssetId;
-    //     if (MesaGUI::EditorSelectable(e->name.c_str(), &selected))
-    //     {
-    //         s_SelectedEntityAssetId = entityAssetId;
-    //         ChooseEntityForCodeEditor(e);
-    //     }
-    // }
-    // MesaGUI::EditorEndListBox();
-
-    // if (MesaGUI::EditorLabelledButton("+ new entity asset"))
-    // {
-    //     EditorState *activeEditorState = EditorState::ActiveEditorState();
-    //     int newId = activeEditorState->CreateNewEntityAsset("entity_x");
-    //     EntityAsset *newEnt = activeEditorState->RetrieveEntityAssetById(newId);
-    //     newEnt->code = "fn Update() { print('new asset bro') }";
-    //     s_SelectedEntityAssetId = newId;
-    //     ChooseEntityForCodeEditor(newEnt);
-    // }
-
-    // MesaGUI::MoveXYInZone(0, 10);
-
-    // if (s_SelectedEntityAssetId > 0 && MesaGUI::EditorLabelledButton("save code"))
-    // {
-    //     activeEditorState->RetrieveEntityAssetById(s_SelectedEntityAssetId)->code = std::string(s_ActiveCodeEditorState.code_buf, s_ActiveCodeEditorState.code_len);
-    //     PrintLog.Message("Saved code changes...");
-    // }
-
-    // int abut_x, abut_y;
-    // MesaGUI::GetXYInZone(&abut_x, &abut_y);
-    // if (s_SelectedEntityAssetId > 0 && EditorButton(4313913109, abut_x, abut_y, 130, 25, "Temp: Choose Sprite"))
-    // {
-    //     COMDLG_FILTERSPEC fileTypes[] =
-    //     {
-    //         { L"PNG files", L"*.png" },
-    //     };
-    //     std::string someshit = OpenFilePrompt(1, fileTypes);
-    //     printf(someshit.c_str());
-    //     if (!someshit.empty())
-    //     {
-    //         activeEditorState->RetrieveEntityAssetById(s_SelectedEntityAssetId)->sprite = Gfx::CreateGPUTextureFromDisk(someshit.c_str());
-    //     }
-    // }
-
-    // MesaGUI::MoveXYInZone(0, 35);
-    // MesaGUI::GetXYInZone(&abut_x, &abut_y);
-    // if (s_SelectedEntityAssetId > 0)
-    // {
-    //     Gfx::TextureHandle spr = activeEditorState->RetrieveEntityAssetById(s_SelectedEntityAssetId)->sprite;
-    //     if (spr.textureId > 0)
-    //     {
-    //         MesaGUI::PrimitivePanel(MesaGUI::UIRect(abut_x, abut_y, spr.width, spr.height), spr.textureId);
-    //     }
-    // }
-
-    // MesaGUI::EndZone();
-
-    //DoEntityConfigurationPanel();
-
-*/

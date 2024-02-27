@@ -50,6 +50,7 @@ set(SOURCE_FILES
         code/Game.cpp
         code/PipAPI.h
         code/PipAPI.cpp
+        code/ByteBuffer.h
 
         code/piplang/VM.h
         code/piplang/VM.cpp
@@ -67,14 +68,19 @@ set(SOURCE_FILES
 
         code/editor/Editor.h
         code/editor/Editor.cpp
-        code/editor/SpriteEditor.h
-        code/editor/SpriteEditor.cpp
         code/editor/CodeEditor.h
         code/editor/CodeEditor.cpp
+        code/editor/SpriteEditor.h
+        code/editor/SpriteEditor.cpp
+        code/editor/SpriteEditorActions.cpp
+        code/editor/SpriteEditorActions.h
+
 )
 
 set(OTHER_FILES_FOR_IDE
     todo.md
+        code/editor/SpriteEditorActions.cpp
+        code/editor/SpriteEditorActions.h
 )
 
 file(GLOB DOCUMENTATION_MARKDOWNS true code/manual/*.md)
