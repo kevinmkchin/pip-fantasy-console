@@ -22,6 +22,9 @@ void InputSystem::ProcessSDLEvent(const SDL_Event event)
         case SDL_MOUSEMOTION: {
             ProcessSDLMouseMotionEvent(event.motion);
         }break;
+        case SDL_MOUSEWHEEL: {
+            ProcessSDLMouseWheelEvent(event.wheel);
+        }break;
         case SDL_KEYDOWN: {
             ProcessSDLKeyDownEvent(event.key);
         }break;
@@ -49,6 +52,7 @@ void InputSystem::ProcessSDLEvent(const SDL_Event event)
 void InputSystem::ResetInputStatesAtEndOfFrame()
 {
     mouseDelta = vec2(0.f, 0.f);
+    mouseYScroll = 0;
 
     mouseLeftHasBeenPressed = false;
     mouseRightHasBeenPressed = false;
@@ -118,6 +122,11 @@ void InputSystem::ProcessSDLMouseMotionEvent(SDL_MouseMotionEvent mouseMotionEve
 {
     mouseDelta = vec2((float)mouseMotionEvent.xrel, (float)mouseMotionEvent.yrel);
     mousePos = ivec2(mouseMotionEvent.x, mouseMotionEvent.y);
+}
+
+void InputSystem::ProcessSDLMouseWheelEvent(SDL_MouseWheelEvent mouseWheelEvent)
+{
+    mouseYScroll = mouseWheelEvent.y;
 }
 
 void InputSystem::ProcessSDLKeyDownEvent(SDL_KeyboardEvent keyEvent) {

@@ -105,6 +105,7 @@ public:
 public:
     vec2 mouseDelta; // relative to window
     ivec2 mousePos; // relative to window
+    i32 mouseYScroll;
     bool mouseLeftPressed = false;
     bool mouseRightPressed = false;
     bool mouseMiddlePressed = false;
@@ -125,6 +126,7 @@ public:
 private:
     void ProcessSDLMouseButtonEvent(SDL_MouseButtonEvent mouseButtonEvent);
     void ProcessSDLMouseMotionEvent(SDL_MouseMotionEvent mouseMotionEvent);
+    void ProcessSDLMouseWheelEvent(SDL_MouseWheelEvent mouseWheelEvent);
     void ProcessSDLKeyDownEvent(SDL_KeyboardEvent keyEvent);
     void ProcessSDLKeyUpEvent(SDL_KeyboardEvent keyEvent);
     void ProcessSDLControllerButtonDownEvent(SDL_ControllerButtonEvent gamepadButtonEvent);
