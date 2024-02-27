@@ -9,7 +9,6 @@ Hotline Miami x Nuclear Throne kind of game
 - additive
 - preview
 - layers
-- undo/redo
 
 # Known Bugs
 

@@ -20,4 +20,9 @@ struct spredit_Frame
     Gfx::TextureHandle gputex;
 };
 
+struct SpriteEditorState
+{
+    spredit_Frame frame;
+};
+
 void DoSpriteEditorGUI();
