@@ -113,3 +113,28 @@ std::string& RemoveCharactersFromEndOfString(std::string& str, const char c)
     }
     return str;
 }
+
+vec3 HSVToRGB(float h, float s, float v)
+{
+    // https://www.rapidtables.com/convert/color/hsv-to-rgb.html
+    u16 huedegree = u16(h * 359.f);
+    float chroma = v*s;
+    float m = v-chroma;
+    float normalizedx = chroma * (1.f - abs(fmod((h * 359.f) / 60.f, 2.f) - 1.f));
+
+    vec3 rgb;
+    if (huedegree < 60)
+        rgb = { chroma, normalizedx, 0.f };
+    else if (huedegree < 120)
+        rgb = { normalizedx, chroma, 0.f };
+    else if (huedegree < 180)
+        rgb = { 0.f, chroma, normalizedx };
+    else if (huedegree < 240)
+        rgb = { 0.f, normalizedx, chroma };
+    else if (huedegree < 300)
+        rgb = { normalizedx, 0.f, chroma };
+    else if (huedegree < 360)
+        rgb = { chroma, 0.f, normalizedx };
+    rgb += vec3(m,m,m);
+    return rgb;
+}

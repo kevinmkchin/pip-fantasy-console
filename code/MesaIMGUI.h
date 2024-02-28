@@ -133,6 +133,8 @@ namespace MesaGUI
     void EditorBeginListBox();
     void EditorEndListBox();
 
+    void EditorColorPicker(ui_id id, float *hue, float *saturation, float *value, float *opacity);
+
 
     struct ALH
     {

@@ -6,10 +6,6 @@ Hotline Miami x Nuclear Throne kind of game
 - Do something interesting with the camera
 - Dodge to avoid bullets -> faster than NT but slower than HM
 
-- additive
-- preview
-- layers
-
 # Known Bugs
 
 - GUI fresh ID is not great...will be buggy when number of elements change dynamically
@@ -49,6 +45,7 @@ Hotline Miami x Nuclear Throne kind of game
 
 - Sprite sheet & animations
 - Sprite batch rendering
+- IMGUI Windows, easier Layouting, get rid of UIStyle
 
 - camera API (maybe not? user can implement own camera)
 - gui API
@@ -59,19 +56,6 @@ Hotline Miami x Nuclear Throne kind of game
 
 - Collision and dispatch system: Pixel perfect AABB Collision checks -> GJK&EPA
   - Select collider type from AABB, Sphere, and Convex point cloud
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Way the fuck down the line
