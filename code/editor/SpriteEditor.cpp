@@ -112,19 +112,21 @@ void DoSpriteEditorGUI()
     static int brushSz = 1;
     MesaGUI::EditorIncrementableIntegerField("brush size", &brushSz);
 
-    static float userR = 0.f;
-    static float userG = 0.f;
-    static float userB = 0.f;
-    static float userA = 1.f;
-    MesaGUI::EditorIncrementableFloatField("r", &userR);
-    MesaGUI::EditorIncrementableFloatField("g", &userG);
-    MesaGUI::EditorIncrementableFloatField("b", &userB);
-    MesaGUI::EditorIncrementableFloatField("a", &userA);
+    static vec3 activeRGB = vec3();
+    static float activeOpacity = 1.f;
+//    static float userR = 0.f;
+//    static float userG = 0.f;
+//    static float userB = 0.f;
+//    static float userA = 1.f;
+//    MesaGUI::EditorIncrementableFloatField("r", &userR);
+//    MesaGUI::EditorIncrementableFloatField("g", &userG);
+//    MesaGUI::EditorIncrementableFloatField("b", &userB);
+//    MesaGUI::EditorIncrementableFloatField("a", &userA);
 
     int showUserColorX;
     int showUserColorY;
     MesaGUI::GetXYInZone(&showUserColorX, &showUserColorY);
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(showUserColorX, showUserColorY, 32, 32), vec4(userR, userG, userB, userA));
+    MesaGUI::PrimitivePanel(MesaGUI::UIRect(showUserColorX, showUserColorY, 32, 32), vec4(activeRGB, activeOpacity));
     MesaGUI::MoveXYInZone(0, 32);
 
     static float panxf = 20;
@@ -132,6 +134,12 @@ void DoSpriteEditorGUI()
     static i32 zoom = 1;
     //MesaGUI::EditorIncrementableIntegerField()
     MesaGUI::EditorText((std::to_string(zoom*100) + std::string(".0%")).c_str());
+
+    static float hue = 0.45f;
+    static float saturation = 1.f;
+    static float value = 1.f;
+    MesaGUI::EditorColorPicker(0x32f98, &hue, &saturation, &value, &activeOpacity);
+    activeRGB = HSVToRGB(hue, saturation, value);
 
     MesaGUI::EndZone();
 
@@ -227,6 +235,8 @@ void DoSpriteEditorGUI()
 
     if (Input.mouseLeftPressed && mouseOverViewport)
     {
+        // TODO(Kevin): a "pixel has been touched during this action" look up array basically bit array
+
         ivec2 click = ivec2(
                 click_guispace.x - alh_sprite_editor_right_panel_top->x - (int)panxf,
                 click_guispace.y - alh_sprite_editor_right_panel_top->y - (int)panyf);
@@ -258,10 +268,14 @@ void DoSpriteEditorGUI()
                     spredit_Color *p = PixelAt(&spreditState.frame, mx+i, my+j);
                     if (p)
                     {
-                        p->r = GM_clamp(userR, 0, 1) * 255;
-                        p->g = GM_clamp(userG, 0, 1) * 255;
-                        p->b = GM_clamp(userB, 0, 1) * 255;
-                        p->a = GM_clamp(userA, 0, 1) * 255;
+                        // Blend mode: RGB is linearly interpolated, A is added onto where opacity is % from
+                        // existing alpha to 255.
+                        vec3 existingRGB = {RGB255TO1(p->r, p->g, p->b)};
+                        vec3 finalRGB = Lerp(existingRGB, activeRGB, activeOpacity);
+                        p->r = u8(finalRGB.x * 255.f);
+                        p->g = u8(finalRGB.y * 255.f);
+                        p->b = u8(finalRGB.z * 255.f);
+                        p->a = GM_clamp(p->a + u8(float(255 - p->a) * activeOpacity), 0, 255);
                     }
                 }
             }

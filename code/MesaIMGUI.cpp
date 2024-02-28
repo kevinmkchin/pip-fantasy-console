@@ -929,12 +929,12 @@ namespace MesaGUI
         {
             if (activeTextInputBuffer.count > 0)
             {
-                PrimitiveText(rect.x + rect.w, rect.y + rect.h, 14, TextAlignment::Right, activeTextInputBuffer.data);
+                PrimitiveText(rect.x + rect.w, rect.y + rect.h, 9, TextAlignment::Right, activeTextInputBuffer.data);
             }
         }
         else
         {
-            PrimitiveText(rect.x + rect.w, rect.y + rect.h, 14, TextAlignment::Right, std::to_string(*v).c_str());
+            PrimitiveText(rect.x + rect.w, rect.y + rect.h, 9, TextAlignment::Right, std::to_string(*v).c_str());
         }
     }
 
@@ -1173,22 +1173,22 @@ namespace MesaGUI
         int y;
         GetXYInZone(&x, &y);
 
-        int w = 120;
+        int w = 80;
         int h = 20;
         int paddingAbove = uistyle.paddingTop;
         int paddingBelow = uistyle.paddingBottom;
 
         PrimitivePanel(UIRect(x, y, w-2, h), vec4(0.4f, 0.4f, 0.4f, 1.f));
         PrimitiveIntegerInputField(FreshID(), UIRect(x + 1, y + 1, w-4, h - 2), v);
-        if (PrimitiveButton(FreshID(), UIRect(x + w, y + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
-        {
-            (*v) += increment;
-        }
-        if (PrimitiveButton(FreshID(), UIRect(x + w, y + (h / 2) + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
-        {
-            (*v) -= increment;
-        }
-        PrimitiveText(x + w + 22, y + h, 20, TextAlignment::Left, label);
+//        if (PrimitiveButton(FreshID(), UIRect(x + w, y + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
+//        {
+//            (*v) += increment;
+//        }
+//        if (PrimitiveButton(FreshID(), UIRect(x + w, y + (h / 2) + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
+//        {
+//            (*v) -= increment;
+//        }
+//        PrimitiveText(x + w + 22, y + h, 9, TextAlignment::Left, label);
 
         MoveXYInZone(0, paddingAbove + h + paddingBelow);
     }
@@ -1253,6 +1253,203 @@ namespace MesaGUI
     {
 
     }
+
+#include "editor/SpriteEditor.h"
+
+    void SetFramePixelColor(spredit_Frame *frame, i32 x, i32 y, spredit_Color color)
+    {
+        if (x >= frame->w || y >= frame->h || x < 0 || y < 0)
+            return;
+        *(frame->pixels + (frame->w*y + x)) = color;
+    }
+
+    void EditorColorPicker(ui_id id, float *hue, float *saturation, float *value, float *opacity)
+    {
+        int x, y;
+        GetXYInZone(&x, &y);
+
+        static spredit_Frame chromaselector;
+        static spredit_Frame hueselector;
+        static spredit_Frame alphaselector;
+        if (chromaselector.gputex.textureId == 0)
+        {
+            chromaselector.w = 61;
+            chromaselector.h = 96;
+            chromaselector.pixels = (spredit_Color*)calloc(chromaselector.w * chromaselector.h, sizeof(spredit_Color));
+            chromaselector.gputex = Gfx::CreateGPUTextureFromBitmap((u8*)chromaselector.pixels, chromaselector.w, chromaselector.h, GL_RGBA, GL_RGBA);
+
+            hueselector.w = chromaselector.w;
+            hueselector.h = 12;
+            hueselector.pixels = (spredit_Color*)calloc(hueselector.w * hueselector.h, sizeof(spredit_Color));
+            hueselector.gputex = Gfx::CreateGPUTextureFromBitmap((u8*)hueselector.pixels, hueselector.w, hueselector.h, GL_RGBA, GL_RGBA);
+
+            alphaselector.w = chromaselector.w;
+            alphaselector.h = 12;
+            alphaselector.pixels = (spredit_Color*)calloc(alphaselector.w * alphaselector.h, sizeof(spredit_Color));
+            alphaselector.gputex = Gfx::CreateGPUTextureFromBitmap((u8*)alphaselector.pixels, alphaselector.w, alphaselector.h, GL_RGBA, GL_RGBA);
+        }
+
+        const UIRect chromaselectorrect = UIRect(x, y, chromaselector.w, chromaselector.h);
+        const UIRect hueselectorrect = UIRect(x, y + chromaselector.h, hueselector.w, hueselector.h);
+        const UIRect alphaselectorrect = UIRect(x, y + chromaselector.h + hueselector.h, alphaselector.w, alphaselector.h);
+
+        if (IsActive(id) && MouseWentUp())
+        {
+            SetActive(null_ui_id);
+        }
+        if (MouseWentDown() && IsHovered(id))
+        {
+            SetActive(id);
+        }
+        if (MouseInside(chromaselectorrect))
+        {
+            SetHovered(id);
+        }
+
+        // todo(kevin): this is all temporary code to quickly hack
+        if (IsActive(id + 1) && MouseWentUp())
+        {
+            SetActive(null_ui_id);
+        }
+        if (MouseWentDown() && IsHovered(id + 1))
+        {
+            SetActive(id + 1);
+        }
+        if (MouseInside(hueselectorrect))
+        {
+            SetHovered(id + 1);
+        }
+
+        if (IsActive(id + 2) && MouseWentUp())
+        {
+            SetActive(null_ui_id);
+        }
+        if (MouseWentDown() && IsHovered(id + 2))
+        {
+            SetActive(id + 2);
+        }
+        if (MouseInside(alphaselectorrect))
+        {
+            SetHovered(id + 2);
+        }
+
+        if (IsActive(id))
+        {
+            i32 chromaSMouseX = GM_clamp(mousePosX - chromaselectorrect.x, 0, chromaselectorrect.w - 1);
+            i32 chromaVMouseY = GM_clamp(chromaselectorrect.h - (mousePosY - chromaselectorrect.y) - 1, 0, chromaselectorrect.h - 1);
+            *saturation = float(chromaSMouseX) / float (chromaselectorrect.w - 1);
+            *value = float(chromaVMouseY) / float (chromaselectorrect.h - 1);
+        }
+        else if (IsActive(id + 1))
+        {
+            i32 hueselectormousex = GM_clamp(mousePosX - hueselectorrect.x, 0, hueselectorrect.w - 1);
+            *hue = float(hueselectormousex) / float(hueselectorrect.w - 1);
+        }
+        else if (IsActive(id + 2))
+        {
+            i32 alphaselectormousex = GM_clamp(mousePosX - alphaselectorrect.x, 0, alphaselectorrect.w - 1);
+            *opacity = float(alphaselectormousex) / float(alphaselectorrect.w - 1);
+        }
+
+        for (i32 i = 0; i < chromaselector.w; ++i)
+        {
+            for (i32 j = 0; j < chromaselector.h; ++j)
+            {
+                float isaturation = float(i) / float(chromaselector.w - 1);
+                float ivalue = float(j) / float(chromaselector.h - 1);
+                vec3 interprgb = HSVToRGB(*hue, isaturation, ivalue);
+                spredit_Color c = {
+                        (u8)(255.f * interprgb.x),
+                        (u8)(255.f * interprgb.y),
+                        (u8)(255.f * interprgb.z),
+                        255
+                };
+                *(chromaselector.pixels + chromaselector.w * j + i) = c;
+            }
+        }
+        spredit_Color selectedchromacirclecolor = { 0,0,0,200 };
+        if (*value < 0.5f)
+            selectedchromacirclecolor = { 255,255,255,200 };
+        i32 left = i32(*saturation * float(chromaselector.w)) - 2;
+        i32 bottom = i32(*value * float(chromaselector.h)) - 2;
+        SetFramePixelColor(&chromaselector, (left + 0), (bottom + 1), selectedchromacirclecolor);
+        SetFramePixelColor(&chromaselector, (left + 0), (bottom + 2), selectedchromacirclecolor);
+        SetFramePixelColor(&chromaselector, (left + 3), (bottom + 1), selectedchromacirclecolor);
+        SetFramePixelColor(&chromaselector, (left + 3), (bottom + 2), selectedchromacirclecolor);
+        SetFramePixelColor(&chromaselector, (left + 1), (bottom + 0), selectedchromacirclecolor);
+        SetFramePixelColor(&chromaselector, (left + 2), (bottom + 0), selectedchromacirclecolor);
+        SetFramePixelColor(&chromaselector, (left + 1), (bottom + 3), selectedchromacirclecolor);
+        SetFramePixelColor(&chromaselector, (left + 2), (bottom + 3), selectedchromacirclecolor);
+        Gfx::UpdateGPUTextureFromBitmap(&chromaselector.gputex, (u8*)chromaselector.pixels, chromaselector.w, chromaselector.h);
+
+        for (i32 i = 0; i < hueselector.w; ++i)
+        {
+            float normalizedhuef = float(i)/float(hueselector.w - 1);
+            vec3 irgb = HSVToRGB(normalizedhuef, 1.f, 1.f);
+            for (i32 j = 0; j < hueselector.h; ++j)
+            {
+                SetFramePixelColor(&hueselector, i, j, {
+                        u8(irgb.x * 255.f),
+                        u8(irgb.y * 255.f),
+                        u8(irgb.z * 255.f),
+                        255
+                });
+            }
+        }
+        i32 selectedhuecirclex = i32(*hue * float(hueselector.w));
+        i32 selectedhuecircley = hueselector.h / 2;
+        spredit_Color selectedhuecirclecolor = { 10,10,10,180 };
+        SetFramePixelColor(&hueselector, selectedhuecirclex-2, selectedhuecircley-1, selectedhuecirclecolor);
+        SetFramePixelColor(&hueselector, selectedhuecirclex-2, selectedhuecircley, selectedhuecirclecolor);
+        SetFramePixelColor(&hueselector, selectedhuecirclex+1, selectedhuecircley-1, selectedhuecirclecolor);
+        SetFramePixelColor(&hueselector, selectedhuecirclex+1, selectedhuecircley, selectedhuecirclecolor);
+        SetFramePixelColor(&hueselector, selectedhuecirclex-1, selectedhuecircley-2, selectedhuecirclecolor);
+        SetFramePixelColor(&hueselector, selectedhuecirclex, selectedhuecircley-2, selectedhuecirclecolor);
+        SetFramePixelColor(&hueselector, selectedhuecirclex-1, selectedhuecircley+1, selectedhuecirclecolor);
+        SetFramePixelColor(&hueselector, selectedhuecirclex, selectedhuecircley+1, selectedhuecirclecolor);
+        Gfx::UpdateGPUTextureFromBitmap(&hueselector.gputex, (u8*)hueselector.pixels, hueselector.w, hueselector.h);
+
+        for (i32 i = 0; i < alphaselector.w; ++i)
+        {
+            float normalizedalpha = float(i) / float(alphaselector.w - 1);
+            for (i32 j = 0; j < alphaselector.h; ++j)
+            {
+                vec3 alphaselectorbg;
+                if ((i % 16) < 8 != j < (alphaselector.h / 2))
+                    alphaselectorbg = { 0.75f, 0.75f, 0.75f };
+                else
+                    alphaselectorbg = { 0.50f, 0.50f, 0.50f };
+
+                vec3 alphaselectorfg = HSVToRGB(*hue, *saturation, *value);
+
+                vec3 alphaselectorfinalcolor = Lerp(alphaselectorbg, alphaselectorfg, normalizedalpha);
+
+                SetFramePixelColor(&alphaselector, i, j, {
+                        u8(alphaselectorfinalcolor.x * 255.f),
+                        u8(alphaselectorfinalcolor.y * 255.f),
+                        u8(alphaselectorfinalcolor.z * 255.f),
+                        255
+                });
+            }
+        }
+        i32 selectedalphacirclex = i32(*opacity * float(alphaselector.w));
+        i32 selectedalphacircley = alphaselector.h / 2;
+        spredit_Color selectedalphacirclecolor = { 10,10,10,180 };
+        SetFramePixelColor(&alphaselector, selectedalphacirclex-2, selectedalphacircley-1, selectedalphacirclecolor);
+        SetFramePixelColor(&alphaselector, selectedalphacirclex-2, selectedalphacircley, selectedalphacirclecolor);
+        SetFramePixelColor(&alphaselector, selectedalphacirclex+1, selectedalphacircley-1, selectedalphacirclecolor);
+        SetFramePixelColor(&alphaselector, selectedalphacirclex+1, selectedalphacircley, selectedalphacirclecolor);
+        SetFramePixelColor(&alphaselector, selectedalphacirclex-1, selectedalphacircley-2, selectedalphacirclecolor);
+        SetFramePixelColor(&alphaselector, selectedalphacirclex, selectedalphacircley-2, selectedalphacirclecolor);
+        SetFramePixelColor(&alphaselector, selectedalphacirclex-1, selectedalphacircley+1, selectedalphacirclecolor);
+        SetFramePixelColor(&alphaselector, selectedalphacirclex, selectedalphacircley+1, selectedalphacirclecolor);
+        Gfx::UpdateGPUTextureFromBitmap(&alphaselector.gputex, (u8*)alphaselector.pixels, alphaselector.w, alphaselector.h);
+
+        PrimitivePanel(chromaselectorrect, chromaselector.gputex.textureId);
+        PrimitivePanel(hueselectorrect, hueselector.gputex.textureId);
+        PrimitivePanel(alphaselectorrect, alphaselector.gputex.textureId);
+    }
+
 
     static void UpdateALHContainer(ALH *layout)
     {

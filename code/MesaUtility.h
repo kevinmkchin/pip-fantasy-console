@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MesaCommon.h"
+#include "MesaMath.h"
 
 #include <cfloat>
 #include <cstring>
@@ -14,6 +15,9 @@ void PickThreeRandomInts(int* x, int* y, int* z, int cap);
 int RandomInt(int min, int max);
 
 i32 ModifyASCIIBasedOnModifiers(i32 keycodeASCII, bool shift);
+
+// normalized hsv to rgb
+vec3 HSVToRGB(float h, float s, float v);
 
 template<typename T>
 inline bool IsOneOfArray(T v, T* array, int count)
