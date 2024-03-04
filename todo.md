@@ -12,12 +12,16 @@ Easy:
 - different brushes
 - limit undo redo buffer size
 - eye dropper
+- optimize color picker the for loops are quite slow
 
 # Known Bugs
 
 - GUI fresh ID is not great...will be buggy when number of elements change dynamically
   - should change to be managed by the window (elements in same window will persist the same ids).
 - code editor upon input, ensure cursor is visible by updating scroll values
+
+- sprite editor blinking pixel hopping leaving gaps. I really don't think its a frame rate issue. 
+I think I'm not receiving enough MouseMove events from SDL. As in some frames don't send the MouseMove.
 
 # Immediate next
 
