@@ -87,29 +87,37 @@ static void DeleteGPUTex(spredit_Frame *frame)
     // TODO(Kevin): delete gpu texture function in GfxDataTypesAndUtility
 }
 
+struct Fuck
+{
+    i32 x;
+    i32 y;
+    spredit_Color pixel;
+};
+
 void DoSpriteEditorGUI()
 {
     MesaGUI::BeginZone(alh_sprite_editor);
-    if (MesaGUI::EditorLabelledButton("Load a new sprite"))
-    {
-        std::string imagepath = OpenLoadImageDialog();
-        if (!imagepath.empty())
-        {
-            Gfx::TextureHandle sprite = Gfx::CreateGPUTextureFromDisk(imagepath.c_str());
-            gamedata.sprites.push_back(sprite);
-        }
-    }
-
-    MesaGUI::EditorBeginListBox();
-    for (size_t i = 0; i < gamedata.sprites.size(); ++i)
-    {
-        Gfx::TextureHandle sprite = gamedata.sprites.at(i);
-        bool selected = false;
-        MesaGUI::EditorSelectable(std::to_string(i).c_str(), &selected);
-    }
-    MesaGUI::EditorEndListBox();
+//    if (MesaGUI::EditorLabelledButton("Load a new sprite"))
+//    {
+//        std::string imagepath = OpenLoadImageDialog();
+//        if (!imagepath.empty())
+//        {
+//            Gfx::TextureHandle sprite = Gfx::CreateGPUTextureFromDisk(imagepath.c_str());
+//            gamedata.sprites.push_back(sprite);
+//        }
+//    }
+//
+//    MesaGUI::EditorBeginListBox();
+//    for (size_t i = 0; i < gamedata.sprites.size(); ++i)
+//    {
+//        Gfx::TextureHandle sprite = gamedata.sprites.at(i);
+//        bool selected = false;
+//        MesaGUI::EditorSelectable(std::to_string(i).c_str(), &selected);
+//    }
+//    MesaGUI::EditorEndListBox();
 
     static int brushSz = 1;
+    MesaGUI::EditorText("brush size");
     MesaGUI::EditorIncrementableIntegerField("brush size", &brushSz);
 
     static vec3 activeRGB = vec3();
@@ -144,8 +152,8 @@ void DoSpriteEditorGUI()
     MesaGUI::EndZone();
 
 
-    spreditState.frame.w = 64;
-    spreditState.frame.h = 64;
+    spreditState.frame.w = 200;
+    spreditState.frame.h = 140;
     if (spreditState.frame.pixels == 0)
     {
         InitSpriteEditorActionBuffers();
@@ -169,30 +177,41 @@ void DoSpriteEditorGUI()
 
     if (Input.mouseYScroll)
     {
-        if (Input.mouseYScroll > 0)
+        if (Input.KeyPressed(SDL_SCANCODE_LCTRL))
         {
-            switch (zoom)
-            {
-                case 8: zoom = 12; break;
-                case 12: zoom = 16; break;
-                case 16: zoom = 24; break;
-                case 24: zoom = 32; break;
-                case 32: zoom = 48; break;
-                case 48: zoom = 64; break;
-                default: zoom = GM_min(zoom + 1, 64);
-            }
+            if (Input.mouseYScroll > 0)
+                ++brushSz;
+            else
+                --brushSz;
+            brushSz = GM_clamp(brushSz, 1, 256);
         }
         else
         {
-            switch (zoom)
+            if (Input.mouseYScroll > 0)
             {
-                case 12: zoom = 8; break;
-                case 16: zoom = 12; break;
-                case 24: zoom = 16; break;
-                case 32: zoom = 24; break;
-                case 48: zoom = 32; break;
-                case 64: zoom = 48; break;
-                default: zoom = GM_max(zoom - 1, 1);
+                switch (zoom)
+                {
+                    case 8: zoom = 12; break;
+                    case 12: zoom = 16; break;
+                    case 16: zoom = 24; break;
+                    case 24: zoom = 32; break;
+                    case 32: zoom = 48; break;
+                    case 48: zoom = 64; break;
+                    default: zoom = GM_min(zoom + 1, 64);
+                }
+            }
+            else
+            {
+                switch (zoom)
+                {
+                    case 12: zoom = 8; break;
+                    case 16: zoom = 12; break;
+                    case 24: zoom = 16; break;
+                    case 32: zoom = 24; break;
+                    case 48: zoom = 32; break;
+                    case 64: zoom = 48; break;
+                    default: zoom = GM_max(zoom - 1, 1);
+                }
             }
         }
     }
@@ -233,7 +252,8 @@ void DoSpriteEditorGUI()
         ClearRedoBuffer();
     }
 
-    if (Input.mouseLeftPressed && mouseOverViewport)
+    std::vector<Fuck> restore;
+    if (mouseOverViewport)
     {
         // TODO(Kevin): a "pixel has been touched during this action" look up array basically bit array
 
@@ -272,6 +292,7 @@ void DoSpriteEditorGUI()
                         // existing alpha to 255.
                         vec3 existingRGB = {RGB255TO1(p->r, p->g, p->b)};
                         vec3 finalRGB = Lerp(existingRGB, activeRGB, activeOpacity);
+                        restore.push_back({ mx+i, my+j, *p });
                         p->r = u8(finalRGB.x * 255.f);
                         p->g = u8(finalRGB.y * 255.f);
                         p->b = u8(finalRGB.z * 255.f);
@@ -290,4 +311,12 @@ void DoSpriteEditorGUI()
             alh_sprite_editor_right_panel_top->y + (int)panyf,
             spreditState.frame.w * zoom, spreditState.frame.h * zoom), spreditState.frame.gputex.textureId);
 
+    if (!Input.mouseLeftPressed && mouseOverViewport)
+    {
+        for (auto p : restore)
+        {
+            *PixelAt(&spreditState.frame, p.x, p.y) = p.pixel;
+        }
+    }
+    restore.clear();
 }
