@@ -22,6 +22,8 @@ Easy:
 
 - sprite editor blinking pixel hopping leaving gaps. I really don't think its a frame rate issue. 
 I think I'm not receiving enough MouseMove events from SDL. As in some frames don't send the MouseMove.
+Proof: using low opacity color, each brush spot is darker than the preview (no "already modified" array yet).
+this means each brush spot is being colored multiple frames before Input is aware of the new mouse position.
 
 # Immediate next
 
