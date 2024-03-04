@@ -204,10 +204,10 @@ void InitEditorGUI()
     mainbarLayout = MesaGUI::NewALH(-1, -1, -1, 0, false);
     codeEditorTabLayout = MesaGUI::NewALH(false);
     alh_sprite_editor = MesaGUI::NewALH(false);
-    alh_sprite_editor_left_panel = MesaGUI::NewALH(-1, -1, 140, -1, false);
+    alh_sprite_editor_left_panel = MesaGUI::NewALH(-1, -1, 70, -1, false);
     alh_sprite_editor_right_panel = MesaGUI::NewALH(true);
     alh_sprite_editor_right_panel_top = MesaGUI::NewALH(false);
-    alh_sprite_editor_right_panel_bot = MesaGUI::NewALH(-1, -1, -1, 100, false);
+    alh_sprite_editor_right_panel_bot = MesaGUI::NewALH(-1, -1, -1, 0, false);
 
     editorLayout->Insert(mainbarLayout);
     editorLayout->Insert(codeEditorTabLayout);

@@ -6,6 +6,13 @@ Hotline Miami x Nuclear Throne kind of game
 - Do something interesting with the camera
 - Dodge to avoid bullets -> faster than NT but slower than HM
 
+Easy:
+- Use static buffer for preview brush changes instead of std vector
+
+- different brushes
+- limit undo redo buffer size
+- eye dropper
+
 # Known Bugs
 
 - GUI fresh ID is not great...will be buggy when number of elements change dynamically
@@ -14,7 +21,10 @@ Hotline Miami x Nuclear Throne kind of game
 
 # Immediate next
 
-- math.lerp (different variations too) // exponential fall off of the speed
+- UI lib clean up
+- Animation frames
+- Layers
+
 - pl: Arrays
 - pl: % BinOp
 - pl: elif
@@ -22,10 +32,12 @@ Hotline Miami x Nuclear Throne kind of game
 - pl: for (n in [1, 2, 3, 5, 7, 11])
 - pl: for (k,v in [ a: 2, b: 3 ])
 - pl: 'continue' and 'break' in while and for-loops
+
+- math.lerp (different variations too) // exponential fall off of the speed
+
 - code editor: cut, copy, paste
 - code editor: ctrl+backspace and ctrl+delete for word deletion
 - code editor: ctrl+d for duplicate line
-- code editor: insert mode + indicator (?)
 - code editor: SCROLLING
 
 # Todo
