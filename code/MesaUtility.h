@@ -18,6 +18,8 @@ i32 ModifyASCIIBasedOnModifiers(i32 keycodeASCII, bool shift);
 
 // normalized hsv to rgb
 vec3 HSVToRGB(float h, float s, float v);
+// normalized rgb to hsv
+vec3 RGBToHSV(float r, float g, float b);
 
 template<typename T>
 inline bool IsOneOfArray(T v, T* array, int count)
