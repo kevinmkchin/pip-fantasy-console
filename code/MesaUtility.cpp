@@ -138,3 +138,22 @@ vec3 HSVToRGB(float h, float s, float v)
     rgb += vec3(m,m,m);
     return rgb;
 }
+
+vec3 RGBToHSV(float r, float g, float b)
+{
+    // https://en.wikipedia.org/wiki/Hue
+    // https://www.rapidtables.com/convert/color/rgb-to-hsv.html
+
+    float h = atan2(1.7320508f * (g - b), 2 * r - g - b);
+    if (h < 0)
+        h = GM_TWOPI + h;
+    h = abs(h) / GM_TWOPI;
+
+    float cmax = GM_max(r, GM_max(g, b));
+    float cmin = GM_min(r, GM_min(g, b));
+    float cdelta = cmax - cmin;
+    float s = cmax == 0.f ? 0.f : cdelta / cmax;
+    
+    vec3 hsv = vec3(h, s, cmax);
+    return hsv;
+}

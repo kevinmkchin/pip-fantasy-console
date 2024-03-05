@@ -151,9 +151,8 @@ void DoSpriteEditorGUI()
 
     MesaGUI::EndZone();
 
-
-    spreditState.frame.w = 200;
-    spreditState.frame.h = 140;
+    spreditState.frame.w = 32;
+    spreditState.frame.h = 32;
     if (spreditState.frame.pixels == 0)
     {
         InitSpriteEditorActionBuffers();
@@ -266,6 +265,23 @@ void DoSpriteEditorGUI()
         i32 y = click.y/zoom;
         i32 mx = x - brushSz/2;
         i32 my = y - brushSz/2;
+
+
+        // Eye dropper
+        if (Input.KeyHasBeenPressed(SDL_SCANCODE_J))
+        {
+            // Note(Kevin): once I add layers, need to add up the color under mouse from each layer
+            spredit_Color *p = PixelAt(&spreditState.frame, x, y);
+            if (p)
+            {
+                vec3 hsv = RGBToHSV(RGB255TO1(p->r, p->g, p->b));
+                hue = hsv.x;
+                saturation = hsv.y;
+                value = hsv.z;
+                activeOpacity = float(p->a)/255.f;
+            }
+        }
+
 
         float brushRadius = (float)brushSz/2.f;
 
