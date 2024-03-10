@@ -221,6 +221,8 @@ int main(int argc, char* argv[])
     {
         if (Time.UpdateDeltaTime() > 0.1f) { continue; } // if delta time is too large, will cause glitches
 
+//        float beforeUpdate = Time.TimeStamp();
+
         MesaGUI::NewFrame();
         ProcessSDLEvents();
 
@@ -249,6 +251,10 @@ int main(int argc, char* argv[])
         if (consoleActive)
             DoSingleCommandLine();
 
+//        float updateDuration = Time.TimeStamp() - beforeUpdate;
+//        printf("update took: %f\n", updateDuration);
+//
+//        float beforeRender = Time.TimeStamp();
         // RENDER
         {
             switch (g_ProgramMode)
@@ -271,6 +277,8 @@ int main(int argc, char* argv[])
             }
 #endif
         }
+//        float renderDuration = Time.TimeStamp() - beforeRender;
+//        printf("render took: %f\n", renderDuration);
 
         Input.ResetInputStatesAtEndOfFrame();
     }

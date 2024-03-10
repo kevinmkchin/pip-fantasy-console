@@ -26,6 +26,8 @@ static ui_id FreshID()
 
 namespace MesaGUI
 {
+#define MAX_WINDOWS_ALLOWED 16
+
     static NiceArray<vtxt_font, 10> __vtxtLoadedFonts;
     static Font __fonts[32];
     static Font __default_font;
@@ -99,19 +101,28 @@ namespace MesaGUI
             "layout (location = 0) in vec2 pos;\n"
             "layout (location = 1) in vec2 uv;\n"
             "out vec2 texUV;\n"
+            "out vec2 fragPos;\n"
             "void main() {\n"
             "    gl_Position = matrixOrtho * vec4(pos, 0.0, 1.0);\n"
             "    texUV = uv;\n"
+            "    fragPos = pos;\n"
             "}\n";
     static const char* __main_ui_shader_fs =
             "#version 330 core\n"
             "uniform sampler2D textureSampler0;\n"
             "uniform bool useColour = false;\n"
             "uniform vec4 uiColour;\n"
+            "uniform ivec4 windowMask;\n"
             "in vec2 texUV;\n"
+            "in vec2 fragPos;\n"
             "out vec4 colour;\n"
             "void main() {\n"
-            "    if (useColour) {\n"
+            "    vec4 fmask = vec4(windowMask);\n"
+            "    bool maskxokay = fmask.x <= fragPos.x && fragPos.x < (fmask.x + fmask.z);\n"
+            "    bool maskyokay = fmask.y <= fragPos.y && fragPos.y < (fmask.y + fmask.w);\n"
+            "    if (!maskxokay || !maskyokay) {"
+            "        colour = vec4(0.0, 0.0, 0.0, 0.0);"
+            "    } else if (useColour) {\n"
             "        colour = uiColour;\n"
             "    } else {\n"
             "        colour = texture(textureSampler0, texUV);\n"
@@ -134,16 +145,21 @@ namespace MesaGUI
             "uniform ivec4 rect;\n"
             "uniform int cornerRadius;\n"
             "uniform vec4 uiColour;\n"
+            "uniform ivec4 windowMask;\n"
             "in vec2 fragPos;\n"
             "out vec4 colour;\n"
             "void main() {\n"
             "    vec4 frect = vec4(rect);\n"
             "    float fradius = float(cornerRadius);\n"
-            "\n"
             "    bool xokay = (frect.x + fradius) < fragPos.x && fragPos.x < (frect.x + frect.z - fradius);\n"
             "    bool yokay = (frect.y + fradius) < fragPos.y && fragPos.y < (frect.y + frect.w - fradius);\n"
             "\n"
-            "    if (xokay || yokay) { \n"
+            "    vec4 fmask = vec4(windowMask);\n"
+            "    bool maskxokay = fmask.x <= fragPos.x && fragPos.x < (fmask.x + fmask.z);\n"
+            "    bool maskyokay = fmask.y <= fragPos.y && fragPos.y < (fmask.y + fmask.w);\n"
+            "    if (!maskxokay || !maskyokay) {"
+            "        colour = vec4(0.0, 0.0, 0.0, 0.0);"
+            "    } else if (xokay || yokay) { \n"
             "        colour = uiColour;\n"
             "    } else {\n"
             "        vec2 cornerPoint;\n"
@@ -183,14 +199,20 @@ namespace MesaGUI
             "uniform sampler2D textureSampler0;\n"
             "uniform vec4 uiColour;\n"
             "uniform ivec4 rectMask;\n"
+            "uniform ivec4 windowMask;\n"
             "uniform int rectMaskCornerRadius;\n"
             "in vec2 fragPos;\n"
             "in vec2 texUV;\n"
             "out vec4 colour;\n"
             "void main() {\n"
             "    float textAlpha = texture(textureSampler0, texUV).x;\n"
-            "    \n"
-            "    if (rectMaskCornerRadius < 0)\n"
+            "\n"
+            "    vec4 fmask = vec4(windowMask);\n"
+            "    bool maskxokay = fmask.x <= fragPos.x && fragPos.x < (fmask.x + fmask.z);\n"
+            "    bool maskyokay = fmask.y <= fragPos.y && fragPos.y < (fmask.y + fmask.w);\n"
+            "    if (!maskxokay || !maskyokay) {"
+            "        colour = vec4(0.0, 0.0, 0.0, 0.0);"
+            "    } else if (rectMaskCornerRadius < 0)\n"
             "    {\n"
             "        colour = vec4(uiColour.xyz, uiColour.w * textAlpha);\n"
             "    }\n"
@@ -254,6 +276,7 @@ namespace MesaGUI
             "uniform sampler2D textureSampler0;\n"
             "uniform ivec4 rectMask;\n"
             "uniform int rectMaskCornerRadius;\n"
+            "uniform ivec4 windowMask;\n"
             "in vec2 fragPos;\n"
             "in vec2 texUV;\n"
             "in vec3 vertColor;\n"
@@ -261,7 +284,12 @@ namespace MesaGUI
             "void main() {\n"
             "    float textAlpha = texture(textureSampler0, texUV).x;\n"
             "    \n"
-            "    if (rectMaskCornerRadius < 0)\n"
+            "    vec4 fmask = vec4(windowMask);\n"
+            "    bool maskxokay = fmask.x <= fragPos.x && fragPos.x < (fmask.x + fmask.z);\n"
+            "    bool maskyokay = fmask.y <= fragPos.y && fragPos.y < (fmask.y + fmask.w);\n"
+            "    if (!maskxokay || !maskyokay) {"
+            "        colour = vec4(0.0, 0.0, 0.0, 0.0);"
+            "    } else if (rectMaskCornerRadius < 0)\n"
             "    {\n"
             "        colour = vec4(vertColor, textAlpha);\n"
             "    }\n"
@@ -316,6 +344,7 @@ namespace MesaGUI
 
     static std::stack<UIStyle> ui_ss; // UI Style Stack
     static UIZone activeZone;
+    static UIRect activeWindowMask;
 
     static ui_id hoveredUI = null_ui_id;
     static ui_id activeUI = null_ui_id;
@@ -346,6 +375,7 @@ namespace MesaGUI
             u32 ib[] = { 0, 1, 3, 1, 2, 3 };
 
             Gfx::UseShader(__main_ui_shader);
+            Gfx::GLBind4i(__main_ui_shader, "windowMask", activeWindowMask.x, activeWindowMask.y, activeWindowMask.w, activeWindowMask.h);
 
             if (textureId != 0)
             {
@@ -383,6 +413,7 @@ namespace MesaGUI
             u32 ib[] = { 0, 1, 3, 1, 2, 3 };
 
             Gfx::UseShader(__rounded_corner_rect_shader);
+            Gfx::GLBind4i(__main_ui_shader, "windowMask", activeWindowMask.x, activeWindowMask.y, activeWindowMask.w, activeWindowMask.h);
             Gfx::GLBind4i(__rounded_corner_rect_shader, "rect", rect.x, rect.y, rect.w, rect.h);
             Gfx::GLBind1i(__rounded_corner_rect_shader, "cornerRadius", radius);
             Gfx::GLBind4f(__rounded_corner_rect_shader, "uiColour", color.x, color.y, color.z, color.w);
@@ -434,6 +465,7 @@ namespace MesaGUI
                          5, 10, 12, 5, 12, 7, 7, 12, 14, 8, 9, 10, 10, 9, 11, 10, 11, 12, 12, 11, 13, 12, 13, 14, 14, 13, 15 };
 
             Gfx::UseShader(__main_ui_shader);
+            Gfx::GLBind4i(__main_ui_shader, "windowMask", activeWindowMask.x, activeWindowMask.y, activeWindowMask.w, activeWindowMask.h);
 
             if (textureId != 0)
             {
@@ -498,6 +530,8 @@ namespace MesaGUI
             Gfx::GLBind4i(__text_shader, "rectMask", rectMask.x, rectMask.y, rectMask.w, rectMask.h);
             Gfx::GLBind1i(__text_shader, "rectMaskCornerRadius", rectMaskCornerRadius);
 
+            Gfx::GLBind4i(__text_shader, "windowMask", activeWindowMask.x, activeWindowMask.y, activeWindowMask.w, activeWindowMask.h);
+
             RenderMesh(__text_mesh);
         }
     };
@@ -537,6 +571,8 @@ namespace MesaGUI
                 Gfx::GLBind4i(__colored_text_shader, "rectMask", rectMask.x, rectMask.y, rectMask.w, rectMask.h);
                 Gfx::GLBind1i(__colored_text_shader, "rectMaskCornerRadius", rectMaskCornerRadius);
 
+                Gfx::GLBind4i(__colored_text_shader, "windowMask", activeWindowMask.x, activeWindowMask.y, activeWindowMask.w, activeWindowMask.h);
+
                 RenderMesh(__colored_text_mesh);
             }
 
@@ -544,8 +580,22 @@ namespace MesaGUI
         }
     };
 
+    struct DrawCollectionMetaData
+    {
+        UIRect windowMask;
+        size_t depth = 0;
+    };
+
     static MemoryLinearBuffer drawRequestsFrameStorageBuffer;
-    static std::vector<UIDrawRequest*> drawQueue;
+    static NiceArray<std::vector<UIDrawRequest*>, MAX_WINDOWS_ALLOWED + 1> DRAWQSTORAGE;
+    static NiceArray<DrawCollectionMetaData, MAX_WINDOWS_ALLOWED + 1> DRAWQUEUE_METADATA;
+    static std::stack<std::vector<UIDrawRequest*>*> DRAWREQCOLLECTIONSTACK;
+
+    void AppendToCurrentDrawRequestsCollection(UIDrawRequest *drawRequest)
+    {
+        DRAWREQCOLLECTIONSTACK.top()->push_back(drawRequest);
+    }
+
 #define MESAIMGUI_NEW_DRAW_REQUEST(type) new (MEMORY_LINEAR_ALLOCATE(&drawRequestsFrameStorageBuffer, type)) type()
 
     bool IsActive(ui_id id)
@@ -660,7 +710,7 @@ namespace MesaGUI
         drawRequest->y = y;
         drawRequest->font = ui_ss.top().textFont;
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
     }
 
 
@@ -674,7 +724,7 @@ namespace MesaGUI
         drawRequest->textureId = IsHovered(id) ? hoveredTexId : normalTexId;
         if (IsActive(id) || result) drawRequest->textureId = activeTexId;
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
 
         return result;
     }
@@ -693,7 +743,7 @@ namespace MesaGUI
             drawRequest->color = activeColor;
         }
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
 
         return result;
     }
@@ -704,7 +754,7 @@ namespace MesaGUI
         drawRequest->rect = rect;
         drawRequest->color = colorRGBA;
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
     }
 
     void PrimitivePanel(UIRect rect, int cornerRadius, vec4 colorRGBA)
@@ -714,7 +764,7 @@ namespace MesaGUI
         drawRequest->color = colorRGBA;
         drawRequest->radius = cornerRadius;
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
     }
 
     void PrimitivePanel(UIRect rect, u32 glTextureId)
@@ -723,7 +773,7 @@ namespace MesaGUI
         drawRequest->rect = rect;
         drawRequest->textureId = glTextureId;
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
     }
 
     void PrimitivePanel(UIRect rect, int cornerRadius, u32 glTextureId, float normalizedCornerSizeInUV)
@@ -735,7 +785,7 @@ namespace MesaGUI
         drawRequest->radius = cornerRadius;
         drawRequest->normalizedCornerSizeInUV = normalizedCornerSizeInUV;
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
     }
 
     void PrimitiveTextFmt(int x, int y, int size, TextAlignment alignment, const char* textFmt, ...)
@@ -767,7 +817,7 @@ namespace MesaGUI
         drawRequest->font = ui_ss.top().textFont;
         drawRequest->color = ui_ss.top().textColor;
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
     }
 
     void PrimitiveText(int x, int y, int size, TextAlignment alignment, const char* text)
@@ -797,7 +847,7 @@ namespace MesaGUI
         drawRequest->font = ui_ss.top().textFont;
         drawRequest->color = ui_ss.top().textColor;
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
     }
 
     void PrimitiveTextMasked(int x, int y, int size, TextAlignment alignment, const char* text, UIRect mask, int maskCornerRadius)
@@ -829,7 +879,7 @@ namespace MesaGUI
         drawRequest->rectMask = mask;
         drawRequest->rectMaskCornerRadius = maskCornerRadius;
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
     }
 
     void PrimtiveImage(UIRect rect, u32 glTextureId)
@@ -841,7 +891,7 @@ namespace MesaGUI
         drawRequest->radius = 0;
         drawRequest->normalizedCornerSizeInUV = 0.f;
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
     }
 
     void PrimitiveIntegerInputField(ui_id id, UIRect rect, int* v)
@@ -923,7 +973,7 @@ namespace MesaGUI
         drawRequest->rect = rect;
         drawRequest->color = IsActive(id) ? vec4(0.f, 0.f, 0.f, 1.f) : vec4(0.2f, 0.2f, 0.2f, 1.f);//vec4(1.f, 1.f, 1.f, 1.f) : vec4(0.8f, 0.8f, 0.8f, 1.f);
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
 
         if (IsActive(id))
         {
@@ -1026,7 +1076,7 @@ namespace MesaGUI
         drawRequest->rect = rect;
         drawRequest->color = IsActive(id) ? vec4(0.f, 0.f, 0.f, 1.f) : vec4(0.2f, 0.2f, 0.2f, 1.f);
 
-        drawQueue.push_back(drawRequest);
+        AppendToCurrentDrawRequestsCollection(drawRequest);
 
         if (IsActive(id))
         {
@@ -1086,19 +1136,32 @@ namespace MesaGUI
 
 
 
-    void BeginZone(UIRect windowRect)
+    void BeginZone(UIRect windowRect, vec4 bgcolor)
     {
-        if (activeZone.zoneId != null_ui_id)
-        {
-            PrintLog.Error("BeginZone and EndZone don't match.");
-            return;
-        }
-
         ui_id windowId = FreshID();
         activeZone.zoneId = windowId;
         activeZone.zoneRect = windowRect;
         activeZone.topLeftXOffset = 5;
         activeZone.topLeftYOffset = 5;
+
+        ASSERT(DRAWQSTORAGE.NotAtCapacity());
+        DRAWQSTORAGE.count++;
+        DRAWQUEUE_METADATA.PushBack({ windowRect, DRAWREQCOLLECTIONSTACK.size() });
+        DRAWREQCOLLECTIONSTACK.push(&DRAWQSTORAGE.Back());
+
+        PrimitivePanel(windowRect, bgcolor);
+    }
+
+    void EndZone()
+    {
+        if (DRAWREQCOLLECTIONSTACK.size() > 1)
+        {
+            DRAWREQCOLLECTIONSTACK.pop();
+        }
+        else
+        {
+            ASSERT(0);
+        }
     }
 
     void GetWHOfZone(int *w, int *h)
@@ -1117,11 +1180,6 @@ namespace MesaGUI
     {
         activeZone.topLeftXOffset += x;
         activeZone.topLeftYOffset += y;
-    }
-
-    void EndZone()
-    {
-        activeZone.zoneId = null_ui_id;
     }
 
 
@@ -1643,6 +1701,14 @@ namespace MesaGUI
             defaultStyle.textFont = __default_font;
             ui_ss.push(defaultStyle);
         }
+
+        ASSERT(DRAWQSTORAGE.count == 0);
+        ASSERT(DRAWQUEUE_METADATA.count == 0);
+        ASSERT(DRAWREQCOLLECTIONSTACK.empty());
+
+        DRAWQSTORAGE.count++;
+        DRAWQUEUE_METADATA.PushBack({ UIRect(0,0,9999,9999), 0 });
+        DRAWREQCOLLECTIONSTACK.push(&DRAWQSTORAGE.Back());
     }
 
     void NewFrame()
@@ -1662,8 +1728,12 @@ namespace MesaGUI
         drawRequestsFrameStorageBuffer.arenaOffset = 0;
         
         // clear draw queue
-        drawQueue.clear();
-
+        DRAWQSTORAGE.count = 1;
+        DRAWQUEUE_METADATA.count = 1;
+        if (DRAWREQCOLLECTIONSTACK.size() > 1)
+        {
+            PrintLog.Error("GUI BeginZone and EndZone don't match.");
+        }
     }
 
     bool Temp_Escape()
@@ -1720,10 +1790,20 @@ namespace MesaGUI
         Gfx::UseShader(__colored_text_shader);
         Gfx::GLBindMatrix4fv(__colored_text_shader, "matrixOrtho", 1, projectionMatrix.ptr());
 
-        for (int i = 0; i < drawQueue.size(); ++i)
+        // Note(Kevin): could sort so its O(n) but realistically how many windows am I going to have...
+        for (int depth = 0; depth < 4; ++depth)
         {
-            UIDrawRequest *drawCall = drawQueue.at(i);
-            drawCall->Draw();
+            for (int i = 0; i < DRAWQSTORAGE.count; ++i)
+            {
+                if (DRAWQUEUE_METADATA.At(i).depth == depth)
+                {
+                    activeWindowMask = DRAWQUEUE_METADATA.At(i).windowMask;
+                    std::vector<UIDrawRequest*>& drawQueue = DRAWQSTORAGE.At(i);
+                    for (auto drawCall : drawQueue)
+                        drawCall->Draw();
+                    drawQueue.clear();
+                }
+            }
         }
     }
 
