@@ -79,6 +79,7 @@ namespace MesaGUI
     bool MouseWentUp();
     bool MouseWentDown();
     bool MouseInside(const UIRect& rect);
+    // IsMouseInsideWindow?
 
     void PushUIStyle(UIStyle style);
     void PopUIStyle();
@@ -116,7 +117,7 @@ namespace MesaGUI
      * TODO think about: 
      * Can be set to capture focus?
      * Can be set to collapse? */
-    void BeginZone(UIRect windowRect);
+    void BeginZone(UIRect windowRect, vec4 bgcolor = vec4(0.05f,0.05f,0.05f,1.f));
     void GetWHOfZone(int *w, int *h);
     void GetXYInZone(int *x, int *y);
     void MoveXYInZone(int x, int y);
@@ -134,6 +135,24 @@ namespace MesaGUI
     void EditorEndListBox();
 
     void EditorColorPicker(ui_id id, float *hue, float *saturation, float *value, float *opacity);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     struct ALH

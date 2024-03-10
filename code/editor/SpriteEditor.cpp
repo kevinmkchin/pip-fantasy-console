@@ -212,7 +212,12 @@ void algo_line_perfect(int x1, int y1, int x2, int y2) // I don't like
 
 void DoSpriteEditorGUI()
 {
-    MesaGUI::BeginZone(alh_sprite_editor);
+//    MesaGUI::BeginZone(MesaGUI::UIRect(200, 200, 200, 200), vec4(0.5f, 0.5f, 0.5f, 1.f));
+//    MesaGUI::BeginZone(MesaGUI::UIRect(50, 50, 200, 400), vec4(0.0f, 1.f, 0.f, 1.f));
+//    MesaGUI::EndZone();
+//    MesaGUI::EndZone();
+
+    MesaGUI::BeginZone(alh_sprite_editor_left_panel);
 //    if (MesaGUI::EditorLabelledButton("Load a new sprite"))
 //    {
 //        std::string imagepath = OpenLoadImageDialog();
@@ -264,8 +269,9 @@ void DoSpriteEditorGUI()
 
     MesaGUI::EndZone();
 
-    spreditState.frame.w = 800;
-    spreditState.frame.h = 600;
+
+    spreditState.frame.w = 320;
+    spreditState.frame.h = 240;
     if (spreditState.frame.pixels == 0)
     {
         InitSpriteEditorActionBuffers();
