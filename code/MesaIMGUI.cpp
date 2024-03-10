@@ -343,7 +343,6 @@ namespace MesaGUI
     static NiceArray<char, 128> activeTextInputBuffer;
 
     static std::stack<UIStyle> ui_ss; // UI Style Stack
-    static UIZone activeZone;
     static UIRect activeWindowMask;
 
     static ui_id hoveredUI = null_ui_id;
@@ -586,14 +585,29 @@ namespace MesaGUI
         size_t depth = 0;
     };
 
+    struct WindowData
+    {
+        ui_id zoneId = null_ui_id;
+        UIRect zoneRect;
+        int topLeftXOffset = 0;
+        int topLeftYOffset = 0;
+    };
+
     static MemoryLinearBuffer drawRequestsFrameStorageBuffer;
     static NiceArray<std::vector<UIDrawRequest*>, MAX_WINDOWS_ALLOWED + 1> DRAWQSTORAGE;
     static NiceArray<DrawCollectionMetaData, MAX_WINDOWS_ALLOWED + 1> DRAWQUEUE_METADATA;
     static std::stack<std::vector<UIDrawRequest*>*> DRAWREQCOLLECTIONSTACK;
+    static std::stack<WindowData> WINDOWSTACK;
 
     void AppendToCurrentDrawRequestsCollection(UIDrawRequest *drawRequest)
     {
         DRAWREQCOLLECTIONSTACK.top()->push_back(drawRequest);
+    }
+
+    WindowData *CurrentWindow()
+    {
+        ASSERT(!WINDOWSTACK.empty());
+        return &WINDOWSTACK.top();
     }
 
 #define MESAIMGUI_NEW_DRAW_REQUEST(type) new (MEMORY_LINEAR_ALLOCATE(&drawRequestsFrameStorageBuffer, type)) type()
@@ -1138,16 +1152,17 @@ namespace MesaGUI
 
     void BeginZone(UIRect windowRect, vec4 bgcolor)
     {
-        ui_id windowId = FreshID();
-        activeZone.zoneId = windowId;
-        activeZone.zoneRect = windowRect;
-        activeZone.topLeftXOffset = 5;
-        activeZone.topLeftYOffset = 5;
-
         ASSERT(DRAWQSTORAGE.NotAtCapacity());
         DRAWQSTORAGE.count++;
         DRAWQUEUE_METADATA.PushBack({ windowRect, DRAWREQCOLLECTIONSTACK.size() });
         DRAWREQCOLLECTIONSTACK.push(&DRAWQSTORAGE.Back());
+
+        WindowData windata;
+        windata.zoneId = FreshID();
+        windata.zoneRect = windowRect;
+        windata.topLeftXOffset = 5;
+        windata.topLeftYOffset = 5;
+        WINDOWSTACK.push(windata);
 
         PrimitivePanel(windowRect, bgcolor);
     }
@@ -1157,6 +1172,7 @@ namespace MesaGUI
         if (DRAWREQCOLLECTIONSTACK.size() > 1)
         {
             DRAWREQCOLLECTIONSTACK.pop();
+            WINDOWSTACK.pop();
         }
         else
         {
@@ -1166,22 +1182,21 @@ namespace MesaGUI
 
     void GetWHOfZone(int *w, int *h)
     {
-        *w = activeZone.zoneRect.w;
-        *h = activeZone.zoneRect.h;
+        *w = CurrentWindow()->zoneRect.w;
+        *h = CurrentWindow()->zoneRect.h;
     }
 
     void GetXYInZone(int *x, int *y)
     {
-        *x = activeZone.zoneRect.x + activeZone.topLeftXOffset;
-        *y = activeZone.zoneRect.y + activeZone.topLeftYOffset;
+        *x = CurrentWindow()->zoneRect.x + CurrentWindow()->topLeftXOffset;
+        *y = CurrentWindow()->zoneRect.y + CurrentWindow()->topLeftYOffset;
     }
 
     void MoveXYInZone(int x, int y)
     {
-        activeZone.topLeftXOffset += x;
-        activeZone.topLeftYOffset += y;
+        CurrentWindow()->topLeftXOffset += x;
+        CurrentWindow()->topLeftYOffset += y;
     }
-
 
     void EditorText(const char* text)
     {
