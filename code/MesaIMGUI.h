@@ -57,14 +57,6 @@ namespace MesaGUI
         vec4 editorWindowBackgroundColor = vec4(0.1f, 0.1f, 0.1f, 0.85f);
     };
 
-    struct UIZone
-    {
-        ui_id zoneId = null_ui_id;
-        UIRect zoneRect;
-        int topLeftXOffset;
-        int topLeftYOffset;
-    };
-
     void Init();
     void NewFrame();
     void ProcessSDLEvent(const SDL_Event evt);
