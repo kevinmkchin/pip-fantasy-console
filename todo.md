@@ -7,23 +7,19 @@ Hotline Miami x Nuclear Throne kind of game
 - Dodge to avoid bullets -> faster than NT but slower than HM
 
 Easy:
-- Use static buffer for preview brush changes instead of std vector
+- prettify Editor GUI elements (the ones that go inside Windows)
+- use static buffer for preview brush changes instead of std vector
 
 - different brushes
 - limit undo redo buffer size
-- eye dropper
 - optimize color picker the for loops are quite slow
+
+- [CompileTimeID] GUI fresh ID is not great...will be buggy when number of elements change dynamically
+  - should change to be managed by the window (elements in same window will persist the same ids).
 
 # Known Bugs
 
-- GUI fresh ID is not great...will be buggy when number of elements change dynamically
-  - should change to be managed by the window (elements in same window will persist the same ids).
 - code editor upon input, ensure cursor is visible by updating scroll values
-
-- sprite editor blinking pixel hopping leaving gaps. I really don't think its a frame rate issue. 
-I think I'm not receiving enough MouseMove events from SDL. As in some frames don't send the MouseMove.
-Proof: using low opacity color, each brush spot is darker than the preview (no "already modified" array yet).
-this means each brush spot is being colored multiple frames before Input is aware of the new mouse position.
 
 # Immediate next
 
@@ -62,7 +58,6 @@ this means each brush spot is being colored multiple frames before Input is awar
 
 - Sprite sheet & animations
 - Sprite batch rendering
-- IMGUI easier Layouting
 
 - camera API (maybe not? user can implement own camera)
 - gui API
@@ -74,18 +69,19 @@ this means each brush spot is being colored multiple frames before Input is awar
 - Collision and dispatch system: Pixel perfect AABB Collision checks -> GJK&EPA
   - Select collider type from AABB, Sphere, and Convex point cloud
 
+- GUI Input handling
+  - rework keyboard input handling (the array of inputs this frame is dumb)
+  - probably eat keyboard inputs
+  - overlapping elements or buttons
+  - SDL_SCANCODE independent input key enums (or maybe unnecessary...)
 
 # Way the fuck down the line
 ### Uncategorized
+- MesaIMGUI easier Layouting?
 - lots of potential optimizations in MesaIMGUI
-- MesaIMGUI abstract out behaviour code so reusable (e.g. button behaviour)
-- MesaIMGUI should probably eat keyboard inputs
-- MesaIMGUI overlapping elements or buttons
-- SDL_SCANCODE independent input key enums (or maybe unnecessary...)
 - (fuck off until later) vertext rewrite for better usability better API
-- rework MesaIMGUI keyboard input handling. 
 
-### Branch off for rearchitecture
+### Rearchitecture?
 
 Core (essentially the common library that everything uses)
 - MesaMath
@@ -110,6 +106,7 @@ Gfx (probably don't make a module out of this)
 
 # Done
 
+- Intertwine between mouse pos to fix sprite editor blinking pixel hopping leaving gaps
 - Editor code coloring with text vertex colors
 - fixed bug where primitive drawing was doing vb size * 0.2 instead of divide by 6...
 - code editor scrolling
