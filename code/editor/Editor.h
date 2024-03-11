@@ -5,7 +5,7 @@
 
 #include "../MesaCommon.h"
 #include "../MesaMath.h"
-#include "../MesaIMGUI.h"
+#include "../GUI.H"
 
 
 bool Temp_StartGameOrEditorButton();

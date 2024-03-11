@@ -40,8 +40,8 @@ set(SOURCE_FILES
         code/PrintLog.cpp
         code/Input.h
         code/Input.cpp
-        code/MesaIMGUI.h
-        code/MesaIMGUI.cpp
+        code/GUI.H
+        code/GUI.CPP
         code/GUI_DRAWING.H
         code/GUI_DRAWING.CPP
         code/MemoryAllocator.h
