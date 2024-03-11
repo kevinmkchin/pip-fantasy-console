@@ -135,18 +135,6 @@ namespace MesaGUI
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     struct ALH
     {
         // if layout has absolute x y then it is not auto layouted
