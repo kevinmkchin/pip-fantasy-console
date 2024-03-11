@@ -519,12 +519,10 @@ void DoCodeEditorGUI(CodeEditorString code)
 
     MesaGUI::PrimitivePanel(MesaGUI::UIRect(x, y - 32, lineNumbersDisplayWidth + 5, h + 64), vec4(RGBHEXTO1(0x414141), 1.f));
 
-    MesaGUI::UIStyle uiss = MesaGUI::GetActiveUIStyleCopy();
-    uiss.textColor = vec4(1.f, 1.f, 1.f, 0.38f);
-    MesaGUI::PushUIStyle(uiss);
-
+    vec4 textColorBefore = MesaGUI::style_textColor;
+    MesaGUI::style_textColor = vec4(1.f, 1.f, 1.f, 0.38f);
     //MesaGUI::PrimitiveTextMasked(textBeginAnchorX - 8, textBeginAnchorY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str(), codeEditorRect, codeEditorRectCornerRadius);
     MesaGUI::PrimitiveText(textBeginAnchorX - 5, textBeginAnchorY - scrollY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str());
-    MesaGUI::PopUIStyle();
+    MesaGUI::style_textColor = textColorBefore;
 }
 
