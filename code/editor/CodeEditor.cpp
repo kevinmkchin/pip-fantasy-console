@@ -238,7 +238,7 @@ static void DrawSelectionHighlightRect(int startCol, int endCol, int row, int zo
     int highlight_y = highlight_y_internal - scrollY;
     int highlight_w = (endCol - startCol) * FIXED_FONT_WIDTH_HACK;
     int highlight_h = (FIXED_FONT_HEIGHT_HACK + FIXED_FONT_LINEGAP_HACK);
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(highlight_x, highlight_y, highlight_w, highlight_h), 3, vec4(0.95f, 0.95f, 0.95f, 0.3f));
+    Gui::PrimitivePanel(Gui::UIRect(highlight_x, highlight_y, highlight_w, highlight_h), 3, vec4(0.95f, 0.95f, 0.95f, 0.3f));
 }
 
 static void GetRowStartAndEnd(const CodeEditorString code, int row, int *startIndex, int *endIndex)
@@ -393,7 +393,7 @@ static void ColorCode(const char *code)
         size_t startIndex = t.start - code;
         for (size_t i = startIndex; i < startIndex + t.length; ++i)
         {
-            MesaGUI::CodeCharIndexToColor[i] = color;
+            Gui::CodeCharIndexToColor[i] = color;
         }
     }
 }
@@ -401,37 +401,36 @@ static void ColorCode(const char *code)
 void DoCodeEditorGUI(CodeEditorString code)
 {
     int x, y, w, h;
-    MesaGUI::GetXYInZone(&x, &y);
-    MesaGUI::GetWHOfZone(&w, &h);
+    Gui::GetXYInWindow(&x, &y);
+    Gui::GetWindowWidthAndHeight(&w, &h);
 
-    MesaGUI::UIRect codeEditorRect = MesaGUI::UIRect(x, y, w - 8, h - 8);
+    Gui::UIRect codeEditorRect = Gui::UIRect(x, y, w - 8, h - 8);
 
-
-    if (MesaGUI::IsActive(g_CodeEditorUIID))
+    if (Gui::IsActive(g_CodeEditorUIID))
     {
-        if (MesaGUI::Temp_Escape())
+        if (Gui::keyboardInputASCIIKeycodeThisFrame.Contains(SDLK_ESCAPE))
         {
-            MesaGUI::SetActive(null_ui_id);
+            Gui::SetActive(null_ui_id);
         }
     }
-    else if (MesaGUI::IsHovered(g_CodeEditorUIID))
+    else if (Gui::IsHovered(g_CodeEditorUIID))
     {
-        if (MesaGUI::MouseWentDown())
+        if (Gui::MouseWentDown())
         {
-            MesaGUI::SetActive(g_CodeEditorUIID);
+            Gui::SetActive(g_CodeEditorUIID);
         }
     }
 
-    if (MesaGUI::MouseInside(codeEditorRect))
+    if (Gui::MouseInside(codeEditorRect))
     {
-        MesaGUI::SetHovered(g_CodeEditorUIID);
+        Gui::SetHovered(g_CodeEditorUIID);
     }
 
     const int codeEditorRectCornerRadius = 0;
-    MesaGUI::UIRect rectcopy = codeEditorRect;
+    Gui::UIRect rectcopy = codeEditorRect;
     rectcopy.y -= 4;
-    //MesaGUI::PrimitivePanel(rectcopy, codeEditorRectCornerRadius, MesaGUI::IsActive(g_CodeEditorUIID) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
-    //MesaGUI::PrimitivePanel(rectcopy, codeEditorRectCornerRadius, MesaGUI::IsActive(g_CodeEditorUIID) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
+    //Gui::PrimitivePanel(rectcopy, codeEditorRectCornerRadius, Gui::IsActive(g_CodeEditorUIID) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
+    //Gui::PrimitivePanel(rectcopy, codeEditorRectCornerRadius, Gui::IsActive(g_CodeEditorUIID) ? vec4(RGB255TO1(40, 44, 52), 1.f) : vec4(RGB255TO1(46, 50, 58), 1.f));
 
     const int textBeginAnchorX = x + GetTextAnchorOffsetX();
     const int textBeginAnchorY = y + textAnchorOffsetY;
@@ -440,12 +439,12 @@ void DoCodeEditorGUI(CodeEditorString code)
     GetCursorData(code, stbCodeEditorState.cursor, &rowcount, &crow, &ccol);
 
     // Draw cursor
-    if (MesaGUI::IsActive(g_CodeEditorUIID))
+    if (Gui::IsActive(g_CodeEditorUIID))
     {
         if (stbCodeEditorState.insert_mode)
-            MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX - scrollX + ccol * 6, textBeginAnchorY - scrollY - 2 + crow * 12, 5, 2), vec4(1,1,1,1));
+            Gui::PrimitivePanel(Gui::UIRect(textBeginAnchorX - scrollX + ccol * 6, textBeginAnchorY - scrollY - 2 + crow * 12, 5, 2), vec4(1, 1, 1, 1));
         else
-            MesaGUI::PrimitivePanel(MesaGUI::UIRect(textBeginAnchorX - scrollX - 1 + ccol * 6, textBeginAnchorY - scrollY - 12 + crow * 12, 1, 13), vec4(1,1,1,1));
+            Gui::PrimitivePanel(Gui::UIRect(textBeginAnchorX - scrollX - 1 + ccol * 6, textBeginAnchorY - scrollY - 12 + crow * 12, 1, 13), vec4(1, 1, 1, 1));
     }
 
     // Draw code
@@ -456,8 +455,8 @@ void DoCodeEditorGUI(CodeEditorString code)
         std::string CodeStdStr = std::string(code.string, code.stringlen);
         // Note(Kevin): map each code character to a color here
         ColorCode(CodeStdStr.c_str());
-        MesaGUI::PipCode(textBeginAnchorX - scrollX, textBeginAnchorY - scrollY, 9, CodeStdStr.c_str());
-        //MesaGUI::PrimitiveText(textBeginAnchorX - scrollX, textBeginAnchorY - scrollY, 9, MesaGUI::TextAlignment::Left, std::string(code.string, code.stringlen).c_str());
+        Gui::PipCode(textBeginAnchorX - scrollX, textBeginAnchorY - scrollY, 9, CodeStdStr.c_str());
+        //Gui::PrimitiveText(textBeginAnchorX - scrollX, textBeginAnchorY - scrollY, 9, Gui::Align::Left, std::string(code.string, code.stringlen).c_str());
     }
 
     // Draw selection highlight
@@ -517,12 +516,12 @@ void DoCodeEditorGUI(CodeEditorString code)
             lineNumbersDisplayWidth = defaultLineNumbersDisplayWidth;
     }
 
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(x, y - 32, lineNumbersDisplayWidth + 5, h + 64), vec4(RGBHEXTO1(0x414141), 1.f));
+    Gui::PrimitivePanel(Gui::UIRect(x - 20, y - 32, lineNumbersDisplayWidth + 20 + 5, h + 64), vec4(RGBHEXTO1(0x414141), 1.f));
 
-    vec4 textColorBefore = MesaGUI::style_textColor;
-    MesaGUI::style_textColor = vec4(1.f, 1.f, 1.f, 0.38f);
-    //MesaGUI::PrimitiveTextMasked(textBeginAnchorX - 8, textBeginAnchorY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str(), codeEditorRect, codeEditorRectCornerRadius);
-    MesaGUI::PrimitiveText(textBeginAnchorX - 5, textBeginAnchorY - scrollY, 9, MesaGUI::TextAlignment::Right, lineNumbersBuf.c_str());
-    MesaGUI::style_textColor = textColorBefore;
+    vec4 textColorBefore = Gui::style_textColor;
+    Gui::style_textColor = vec4(1.f, 1.f, 1.f, 0.38f);
+    //Gui::PrimitiveTextMasked(textBeginAnchorX - 8, textBeginAnchorY, 9, Gui::Align::Right, lineNumbersBuf.c_str(), codeEditorRect, codeEditorRectCornerRadius);
+    Gui::PrimitiveText(textBeginAnchorX - 5, textBeginAnchorY - scrollY, 9, Gui::Align::Right, lineNumbersBuf.c_str());
+    Gui::style_textColor = textColorBefore;
 }
 

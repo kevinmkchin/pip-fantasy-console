@@ -496,7 +496,7 @@ namespace Gfx
         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA, GL_ONE);
         glDisable(GL_DEPTH_TEST);
 
-        MesaGUI::Draw();
+        Gui::Draw();
     }
 
     void CoreRenderer::ConfigureViewportForFinalRender() const

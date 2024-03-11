@@ -13,12 +13,12 @@ struct vtxt_font;
 #define null_ui_id (-1)
 typedef i64 ui_id;
 
-namespace MesaGUI
+namespace Gui
 {
     extern NiceArray<SDL_Keycode, 32> keyboardInputASCIIKeycodeThisFrame;
     extern vec4 style_textColor;
 
-    enum class TextAlignment
+    enum class Align
     {
         Left,
         Center,
@@ -42,13 +42,13 @@ namespace MesaGUI
         int h;
     };
 
-    void Init();
-    void NewFrame();
-    void ProcessSDLEvent(const SDL_Event evt);
-    void Draw();
+    /* Application API */
+    void Init(); // on program start
+    void NewFrame(); // before each frame
+    void ProcessSDLEvent(const SDL_Event evt); // update input state
+    void Draw(); // flush draw requests to GPU
 
-    bool Temp_Escape();
-
+    /* Immediate-mode state helpers */
     bool IsActive(ui_id id);
     bool IsHovered(ui_id id);
     void SetActive(ui_id id);
@@ -58,42 +58,46 @@ namespace MesaGUI
     bool MouseInside(const UIRect& rect);
     // IsMouseInsideWindow?
 
+    /* Behaviours
+    * "building block" behaviours for making interactible GUI elements */
     bool Behaviour_Button(ui_id id, UIRect rect);
 
     bool ImageButton(UIRect rect, u32 normalTexId, u32 hoveredTexId, u32 activeTexId);
-
     extern vec3 CodeCharIndexToColor[];
     void PipCode(int x, int y, int size, const char* text);
 
 
-    // Primitive "building block" GUI elements with the most parameters
+    /* Primitive "building block" GUI elements with the most parameters
+    * */
     void PrimitivePanel(UIRect rect, vec4 colorRGBA);
     void PrimitivePanel(UIRect rect, int cornerRadius, vec4 colorRGBA);
     void PrimitivePanel(UIRect rect, u32 glTextureId);
     void PrimitivePanel(UIRect rect, int cornerRadius, u32 glTextureId = 0, float normalizedCornerSizeInUV = 0.3f);
     bool PrimitiveButton(ui_id id, UIRect rect, vec4 normalColor, vec4 hoveredColor, vec4 activeColor, bool activeColorOnClickReleaseFrame = false);
-    void PrimitiveText(int x, int y, int size, TextAlignment alignment, const char* text);
-    void PrimitiveTextFmt(int x, int y, int size, TextAlignment alignment, const char* textFmt, ...);
-    void PrimitiveTextMasked(int x, int y, int size, TextAlignment alignment, const char* text, UIRect mask, int maskCornerRadius);
-    void PrimtiveImage(UIRect rect, u32 glTextureId = 0);
+    void PrimitiveText(int x, int y, int size, Align alignment, const char* text);
+    void PrimitiveTextFmt(int x, int y, int size, Align alignment, const char* textFmt, ...);
+    void PrimitiveTextMasked(int x, int y, int size, Align alignment, const char* text, UIRect mask, int maskCornerRadius);
     void PrimitiveIntegerInputField(ui_id id, UIRect rect, int* v);
     void PrimitiveFloatInputField(ui_id id, UIRect rect, float* v);
-    //void PrimtiveCheckbox(const char* label, );
+    //void PrimitiveCheckbox(const char* label, );
+    bool PrimitiveLabelledButton(UIRect rect, const char* label, Align textAlignment);
 
-    bool LabelledButton(UIRect rect, const char* label, TextAlignment textAlignment);
 
-    /** Zonesvec3
-     * For aligning UI elements in order like a DearImGui window.
-     * TODO Can be set to stop clicks from going through (if i click inside zone, then click doesn't go through to zones or program behind?)
-     * TODO think about: 
-     * Can be set to capture focus?
-     * Can be set to collapse? */
-    void BeginZone(UIRect windowRect, vec4 bgcolor = vec4(0.05f,0.05f,0.05f,1.f));
-    void GetWHOfZone(int *w, int *h);
-    void GetXYInZone(int *x, int *y);
-    void MoveXYInZone(int x, int y);
-    void EndZone();
+    /* Windows
+    * For aligning GUI elements like a DearImGui window
+    * TODO Can be set to stop clicks from going through (if i click inside zone, then click doesn't go through to zones or program behind?)
+    * TODO think about:
+    * Can be set to capture focus?
+    * Can be set to collapse?
+    * */
+    void BeginWindow(UIRect windowRect, vec4 bgcolor = vec4(0.05f, 0.05f, 0.05f, 1.f), int depth = -1);
+    void EndWindow();
+    void GetWindowWidthAndHeight(int *w, int *h);
+    void GetXYInWindow(int *x, int *y);
+    void MoveXYInWindow(int x, int y);
 
+    /* GUI elements that go inside windows
+    * */
     void EditorText(const char *text);
     bool EditorLabelledButton(const char *label);
     void EditorIncrementableIntegerField(const char *label, int *v, int increment = 1);
@@ -106,9 +110,6 @@ namespace MesaGUI
     void EditorEndListBox();
 
     void EditorColorPicker(ui_id id, float *hue, float *saturation, float *value, float *opacity);
-
-
-
 
 
 

@@ -13,10 +13,10 @@ bool Temp_StartGameOrEditorButton();
 void EditorSDLProcessEvent(const SDL_Event event);
 void EditorDoGUI();
 
-extern MesaGUI::ALH *alh_sprite_editor;
-extern MesaGUI::ALH *alh_sprite_editor_left_panel;
-extern MesaGUI::ALH *alh_sprite_editor_right_panel;
-extern MesaGUI::ALH *alh_sprite_editor_right_panel_top;
-extern MesaGUI::ALH *alh_sprite_editor_right_panel_bot;
+extern Gui::ALH *alh_sprite_editor;
+extern Gui::ALH *alh_sprite_editor_left_panel;
+extern Gui::ALH *alh_sprite_editor_right_panel;
+extern Gui::ALH *alh_sprite_editor_right_panel_top;
+extern Gui::ALH *alh_sprite_editor_right_panel_bot;
 
 

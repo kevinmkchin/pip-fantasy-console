@@ -246,9 +246,9 @@ static Gfx::Mesh __ui_mesh;
 static Gfx::Mesh __text_mesh;
 static Gfx::Mesh __colored_text_mesh;
 
-#define MAX_DRAWCOLLECTIONS_ALLOWED 16
+#define MAX_DRAWCOLLECTIONS_ALLOWED 8
 
-namespace MesaGUI
+namespace Gui
 {
     struct DrawCollectionMetaData
     {
@@ -287,7 +287,7 @@ namespace MesaGUI
         DRAWQUEUE_METADATA.count = 1;
         if (DRAWREQCOLLECTIONSTACK.size() > 1)
         {
-            PrintLog.Error("GUI BeginZone and EndZone don't match.");
+            PrintLog.Error("GUI BeginWindow and EndWindow don't match.");
         }
     }
 
@@ -309,10 +309,16 @@ namespace MesaGUI
         Gfx::UseShader(__colored_text_shader);
         Gfx::GLBindMatrix4fv(__colored_text_shader, "matrixOrtho", 1, projectionMatrix.ptr());
 
-        // Note(Kevin): could sort so its O(n) but realistically how many windows am I going to have...
-        for (int depth = 0; depth < 4; ++depth)
+
+        // could sort so its O(n) but realistically how many windows am I going to have...
+        int highestDepth = 0;
+        for (int i = 0; i < DRAWQUEUE_METADATA.count; ++i)
+            highestDepth = GM_max(highestDepth, DRAWQUEUE_METADATA.At(i).depth);
+
+        // Draw collections of depth 0 to highestDepth except for base collection
+        for (int depth = 0; depth <= highestDepth; ++depth)
         {
-            for (int i = 0; i < DRAWQSTORAGE.count; ++i)
+            for (int i = 1; i < DRAWQSTORAGE.count; ++i)
             {
                 if (DRAWQUEUE_METADATA.At(i).depth == depth)
                 {
@@ -320,10 +326,19 @@ namespace MesaGUI
                     std::vector<UIDrawRequest*>& drawQueue = DRAWQSTORAGE.At(i);
                     for (auto drawCall : drawQueue)
                         drawCall->Draw();
-                    drawQueue.clear();
                 }
             }
         }
+
+        // Draw base collection
+        activeWindowMask = DRAWQUEUE_METADATA.At(0).windowMask;
+        std::vector<UIDrawRequest*>& baseDrawQueue = DRAWQSTORAGE.At(0);
+        for (auto drawCall : baseDrawQueue)
+            drawCall->Draw();
+
+        // Clear all collections
+        for (int i = 0; i < DRAWQSTORAGE.count; ++i)
+            DRAWQSTORAGE.At(i).clear();
     }
 
     void GUIDraw_PushDrawCollection(UIRect windowMask, int depth)
@@ -332,6 +347,8 @@ namespace MesaGUI
         DRAWQSTORAGE.count++;
         if (depth < 0)
             depth = (int)DRAWREQCOLLECTIONSTACK.size();
+        else
+            depth = GM_min(depth, MAX_DRAWCOLLECTIONS_ALLOWED);
         DRAWQUEUE_METADATA.PushBack({ windowMask, depth });
         DRAWREQCOLLECTIONSTACK.push(&DRAWQSTORAGE.Back());
     }
@@ -461,13 +478,13 @@ namespace MesaGUI
         vtxt_move_cursor(x, y);
         switch (alignment)
         {
-            case TextAlignment::Left:{
+            case Align::Left:{
                 vtxt_append_line(text, font.ptr, size);
             }break;
-            case TextAlignment::Center:{
+            case Align::Center:{
                 vtxt_append_line_centered(text, font.ptr, size);
             }break;
-            case TextAlignment::Right:{
+            case Align::Right:{
                 vtxt_append_line_align_right(text, font.ptr, size);
             }break;
         }
