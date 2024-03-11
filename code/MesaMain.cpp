@@ -246,7 +246,7 @@ int main(int argc, char* argv[])
             framerate = (1.f / Time.deltaTime);
             lastFPSShowTime = Time.time;
         }
-        Gui::PrimitiveTextFmt(0, 9, 9, Gui::Align::Left, "FPS: %d", int(framerate));
+//        Gui::PrimitiveTextFmt(0, 9, 9, Gui::Align::Left, "FPS: %d", int(framerate));
 
         if (consoleActive)
             DoSingleCommandLine();

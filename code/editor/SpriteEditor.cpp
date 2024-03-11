@@ -212,50 +212,55 @@ void algo_line_perfect(int x1, int y1, int x2, int y2) // I don't like
 
 void DoSpriteEditorGUI()
 {
-//    Gui::BeginWindow(Gui::UIRect(200, 200, 200, 200), vec4(0.5f, 0.5f, 0.5f, 1.f));
-//    Gui::BeginWindow(Gui::UIRect(50, 50, 200, 400), vec4(0.0f, 1.f, 0.f, 1.f));
-//    Gui::EditorText("When I got my first game console in 1979—a way-cool Intellivision system by Mattel—the term “game engine” did not exist.");
-//    Gui::EndWindow();
-//    Gui::EditorText("When I got my first game console in 1979—a way-cool Intellivision system by Mattel—the term “game engine” did not exist.");
-//    Gui::EndWindow();
+    Gui::BeginWindow(Gui::UIRect(200,100,200,200), vec4(0.05f,0.05f,0.05f,0.5f), 3);
 
-    Gui::BeginWindow(alh_sprite_editor_left_panel);
-//    if (Gui::EditorLabelledButton("Load a new sprite"))
-//    {
-//        std::string imagepath = OpenLoadImageDialog();
-//        if (!imagepath.empty())
-//        {
-//            Gfx::TextureHandle sprite = Gfx::CreateGPUTextureFromDisk(imagepath.c_str());
-//            gamedata.sprites.push_back(sprite);
-//        }
-//    }
-//
-//    Gui::EditorBeginListBox();
-//    for (size_t i = 0; i < gamedata.sprites.size(); ++i)
-//    {
-//        Gfx::TextureHandle sprite = gamedata.sprites.at(i);
-//        bool selected = false;
-//        Gui::EditorSelectable(std::to_string(i).c_str(), &selected);
-//    }
-//    Gui::EditorEndListBox();
+    Gui::EditorText("Hello world!");
+    static int in = 3;
+    Gui::EditorIncrementableIntegerField("int", &in);
+    static float f = 32.05f;
+    Gui::EditorIncrementableFloatField("float", &f);
+
+    Gui::EditorBeginListBox();
+    static bool a,b,c = false;
+    Gui::EditorSelectable("item a", &a);
+    Gui::EditorSelectable("item b", &b);
+    Gui::EditorSelectable("item c", &c);
+    Gui::EditorEndListBox();
+
+    if (Gui::EditorLabelledButton("Load a new sprite"))
+    {
+        std::string imagepath = OpenLoadImageDialog();
+        if (!imagepath.empty())
+        {
+            Gfx::TextureHandle sprite = Gfx::CreateGPUTextureFromDisk(imagepath.c_str());
+            gamedata.sprites.push_back(sprite);
+        }
+    }
+
+    Gui::EditorBeginListBox();
+    for (size_t i = 0; i < gamedata.sprites.size(); ++i)
+    {
+        Gfx::TextureHandle sprite = gamedata.sprites.at(i);
+        bool selected = false;
+        Gui::EditorSelectable(std::to_string(i).c_str(), &selected);
+    }
+    Gui::EditorEndListBox();
+
+    Gui::EndWindow();
+
+
+
+
+    Gui::BeginWindow(alh_sprite_editor_left_panel, vec4(0.05f, 0.05f, 0.05f, 0.5f), 2);
 
     Gui::EditorText("brush size");
     Gui::EditorIncrementableIntegerField("brush size", &brushSz);
 
-//    static float userR = 0.f;
-//    static float userG = 0.f;
-//    static float userB = 0.f;
-//    static float userA = 1.f;
-//    Gui::EditorIncrementableFloatField("r", &userR);
-//    Gui::EditorIncrementableFloatField("g", &userG);
-//    Gui::EditorIncrementableFloatField("b", &userB);
-//    Gui::EditorIncrementableFloatField("a", &userA);
-
     int showUserColorX;
     int showUserColorY;
     Gui::GetXYInWindow(&showUserColorX, &showUserColorY);
-    Gui::PrimitivePanel(Gui::UIRect(showUserColorX, showUserColorY, 32, 32), vec4(activeRGB, activeOpacity));
-    Gui::MoveXYInWindow(0, 32);
+    Gui::PrimitivePanel(Gui::UIRect(showUserColorX, showUserColorY, 61, 12), vec4(activeRGB, activeOpacity));
+    Gui::MoveXYInWindow(0, 12);
 
     static float panxf = 20;
     static float panyf = 20;
@@ -272,8 +277,8 @@ void DoSpriteEditorGUI()
     Gui::EndWindow();
 
 
-    spreditState.frame.w = 320;
-    spreditState.frame.h = 240;
+    spreditState.frame.w = 64;
+    spreditState.frame.h = 64;
     if (spreditState.frame.pixels == 0)
     {
         InitSpriteEditorActionBuffers();
@@ -424,7 +429,13 @@ void DoSpriteEditorGUI()
 
     UpdateGPUTex(&spreditState.frame);
 
-    Gui::BeginWindow(alh_sprite_editor_right_panel_top, vec4(0.157f, 0.172f, 0.204f, 1.f));
+//    Gui::BeginWindow(alh_sprite_editor_right_panel_top, vec4(0.157f, 0.172f, 0.204f, 1.f));
+    Gui::BeginWindow(alh_sprite_editor, vec4(0.157f, 0.172f, 0.204f, 1.f));
+    Gui::PrimitivePanel(Gui::UIRect(
+            alh_sprite_editor_right_panel_top->x + (int)panxf - 1,
+            alh_sprite_editor_right_panel_top->y + (int)panyf - 1,
+            spreditState.frame.w * zoom + 2,
+            spreditState.frame.h * zoom + 2), vec4(0.f,0.f,0.f,1.f));
     Gui::PrimitivePanel(Gui::UIRect(
             alh_sprite_editor_right_panel_top->x + (int)panxf,
             alh_sprite_editor_right_panel_top->y + (int)panyf,

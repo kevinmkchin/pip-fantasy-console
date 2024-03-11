@@ -90,7 +90,7 @@ namespace Gui
     * Can be set to capture focus?
     * Can be set to collapse?
     * */
-    void BeginWindow(UIRect windowRect, vec4 bgcolor = vec4(0.05f, 0.05f, 0.05f, 1.f), int depth = -1);
+    void BeginWindow(UIRect windowRect, vec4 bgcolor = vec4(0.05f, 0.05f, 0.05f, 0.5f), int depth = -1);
     void EndWindow();
     void GetWindowWidthAndHeight(int *w, int *h);
     void GetXYInWindow(int *x, int *y);

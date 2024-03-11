@@ -18,30 +18,30 @@ Easy:
 
 # Known Bugs
 
-- code editor upon input, ensure cursor is visible by updating scroll values
+- [Code editor] code editor upon input, ensure cursor is visible by updating scroll values
 
 # Immediate next
 
-- [Sprite editor] color palette
+- [Sprite editor] **color palette**
+- [Sprite editor] **Animation frames**
+- [Sprite editor] Layers
+- [Sprite editor] Eraser, Paint bucket, Marquee, Line, Rectangle(Shapes), Jumble tool
 - [Sprite editor] toggle symmetry lines (mirror in horizontal and vertical; movable)
-- Animation frames
-- Layers
-- Eraser, Paint bucket, Marquee, Line, Rectangle(Shapes), Jumble tool
 
-- pl: Arrays
-- pl: % BinOp
-- pl: elif
-- pl: +=, -=, /=, *=
-- pl: for (n in [1, 2, 3, 5, 7, 11])
-- pl: for (k,v in [ a: 2, b: 3 ])
-- pl: 'continue' and 'break' in while and for-loops
+- [PipLang] Arrays
+- [PipLang] % BinOp
+- [PipLang] elif
+- [PipLang] +=, -=, /=, *=
+- [PipLang] for (n in [1, 2, 3, 5, 7, 11])
+- [PipLang] for (k,v in [ a: 2, b: 3 ])
+- [PipLang] 'continue' and 'break' in while and for-loops
 
 - math.lerp (different variations too) // exponential fall off of the speed
 
-- code editor: cut, copy, paste
-- code editor: ctrl+backspace and ctrl+delete for word deletion
-- code editor: ctrl+d for duplicate line
-- code editor: SCROLLING
+- [Code editor] cut, copy, paste
+- [Code editor] ctrl+backspace and ctrl+delete for word deletion
+- [Code editor] ctrl+d for duplicate line
+- [Code editor] SCROLLING
 
 # Todo
 
