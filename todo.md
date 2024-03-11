@@ -27,7 +27,6 @@ this means each brush spot is being colored multiple frames before Input is awar
 
 # Immediate next
 
-- UI lib clean up
 - Animation frames
 - Layers
 
@@ -63,7 +62,7 @@ this means each brush spot is being colored multiple frames before Input is awar
 
 - Sprite sheet & animations
 - Sprite batch rendering
-- IMGUI Windows, easier Layouting, get rid of UIStyle
+- IMGUI easier Layouting
 
 - camera API (maybe not? user can implement own camera)
 - gui API

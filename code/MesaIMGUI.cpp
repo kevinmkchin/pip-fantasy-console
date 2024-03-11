@@ -25,6 +25,18 @@ static ui_id FreshID()
 
 namespace MesaGUI
 {
+    vec4 style_buttonNormalColor = vec4(0.18f, 0.18f, 0.18f, 1.f);
+    vec4 style_buttonHoveredColor = vec4(0.08f, 0.08f, 0.08f, 1.f);
+    vec4 style_buttonActiveColor = vec4(0.06f, 0.06f, 0.06f, 1.f);
+    Font style_textFont;
+    vec4 style_textColor = vec4(1.f, 1.f, 1.f, 1.0f);
+    int style_paddingTop = 1;
+    int style_paddingBottom = 1;
+    int style_paddingLeft = 1;
+    int style_paddingRight = 1;
+    vec4 style_editorWindowBackgroundColor = vec4(0.1f, 0.1f, 0.1f, 0.85f);
+
+
     static NiceArray<vtxt_font, 10> __vtxtLoadedFonts;
     static Font __fonts[32];
     static Font __default_font;
@@ -93,12 +105,8 @@ namespace MesaGUI
 
     static char __reservedTextMemory[16000000];
     static u32 __reservedTextMemoryIndexer = 0;
-
     NiceArray<SDL_Keycode, 32> keyboardInputASCIIKeycodeThisFrame;
-
     static NiceArray<char, 128> activeTextInputBuffer;
-
-    static std::stack<UIStyle> ui_ss; // UI Style Stack
 
     static ui_id hoveredUI = null_ui_id;
     static ui_id activeUI = null_ui_id;
@@ -233,7 +241,7 @@ namespace MesaGUI
         drawRequest->size = size;
         drawRequest->x = x;
         drawRequest->y = y;
-        drawRequest->font = ui_ss.top().textFont;
+        drawRequest->font = style_textFont;
 
         AppendToCurrentDrawRequestsCollection(drawRequest);
     }
@@ -339,8 +347,8 @@ namespace MesaGUI
         drawRequest->x = x;
         drawRequest->y = y;
         drawRequest->alignment = alignment;
-        drawRequest->font = ui_ss.top().textFont;
-        drawRequest->color = ui_ss.top().textColor;
+        drawRequest->font = style_textFont;
+        drawRequest->color = style_textColor;
 
         AppendToCurrentDrawRequestsCollection(drawRequest);
     }
@@ -369,8 +377,8 @@ namespace MesaGUI
         drawRequest->x = x;
         drawRequest->y = y;
         drawRequest->alignment = alignment;
-        drawRequest->font = ui_ss.top().textFont;
-        drawRequest->color = ui_ss.top().textColor;
+        drawRequest->font = style_textFont;
+        drawRequest->color = style_textColor;
 
         AppendToCurrentDrawRequestsCollection(drawRequest);
     }
@@ -399,8 +407,8 @@ namespace MesaGUI
         drawRequest->x = x;
         drawRequest->y = y;
         drawRequest->alignment = alignment;
-        drawRequest->font = ui_ss.top().textFont;
-        drawRequest->color = ui_ss.top().textColor;
+        drawRequest->font = style_textFont;
+        drawRequest->color = style_textColor;
         drawRequest->rectMask = mask;
         drawRequest->rectMaskCornerRadius = maskCornerRadius;
 
@@ -619,29 +627,10 @@ namespace MesaGUI
     }
 
 
-    void PushUIStyle(UIStyle style)
-    {
-        ui_ss.push(style);
-    }
-
-    void PopUIStyle()
-    {
-        if (!ui_ss.empty()) ui_ss.pop();
-    }
-
-    UIStyle GetActiveUIStyleCopy()
-    {
-        return ui_ss.top();
-    }
-
-    UIStyle& GetActiveUIStyleReference()
-    {
-        return ui_ss.top();
-    }
 
     bool LabelledButton(UIRect rect, const char* label, TextAlignment textAlignment)
     {
-        int ascenderTextSize = ui_ss.top().textFont.ptr->font_height_px;
+        int ascenderTextSize = style_textFont.ptr->font_height_px;
         float yTextPaddingRatio = (1.f - (float(ascenderTextSize) / float(rect.h))) / 2.f;
         ivec2 textPadding = ivec2(10, (int) roundf(rect.h * yTextPaddingRatio));
         int textX = rect.x + textPadding.x;
@@ -654,7 +643,7 @@ namespace MesaGUI
             textX = (int) rect.x + rect.w - textPadding.x;
         }
 
-        bool buttonValue = PrimitiveButton(FreshID(), rect, ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor);
+        bool buttonValue = PrimitiveButton(FreshID(), rect, style_buttonNormalColor, style_buttonHoveredColor, style_buttonActiveColor);
         PrimitiveText(textX, rect.y + rect.h - textPadding.y, ascenderTextSize, textAlignment, label);
         return buttonValue;
     }
@@ -708,56 +697,50 @@ namespace MesaGUI
 
     void EditorText(const char* text)
     {
-        UIStyle& uistyle = ui_ss.top();
-
         int x;
         int y;
         GetXYInZone(&x, &y);
 
-        int sz = ui_ss.top().textFont.ptr->font_height_px;
+        int sz = style_textFont.ptr->font_height_px;
 
-        PrimitiveText(x + uistyle.paddingLeft, y + sz + uistyle.paddingTop, sz, TextAlignment::Left, text);
+        PrimitiveText(x + style_paddingLeft, y + sz + style_paddingTop, sz, TextAlignment::Left, text);
 
-        MoveXYInZone(0, sz + uistyle.paddingTop + uistyle.paddingBottom);
+        MoveXYInZone(0, sz + style_paddingTop + style_paddingBottom);
     }
 
     bool EditorLabelledButton(const char* label)
     {
-        UIStyle& uistyle = ui_ss.top();
-
-        int labelTextSize = uistyle.textFont.ptr->font_height_px;
+        int labelTextSize = style_textFont.ptr->font_height_px;
         float textW;
         float textH;
-        vtxt_get_text_bounding_box_info(&textW, &textH, label, uistyle.textFont.ptr, labelTextSize);
+        vtxt_get_text_bounding_box_info(&textW, &textH, label, style_textFont.ptr, labelTextSize);
 
         int buttonX;
         int buttonY;
         GetXYInZone(&buttonX, &buttonY);
-        buttonX += uistyle.paddingLeft;
-        buttonY += uistyle.paddingTop;
+        buttonX += style_paddingLeft;
+        buttonY += style_paddingTop;
         int buttonW = GM_max((int) textW + 4, 50);
         int buttonH = labelTextSize + 4;
 
         UIRect buttonRect = UIRect(buttonX, buttonY, buttonW, buttonH);
         bool result = LabelledButton(buttonRect, label, TextAlignment::Center);
 
-        MoveXYInZone(0, uistyle.paddingTop + buttonH + uistyle.paddingBottom);
+        MoveXYInZone(0, style_paddingTop + buttonH + style_paddingBottom);
 
         return result;
     }
 
     void EditorIncrementableIntegerField(const char* label, int* v, int increment)
     {
-        UIStyle& uistyle = ui_ss.top();
-
         int x;
         int y;
         GetXYInZone(&x, &y);
 
         int w = 50;
         int h = 9 + 4;
-        int paddingAbove = uistyle.paddingTop;
-        int paddingBelow = uistyle.paddingBottom;
+        int paddingAbove = style_paddingTop;
+        int paddingBelow = style_paddingBottom;
 
         PrimitivePanel(UIRect(x, y, w-2, h), vec4(0.4f, 0.4f, 0.4f, 1.f));
         PrimitiveIntegerInputField(FreshID(), UIRect(x + 1, y + 1, w-4, h - 2), v);
@@ -776,23 +759,21 @@ namespace MesaGUI
 
     void EditorIncrementableFloatField(const char* label, float* v, float increment)
     {
-        UIStyle& uistyle = ui_ss.top();
-
         int x, y;
         GetXYInZone(&x, &y);
 
         int w = 80;
         int h = 20;
-        int paddingAbove = uistyle.paddingTop;
-        int paddingBelow = uistyle.paddingBottom;
+        int paddingAbove = style_paddingTop;
+        int paddingBelow = style_paddingBottom;
 
         PrimitivePanel(UIRect(x, y, w-2, h), vec4(0.4f, 0.4f, 0.4f, 1.f));
         PrimitiveFloatInputField(FreshID(), UIRect(x + 1, y + 1, w-4, h - 2), v);
-        if (PrimitiveButton(FreshID(), UIRect(x + w, y + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
+        if (PrimitiveButton(FreshID(), UIRect(x + w, y + 1, 20, (h / 2) - 1), style_buttonNormalColor, style_buttonHoveredColor, style_buttonActiveColor))
         {
             (*v) += increment;
         }
-        if (PrimitiveButton(FreshID(), UIRect(x + w, y + (h / 2) + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
+        if (PrimitiveButton(FreshID(), UIRect(x + w, y + (h / 2) + 1, 20, (h / 2) - 1), style_buttonNormalColor, style_buttonHoveredColor, style_buttonActiveColor))
         {
             (*v) -= increment;
         }
@@ -1209,12 +1190,7 @@ namespace MesaGUI
         __fonts[6] = FontCreateFromBitmap(tex_0);
         __default_font = __fonts[6];
 
-        if(ui_ss.empty())
-        {
-            UIStyle defaultStyle;
-            defaultStyle.textFont = __default_font;
-            ui_ss.push(defaultStyle);
-        }
+        style_textFont = __default_font;
 
         GUIDraw_InitResources();
     }

@@ -79,12 +79,11 @@ bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
         texId,
         5.f/thBu00_generic_n.width);
 
-    MesaGUI::UIStyle style = MesaGUI::GetActiveUIStyleCopy();
-    style.textColor = vec4(0.f,0.f,0.f,1.f);
-    MesaGUI::PushUIStyle(style);
+    vec4 textColorBefore = MesaGUI::style_textColor;
+    MesaGUI::style_textColor = vec4(0.f,0.f,0.f,1.f);
     int sz = 9;
     MesaGUI::PrimitiveText(x+4, y+5+sz+((MesaGUI::IsActive(id) || result) ? 1 : 0), sz, MesaGUI::TextAlignment::Left, text);
-    MesaGUI::PopUIStyle();
+    MesaGUI::style_textColor = textColorBefore;
 
     return result;
 }

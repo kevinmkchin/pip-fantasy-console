@@ -16,6 +16,7 @@ typedef i64 ui_id;
 namespace MesaGUI
 {
     extern NiceArray<SDL_Keycode, 32> keyboardInputASCIIKeycodeThisFrame;
+    extern vec4 style_textColor;
 
     enum class TextAlignment
     {
@@ -41,22 +42,6 @@ namespace MesaGUI
         int h;
     };
 
-    struct UIStyle
-    {
-        vec4 buttonNormalColor = vec4(0.18f, 0.18f, 0.18f, 1.f);
-        vec4 buttonHoveredColor = vec4(0.08f, 0.08f, 0.08f, 1.f);
-        vec4 buttonActiveColor = vec4(0.06f, 0.06f, 0.06f, 1.f);
-        Font textFont;
-        vec4 textColor = vec4(1.f, 1.f, 1.f, 1.0f);
-
-        int paddingTop = 1;
-        int paddingBottom = 1;
-        int paddingLeft = 1;
-        int paddingRight = 1;
- 
-        vec4 editorWindowBackgroundColor = vec4(0.1f, 0.1f, 0.1f, 0.85f);
-    };
-
     void Init();
     void NewFrame();
     void ProcessSDLEvent(const SDL_Event evt);
@@ -72,12 +57,6 @@ namespace MesaGUI
     bool MouseWentDown();
     bool MouseInside(const UIRect& rect);
     // IsMouseInsideWindow?
-
-    void PushUIStyle(UIStyle style);
-    void PopUIStyle();
-    UIStyle GetActiveUIStyleCopy();
-    UIStyle& GetActiveUIStyleReference();
-
 
     bool Behaviour_Button(ui_id id, UIRect rect);
 
