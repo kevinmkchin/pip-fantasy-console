@@ -10,7 +10,6 @@ Easy:
 - prettify Editor GUI elements (the ones that go inside Windows)
 - use static buffer for preview brush changes instead of std vector
 
-- different brushes
 - limit undo redo buffer size
 - optimize color picker the for loops are quite slow
 
@@ -23,8 +22,11 @@ Easy:
 
 # Immediate next
 
+- [Sprite editor] color palette
+- [Sprite editor] toggle symmetry lines (mirror in horizontal and vertical; movable)
 - Animation frames
 - Layers
+- Eraser, Paint bucket, Marquee, Line, Rectangle(Shapes), Jumble tool
 
 - pl: Arrays
 - pl: % BinOp
@@ -77,6 +79,7 @@ Easy:
 
 # Way the fuck down the line
 ### Uncategorized
+- different brushes in sprite editor
 - MesaIMGUI easier Layouting?
 - lots of potential optimizations in MesaIMGUI
 - (fuck off until later) vertext rewrite for better usability better API
