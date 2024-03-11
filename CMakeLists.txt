@@ -74,6 +74,8 @@ set(SOURCE_FILES
         code/editor/SpriteEditor.cpp
         code/editor/SpriteEditorActions.cpp
         code/editor/SpriteEditorActions.h
+        code/GUI_DRAWING.CPP
+        code/GUI_DRAWING.H
 
 )
 
