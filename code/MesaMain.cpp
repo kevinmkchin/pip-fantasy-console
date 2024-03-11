@@ -18,7 +18,7 @@
 #include "Input.h"
 #include "Console.h"
 #include "PrintLog.h"
-#include "MesaIMGUI.h"
+#include "GUI.H"
 #include "editor/Editor.h"
 #include "Game.h"
 

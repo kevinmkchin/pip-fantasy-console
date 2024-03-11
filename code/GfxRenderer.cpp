@@ -9,7 +9,7 @@
 
 #include "MesaUtility.h"
 #include "PrintLog.h"
-#include "MesaIMGUI.h"
+#include "GUI.H"
 #include "MesaMain.h"
 
 namespace Gfx

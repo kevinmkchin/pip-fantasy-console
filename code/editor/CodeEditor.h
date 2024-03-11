@@ -4,7 +4,7 @@
 
 #include "../MesaCommon.h"
 #include "../MesaMath.h"
-#include "../MesaIMGUI.h"
+#include "../GUI.H"
 
 #define STB_TEXTEDIT_KEYTYPE    int
 #define STB_TEXTEDIT_CHARTYPE   char
