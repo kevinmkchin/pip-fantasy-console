@@ -69,7 +69,7 @@ static bool InitializeEverything()
     //                  "x" + std::to_string(EDITOR_FIXED_INTERNAL_RESOLUTION_H));
 
     g_gfx.Init();
-    MesaGUI::Init();
+    Gui::Init();
 
     SetupConsoleCommands();
 
@@ -154,7 +154,7 @@ static void ProcessSDLEvents()
         // Send SDL events to other systems
         Input.ProcessSDLEvent(event);
         if (g_ProgramMode == MesaProgramMode::Editor) EditorSDLProcessEvent(event);
-        MesaGUI::ProcessSDLEvent(event);
+        Gui::ProcessSDLEvent(event);
     }
 }
 
@@ -223,7 +223,7 @@ int main(int argc, char* argv[])
 
 //        float beforeUpdate = Time.TimeStamp();
 
-        MesaGUI::NewFrame();
+        Gui::NewFrame();
         ProcessSDLEvents();
 
         switch (g_ProgramMode)
@@ -246,7 +246,7 @@ int main(int argc, char* argv[])
             framerate = (1.f / Time.deltaTime);
             lastFPSShowTime = Time.time;
         }
-        MesaGUI::PrimitiveTextFmt(0, 9, 9, MesaGUI::TextAlignment::Left, "FPS: %d", int(framerate));
+        Gui::PrimitiveTextFmt(0, 9, 9, Gui::Align::Left, "FPS: %d", int(framerate));
 
         if (consoleActive)
             DoSingleCommandLine();

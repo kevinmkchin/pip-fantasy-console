@@ -3,7 +3,7 @@
 #include "MesaIMGUI.h"
 #include "GfxDataTypesAndUtility.h"
 
-namespace MesaGUI {
+namespace Gui {
 
     struct UIDrawRequest;
 
@@ -55,7 +55,7 @@ namespace MesaGUI {
         int size = 8;
         int x = 0;
         int y = 0;
-        TextAlignment alignment = TextAlignment::Left;
+        Align alignment = Align::Left;
         Font font;
 
         UIRect rectMask = UIRect(0, 0, 9999, 9999);

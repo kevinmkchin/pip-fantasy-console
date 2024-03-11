@@ -23,7 +23,7 @@ static ui_id FreshID()
     return freshIdCounter++;
 }
 
-namespace MesaGUI
+namespace Gui
 {
     vec4 style_buttonNormalColor = vec4(0.18f, 0.18f, 0.18f, 1.f);
     vec4 style_buttonHoveredColor = vec4(0.08f, 0.08f, 0.08f, 1.f);
@@ -304,6 +304,7 @@ namespace MesaGUI
     {
         RectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(RectDrawRequest);
         drawRequest->rect = rect;
+        drawRequest->color = vec4(1.f, 0.f, 1.f, 1.f);
         drawRequest->textureId = glTextureId;
 
         AppendToCurrentDrawRequestsCollection(drawRequest);
@@ -313,7 +314,7 @@ namespace MesaGUI
     {
         CorneredRectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(CorneredRectDrawRequest);
         drawRequest->rect = rect;
-        drawRequest->color = vec4(0.157f, 0.172f, 0.204f, 1.f);
+        drawRequest->color = vec4(1.f, 0.f, 1.f, 1.f);
         drawRequest->textureId = glTextureId;
         drawRequest->radius = cornerRadius;
         drawRequest->normalizedCornerSizeInUV = normalizedCornerSizeInUV;
@@ -321,7 +322,7 @@ namespace MesaGUI
         AppendToCurrentDrawRequestsCollection(drawRequest);
     }
 
-    void PrimitiveTextFmt(int x, int y, int size, TextAlignment alignment, const char* textFmt, ...)
+    void PrimitiveTextFmt(int x, int y, int size, Align alignment, const char* textFmt, ...)
     {
         if (textFmt == NULL) return;
 
@@ -353,7 +354,7 @@ namespace MesaGUI
         AppendToCurrentDrawRequestsCollection(drawRequest);
     }
 
-    void PrimitiveText(int x, int y, int size, TextAlignment alignment, const char* text)
+    void PrimitiveText(int x, int y, int size, Align alignment, const char* text)
     {
         if (text == NULL) return;
 
@@ -383,7 +384,7 @@ namespace MesaGUI
         AppendToCurrentDrawRequestsCollection(drawRequest);
     }
 
-    void PrimitiveTextMasked(int x, int y, int size, TextAlignment alignment, const char* text, UIRect mask, int maskCornerRadius)
+    void PrimitiveTextMasked(int x, int y, int size, Align alignment, const char* text, UIRect mask, int maskCornerRadius)
     {
         if (text == NULL) return;
 
@@ -411,18 +412,6 @@ namespace MesaGUI
         drawRequest->color = style_textColor;
         drawRequest->rectMask = mask;
         drawRequest->rectMaskCornerRadius = maskCornerRadius;
-
-        AppendToCurrentDrawRequestsCollection(drawRequest);
-    }
-
-    void PrimtiveImage(UIRect rect, u32 glTextureId)
-    {
-        CorneredRectDrawRequest *drawRequest = MESAIMGUI_NEW_DRAW_REQUEST(CorneredRectDrawRequest);
-        drawRequest->rect = rect;
-        drawRequest->color = vec4(0.157f, 0.172f, 0.204f, 1.f);
-        drawRequest->textureId = glTextureId;
-        drawRequest->radius = 0;
-        drawRequest->normalizedCornerSizeInUV = 0.f;
 
         AppendToCurrentDrawRequestsCollection(drawRequest);
     }
@@ -512,12 +501,12 @@ namespace MesaGUI
         {
             if (activeTextInputBuffer.count > 0)
             {
-                PrimitiveText(rect.x + rect.w, rect.y + rect.h, 9, TextAlignment::Right, activeTextInputBuffer.data);
+                PrimitiveText(rect.x + rect.w, rect.y + rect.h, 9, Align::Right, activeTextInputBuffer.data);
             }
         }
         else
         {
-            PrimitiveText(rect.x + rect.w, rect.y + rect.h, 9, TextAlignment::Right, std::to_string(*v).c_str());
+            PrimitiveText(rect.x + rect.w, rect.y + rect.h, 9, Align::Right, std::to_string(*v).c_str());
         }
     }
 
@@ -615,30 +604,30 @@ namespace MesaGUI
         {
             if (activeTextInputBuffer.count > 0)
             {
-                PrimitiveText(rect.x + rect.w, rect.y + rect.h, 14, TextAlignment::Right, activeTextInputBuffer.data);
+                PrimitiveText(rect.x + rect.w, rect.y + rect.h, 14, Align::Right, activeTextInputBuffer.data);
             }
         }
         else
         {
             char cbuf[32];
             stbsp_sprintf(cbuf, "%.2f", *v);
-            PrimitiveText(rect.x + rect.w, rect.y + rect.h, 14, TextAlignment::Right, cbuf);
+            PrimitiveText(rect.x + rect.w, rect.y + rect.h, 14, Align::Right, cbuf);
         }
     }
 
 
 
-    bool LabelledButton(UIRect rect, const char* label, TextAlignment textAlignment)
+    bool PrimitiveLabelledButton(UIRect rect, const char* label, Align textAlignment)
     {
         int ascenderTextSize = style_textFont.ptr->font_height_px;
         float yTextPaddingRatio = (1.f - (float(ascenderTextSize) / float(rect.h))) / 2.f;
         ivec2 textPadding = ivec2(10, (int) roundf(rect.h * yTextPaddingRatio));
         int textX = rect.x + textPadding.x;
-        if (textAlignment == TextAlignment::Center)
+        if (textAlignment == Align::Center)
         {
             textX = (int) ((rect.w / 2) + rect.x);
         }
-        else if (textAlignment == TextAlignment::Right)
+        else if (textAlignment == Align::Right)
         {
             textX = (int) rect.x + rect.w - textPadding.x;
         }
@@ -650,9 +639,9 @@ namespace MesaGUI
 
 
 
-    void BeginZone(UIRect windowRect, vec4 bgcolor)
+    void BeginWindow(UIRect windowRect, vec4 bgcolor, int depth)
     {
-        GUIDraw_PushDrawCollection(windowRect);
+        GUIDraw_PushDrawCollection(windowRect, depth);
 
         WindowData windata;
         windata.zoneId = FreshID();
@@ -664,7 +653,7 @@ namespace MesaGUI
         PrimitivePanel(windowRect, bgcolor);
     }
 
-    void EndZone()
+    void EndWindow()
     {
         if (!WINDOWSTACK.empty())
         {
@@ -677,19 +666,19 @@ namespace MesaGUI
         }
     }
 
-    void GetWHOfZone(int *w, int *h)
+    void GetWindowWidthAndHeight(int *w, int *h)
     {
         *w = CurrentWindow()->zoneRect.w;
         *h = CurrentWindow()->zoneRect.h;
     }
 
-    void GetXYInZone(int *x, int *y)
+    void GetXYInWindow(int *x, int *y)
     {
         *x = CurrentWindow()->zoneRect.x + CurrentWindow()->topLeftXOffset;
         *y = CurrentWindow()->zoneRect.y + CurrentWindow()->topLeftYOffset;
     }
 
-    void MoveXYInZone(int x, int y)
+    void MoveXYInWindow(int x, int y)
     {
         CurrentWindow()->topLeftXOffset += x;
         CurrentWindow()->topLeftYOffset += y;
@@ -699,13 +688,13 @@ namespace MesaGUI
     {
         int x;
         int y;
-        GetXYInZone(&x, &y);
+        GetXYInWindow(&x, &y);
 
         int sz = style_textFont.ptr->font_height_px;
 
-        PrimitiveText(x + style_paddingLeft, y + sz + style_paddingTop, sz, TextAlignment::Left, text);
+        PrimitiveText(x + style_paddingLeft, y + sz + style_paddingTop, sz, Align::Left, text);
 
-        MoveXYInZone(0, sz + style_paddingTop + style_paddingBottom);
+        MoveXYInWindow(0, sz + style_paddingTop + style_paddingBottom);
     }
 
     bool EditorLabelledButton(const char* label)
@@ -717,16 +706,16 @@ namespace MesaGUI
 
         int buttonX;
         int buttonY;
-        GetXYInZone(&buttonX, &buttonY);
+        GetXYInWindow(&buttonX, &buttonY);
         buttonX += style_paddingLeft;
         buttonY += style_paddingTop;
         int buttonW = GM_max((int) textW + 4, 50);
         int buttonH = labelTextSize + 4;
 
         UIRect buttonRect = UIRect(buttonX, buttonY, buttonW, buttonH);
-        bool result = LabelledButton(buttonRect, label, TextAlignment::Center);
+        bool result = PrimitiveLabelledButton(buttonRect, label, Align::Center);
 
-        MoveXYInZone(0, style_paddingTop + buttonH + style_paddingBottom);
+        MoveXYInWindow(0, style_paddingTop + buttonH + style_paddingBottom);
 
         return result;
     }
@@ -735,7 +724,7 @@ namespace MesaGUI
     {
         int x;
         int y;
-        GetXYInZone(&x, &y);
+        GetXYInWindow(&x, &y);
 
         int w = 50;
         int h = 9 + 4;
@@ -752,15 +741,15 @@ namespace MesaGUI
 //        {
 //            (*v) -= increment;
 //        }
-//        PrimitiveText(x + w + 22, y + h, 9, TextAlignment::Left, label);
+//        PrimitiveText(x + w + 22, y + h, 9, Align::Left, label);
 
-        MoveXYInZone(0, paddingAbove + h + paddingBelow);
+        MoveXYInWindow(0, paddingAbove + h + paddingBelow);
     }
 
     void EditorIncrementableFloatField(const char* label, float* v, float increment)
     {
         int x, y;
-        GetXYInZone(&x, &y);
+        GetXYInWindow(&x, &y);
 
         int w = 80;
         int h = 20;
@@ -777,28 +766,28 @@ namespace MesaGUI
         {
             (*v) -= increment;
         }
-        PrimitiveText(x + w + 22, y + h, 20, TextAlignment::Left, label);
+        PrimitiveText(x + w + 22, y + h, 20, Align::Left, label);
 
-        MoveXYInZone(0, paddingAbove + h + paddingBelow);
+        MoveXYInWindow(0, paddingAbove + h + paddingBelow);
     }
 
     bool EditorSelectable(const char *label, bool *selected)
     {
         int x, y;
-        GetXYInZone(&x, &y);
+        GetXYInWindow(&x, &y);
 
         UIRect selectableRegion = UIRect(x, y, 100, 11);
         if (*selected)
         {
             PrimitivePanel(selectableRegion, vec4(0,0,0,0.4f));
-            PrimitiveText(x + 1, y + 10, 9, TextAlignment::Left, label);
-            MoveXYInZone(0, 11);
+            PrimitiveText(x + 1, y + 10, 9, Align::Left, label);
+            MoveXYInWindow(0, 11);
         }
         else
         {
             *selected = PrimitiveButton(FreshID(), selectableRegion, vec4(), vec4(0,0,0,0.2f), vec4(0,0,0,0.4f), true);
-            PrimitiveText(x + 1, y + 10, 9, TextAlignment::Left, label);
-            MoveXYInZone(0, 11);
+            PrimitiveText(x + 1, y + 10, 9, Align::Left, label);
+            MoveXYInWindow(0, 11);
             if (*selected)
             {
                 return true;
@@ -828,7 +817,7 @@ namespace MesaGUI
     void EditorColorPicker(ui_id id, float *hue, float *saturation, float *value, float *opacity)
     {
         int x, y;
-        GetXYInZone(&x, &y);
+        GetXYInWindow(&x, &y);
 
         static spredit_Frame chromaselector;
         static spredit_Frame hueselector;
@@ -1221,11 +1210,6 @@ namespace MesaGUI
 //         }
 
         GUIDraw_DrawEverything();
-    }
-
-    bool Temp_Escape()
-    {
-        return keyboardInputASCIIKeycodeThisFrame.Contains(SDLK_ESCAPE);
     }
 
     void ProcessSDLEvent(const SDL_Event event)

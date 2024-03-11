@@ -212,15 +212,15 @@ void algo_line_perfect(int x1, int y1, int x2, int y2) // I don't like
 
 void DoSpriteEditorGUI()
 {
-//    MesaGUI::BeginZone(MesaGUI::UIRect(200, 200, 200, 200), vec4(0.5f, 0.5f, 0.5f, 1.f));
-//    MesaGUI::BeginZone(MesaGUI::UIRect(50, 50, 200, 400), vec4(0.0f, 1.f, 0.f, 1.f));
-//    MesaGUI::EditorText("When I got my first game console in 1979—a way-cool Intellivision system by Mattel—the term “game engine” did not exist.");
-//    MesaGUI::EndZone();
-//    MesaGUI::EditorText("When I got my first game console in 1979—a way-cool Intellivision system by Mattel—the term “game engine” did not exist.");
-//    MesaGUI::EndZone();
+//    Gui::BeginWindow(Gui::UIRect(200, 200, 200, 200), vec4(0.5f, 0.5f, 0.5f, 1.f));
+//    Gui::BeginWindow(Gui::UIRect(50, 50, 200, 400), vec4(0.0f, 1.f, 0.f, 1.f));
+//    Gui::EditorText("When I got my first game console in 1979—a way-cool Intellivision system by Mattel—the term “game engine” did not exist.");
+//    Gui::EndWindow();
+//    Gui::EditorText("When I got my first game console in 1979—a way-cool Intellivision system by Mattel—the term “game engine” did not exist.");
+//    Gui::EndWindow();
 
-    MesaGUI::BeginZone(alh_sprite_editor_left_panel);
-//    if (MesaGUI::EditorLabelledButton("Load a new sprite"))
+    Gui::BeginWindow(alh_sprite_editor_left_panel);
+//    if (Gui::EditorLabelledButton("Load a new sprite"))
 //    {
 //        std::string imagepath = OpenLoadImageDialog();
 //        if (!imagepath.empty())
@@ -230,46 +230,46 @@ void DoSpriteEditorGUI()
 //        }
 //    }
 //
-//    MesaGUI::EditorBeginListBox();
+//    Gui::EditorBeginListBox();
 //    for (size_t i = 0; i < gamedata.sprites.size(); ++i)
 //    {
 //        Gfx::TextureHandle sprite = gamedata.sprites.at(i);
 //        bool selected = false;
-//        MesaGUI::EditorSelectable(std::to_string(i).c_str(), &selected);
+//        Gui::EditorSelectable(std::to_string(i).c_str(), &selected);
 //    }
-//    MesaGUI::EditorEndListBox();
+//    Gui::EditorEndListBox();
 
-    MesaGUI::EditorText("brush size");
-    MesaGUI::EditorIncrementableIntegerField("brush size", &brushSz);
+    Gui::EditorText("brush size");
+    Gui::EditorIncrementableIntegerField("brush size", &brushSz);
 
 //    static float userR = 0.f;
 //    static float userG = 0.f;
 //    static float userB = 0.f;
 //    static float userA = 1.f;
-//    MesaGUI::EditorIncrementableFloatField("r", &userR);
-//    MesaGUI::EditorIncrementableFloatField("g", &userG);
-//    MesaGUI::EditorIncrementableFloatField("b", &userB);
-//    MesaGUI::EditorIncrementableFloatField("a", &userA);
+//    Gui::EditorIncrementableFloatField("r", &userR);
+//    Gui::EditorIncrementableFloatField("g", &userG);
+//    Gui::EditorIncrementableFloatField("b", &userB);
+//    Gui::EditorIncrementableFloatField("a", &userA);
 
     int showUserColorX;
     int showUserColorY;
-    MesaGUI::GetXYInZone(&showUserColorX, &showUserColorY);
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(showUserColorX, showUserColorY, 32, 32), vec4(activeRGB, activeOpacity));
-    MesaGUI::MoveXYInZone(0, 32);
+    Gui::GetXYInWindow(&showUserColorX, &showUserColorY);
+    Gui::PrimitivePanel(Gui::UIRect(showUserColorX, showUserColorY, 32, 32), vec4(activeRGB, activeOpacity));
+    Gui::MoveXYInWindow(0, 32);
 
     static float panxf = 20;
     static float panyf = 20;
     static i32 zoom = 1;
-    //MesaGUI::EditorIncrementableIntegerField()
-    MesaGUI::EditorText((std::to_string(zoom*100) + std::string(".0%")).c_str());
+    //Gui::EditorIncrementableIntegerField()
+    Gui::EditorText((std::to_string(zoom * 100) + std::string(".0%")).c_str());
 
     static float hue = 0.45f;
     static float saturation = 1.f;
     static float value = 1.f;
-    MesaGUI::EditorColorPicker(0x32f98, &hue, &saturation, &value, &activeOpacity);
+    Gui::EditorColorPicker(0x32f98, &hue, &saturation, &value, &activeOpacity);
     activeRGB = HSVToRGB(hue, saturation, value);
 
-    MesaGUI::EndZone();
+    Gui::EndWindow();
 
 
     spreditState.frame.w = 320;
@@ -424,11 +424,12 @@ void DoSpriteEditorGUI()
 
     UpdateGPUTex(&spreditState.frame);
 
-    MesaGUI::PrimitivePanel(alh_sprite_editor_right_panel_top, vec4(0.2,0.2,0.2,1));
-    MesaGUI::PrimtiveImage(MesaGUI::UIRect(
+    Gui::BeginWindow(alh_sprite_editor_right_panel_top, vec4(0.157f, 0.172f, 0.204f, 1.f));
+    Gui::PrimitivePanel(Gui::UIRect(
             alh_sprite_editor_right_panel_top->x + (int)panxf,
             alh_sprite_editor_right_panel_top->y + (int)panyf,
             spreditState.frame.w * zoom, spreditState.frame.h * zoom), spreditState.frame.gputex.textureId);
+    Gui::EndWindow();
 
     if (!Input.mouseLeftPressed && mouseOverViewport)
     {

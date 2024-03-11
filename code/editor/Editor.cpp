@@ -22,15 +22,15 @@ static Gfx::TextureHandle thBu01_hovered;
 static Gfx::TextureHandle thBu01_active;
 static Gfx::TextureHandle borders_00;
 
-MesaGUI::ALH *editorLayout = NULL;
-MesaGUI::ALH *mainbarLayout = NULL;
+Gui::ALH *editorLayout = NULL;
+Gui::ALH *mainbarLayout = NULL;
 
-MesaGUI::ALH *codeEditorTabLayout = NULL;
-MesaGUI::ALH *alh_sprite_editor = NULL;
-MesaGUI::ALH *alh_sprite_editor_left_panel = NULL;
-MesaGUI::ALH *alh_sprite_editor_right_panel = NULL;
-MesaGUI::ALH *alh_sprite_editor_right_panel_top = NULL;
-MesaGUI::ALH *alh_sprite_editor_right_panel_bot = NULL;
+Gui::ALH *codeEditorTabLayout = NULL;
+Gui::ALH *alh_sprite_editor = NULL;
+Gui::ALH *alh_sprite_editor_left_panel = NULL;
+Gui::ALH *alh_sprite_editor_right_panel = NULL;
+Gui::ALH *alh_sprite_editor_right_panel_top = NULL;
+Gui::ALH *alh_sprite_editor_right_panel_bot = NULL;
 
 static CodeEditorString tempCodeEditorStringA;
 
@@ -70,20 +70,20 @@ static EditorMode s_ActiveMode = EditorMode::SpritesEditor;
 
 bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
 {
-    bool result = MesaGUI::Behaviour_Button(id, MesaGUI::UIRect(x,y,w,h));
+    bool result = Gui::Behaviour_Button(id, Gui::UIRect(x, y, w, h));
 
-    u32 texId = MesaGUI::IsHovered(id) ? thBu00_generic_h.textureId : thBu00_generic_n.textureId;
-    if (MesaGUI::IsActive(id) || result) texId = thBu00_generic_a.textureId;
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(x,y,w,h), 
-        5,
-        texId,
+    u32 texId = Gui::IsHovered(id) ? thBu00_generic_h.textureId : thBu00_generic_n.textureId;
+    if (Gui::IsActive(id) || result) texId = thBu00_generic_a.textureId;
+    Gui::PrimitivePanel(Gui::UIRect(x, y, w, h),
+                        5,
+                        texId,
         5.f/thBu00_generic_n.width);
 
-    vec4 textColorBefore = MesaGUI::style_textColor;
-    MesaGUI::style_textColor = vec4(0.f,0.f,0.f,1.f);
+    vec4 textColorBefore = Gui::style_textColor;
+    Gui::style_textColor = vec4(0.f, 0.f, 0.f, 1.f);
     int sz = 9;
-    MesaGUI::PrimitiveText(x+4, y+5+sz+((MesaGUI::IsActive(id) || result) ? 1 : 0), sz, MesaGUI::TextAlignment::Left, text);
-    MesaGUI::style_textColor = textColorBefore;
+    Gui::PrimitiveText(x + 4, y + 5 + sz + ((Gui::IsActive(id) || result) ? 1 : 0), sz, Gui::Align::Left, text);
+    Gui::style_textColor = textColorBefore;
 
     return result;
 }
@@ -93,30 +93,30 @@ bool EditorButton(ui_id id, int x, int y, int w, int h, const char *text)
 
 //void EditorMainBar()
 //{
-//    MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->x, mainbarLayout->y, mainbarLayout->w, mainbarLayout->h), vec4(RGBHEXTO1(0xD0CABD),1)); // 0xc9c9ae RGBHEXTO1(0xc6c6c6) RGBHEXTO1(0xd2cabd)
+//    Gui::PrimitivePanel(Gui::UIRect(mainbarLayout->x, mainbarLayout->y, mainbarLayout->w, mainbarLayout->h), vec4(RGBHEXTO1(0xD0CABD),1)); // 0xc9c9ae RGBHEXTO1(0xc6c6c6) RGBHEXTO1(0xd2cabd)
 //
 //    if(s_ActiveMode == EditorMode::SpritesEditor)
-//        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+//        Gui::PrimitivePanel(Gui::UIRect(mainbarLayout->w - 136, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
 //    else
-//        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F1) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 136, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+//        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F1) || Gui::ImageButton(Gui::UIRect(mainbarLayout->w - 136, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
 //            s_ActiveMode = EditorMode::SpritesEditor;
 //
 //    if(s_ActiveMode == EditorMode::CodeEditor)
-//        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 102, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+//        Gui::PrimitivePanel(Gui::UIRect(mainbarLayout->w - 102, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
 //    else
-//        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F2) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 102, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+//        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F2) || Gui::ImageButton(Gui::UIRect(mainbarLayout->w - 102, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
 //            s_ActiveMode = EditorMode::CodeEditor;
 //
 //    if(s_ActiveMode == EditorMode::SpacesEditor)
-//        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 68, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+//        Gui::PrimitivePanel(Gui::UIRect(mainbarLayout->w - 68, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
 //    else
-//        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F3) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 68, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+//        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F3) || Gui::ImageButton(Gui::UIRect(mainbarLayout->w - 68, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
 //            s_ActiveMode = EditorMode::SpacesEditor;
 //
 //    if(s_ActiveMode == EditorMode::SoundAndMusic)
-//        MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout->w - 34, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
+//        Gui::PrimitivePanel(Gui::UIRect(mainbarLayout->w - 34, 4, thBu01_active.width, thBu01_active.height), thBu01_active.textureId);
 //    else
-//        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F4) || MesaGUI::ImageButton(MesaGUI::UIRect(mainbarLayout->w - 34, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
+//        if(Input.KeyHasBeenPressed(SDL_SCANCODE_F4) || Gui::ImageButton(Gui::UIRect(mainbarLayout->w - 34, 4, thBu01_normal.width, thBu01_normal.height), thBu01_normal.textureId, thBu01_hovered.textureId, thBu01_active.textureId))
 //            s_ActiveMode = EditorMode::SoundAndMusic;
 //}
 
@@ -199,14 +199,14 @@ void InitEditorGUI()
 
     SetupWorldDesigner();
 
-    editorLayout = MesaGUI::NewALH(true);
-    mainbarLayout = MesaGUI::NewALH(-1, -1, -1, 0, false);
-    codeEditorTabLayout = MesaGUI::NewALH(false);
-    alh_sprite_editor = MesaGUI::NewALH(false);
-    alh_sprite_editor_left_panel = MesaGUI::NewALH(-1, -1, 70, -1, false);
-    alh_sprite_editor_right_panel = MesaGUI::NewALH(true);
-    alh_sprite_editor_right_panel_top = MesaGUI::NewALH(false);
-    alh_sprite_editor_right_panel_bot = MesaGUI::NewALH(-1, -1, -1, 0, false);
+    editorLayout = Gui::NewALH(true);
+    mainbarLayout = Gui::NewALH(-1, -1, -1, 0, false);
+    codeEditorTabLayout = Gui::NewALH(false);
+    alh_sprite_editor = Gui::NewALH(false);
+    alh_sprite_editor_left_panel = Gui::NewALH(-1, -1, 70, -1, false);
+    alh_sprite_editor_right_panel = Gui::NewALH(true);
+    alh_sprite_editor_right_panel_top = Gui::NewALH(false);
+    alh_sprite_editor_right_panel_bot = Gui::NewALH(-1, -1, -1, 0, false);
 
     editorLayout->Insert(mainbarLayout);
     editorLayout->Insert(codeEditorTabLayout);
@@ -220,7 +220,7 @@ void InitEditorGUI()
     SetupCodeEditorString(&tempCodeEditorStringA, gamedata.codePage1.c_str(), (u32)gamedata.codePage1.size());
 }
 
-static bool IsPointInLayoutRect(ivec2 point, MesaGUI::ALH *layout)
+static bool IsPointInLayoutRect(ivec2 point, Gui::ALH *layout)
 {
     int xmin = layout->x;
     int ymin = layout->y;
@@ -232,10 +232,10 @@ static bool IsPointInLayoutRect(ivec2 point, MesaGUI::ALH *layout)
 static ivec2 WindowCoordinateToCodeEditorCoordinate(ivec2 xy_win)
 {
     ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(xy_win);
-    MesaGUI::BeginZone(MesaGUI::UIRect(codeEditorTabLayout));
+    Gui::BeginWindow(Gui::UIRect(codeEditorTabLayout));
     ivec2 xy_in_zone;
-    MesaGUI::GetXYInZone(&xy_in_zone.x, &xy_in_zone.y);
-    MesaGUI::EndZone();
+    Gui::GetXYInWindow(&xy_in_zone.x, &xy_in_zone.y);
+    Gui::EndWindow();
     ivec2 xy_codeeditorgui = ivec2(xy_internal.x - xy_in_zone.x, xy_internal.y - xy_in_zone.y);
     return xy_codeeditorgui;
 }
@@ -253,7 +253,7 @@ void EditorSDLProcessEvent(const SDL_Event event)
             {
                 leftMouseDown = true;
 
-                if (MesaGUI::IsActive(g_CodeEditorUIID))
+                if (Gui::IsActive(g_CodeEditorUIID))
                 {
                     ivec2 point_windowcoords = ivec2(event.button.x, event.button.y);
                     ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(
@@ -281,7 +281,7 @@ void EditorSDLProcessEvent(const SDL_Event event)
 
         case SDL_MOUSEMOTION:
         {
-            if (MesaGUI::IsActive(g_CodeEditorUIID) && leftMouseDown)
+            if (Gui::IsActive(g_CodeEditorUIID) && leftMouseDown)
             {
                 ivec2 point_windowcoords = ivec2(event.button.x, event.button.y);
                 ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(
@@ -315,7 +315,7 @@ void EditorSDLProcessEvent(const SDL_Event event)
         {
             SDL_KeyboardEvent keyevent = event.key;
 
-            if (MesaGUI::IsActive(g_CodeEditorUIID))
+            if (Gui::IsActive(g_CodeEditorUIID))
             {
                 int key = (int)keyevent.keysym.sym;
                 if (keyevent.keysym.mod & KMOD_SHIFT) 
@@ -339,33 +339,33 @@ void EditorDoGUI()
         InitEditorGUI();
     }
 
-    MesaGUI::UpdateMainCanvasALH(editorLayout);
+    Gui::UpdateMainCanvasALH(editorLayout);
 
     switch (s_ActiveMode)
     {
         case EditorMode::SpritesEditor:
         {
             editorLayout->Replace(1, alh_sprite_editor);
-            MesaGUI::UpdateMainCanvasALH(editorLayout);
+            Gui::UpdateMainCanvasALH(editorLayout);
             DoSpriteEditorGUI();
-//            MesaGUI::PrimitiveText(20, 100, 9, MesaGUI::TextAlignment::Left, "Art and animation creator coming soon");
+//            Gui::PrimitiveText(20, 100, 9, Gui::Align::Left, "Art and animation creator coming soon");
             break;
         }
         case EditorMode::CodeEditor:
         {
             editorLayout->Replace(1, codeEditorTabLayout);
-            MesaGUI::UpdateMainCanvasALH(editorLayout);
+            Gui::UpdateMainCanvasALH(editorLayout);
 
-            MesaGUI::PrimitivePanel(MesaGUI::UIRect(codeEditorTabLayout), vec4(RGBHEXTO1(0x414141), 1.f));// 0x193342 //s_EditorColor1);
-            MesaGUI::BeginZone(MesaGUI::UIRect(codeEditorTabLayout));
+            //Gui::PrimitivePanel(Gui::UIRect(codeEditorTabLayout), );// 0x193342 //s_EditorColor1);
+            Gui::BeginWindow(Gui::UIRect(codeEditorTabLayout), vec4(RGBHEXTO1(0x414141), 1.f));
             DoCodeEditorGUI(tempCodeEditorStringA);
             gamedata.codePage1 = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
-            MesaGUI::EndZone();
+            Gui::EndWindow();
 
-//            MesaGUI::UIRect codeEditorBorder = MesaGUI::UIRect(codeEditorTabLayout);
+//            Gui::UIRect codeEditorBorder = Gui::UIRect(codeEditorTabLayout);
 //            codeEditorBorder.y -= 6;
 //            codeEditorBorder.h += 6;
-//            MesaGUI::PrimitivePanel(codeEditorBorder, 8, borders_00.textureId, 0.4f);
+//            Gui::PrimitivePanel(codeEditorBorder, 8, borders_00.textureId, 0.4f);
 
             break;
         }
@@ -376,15 +376,15 @@ void EditorDoGUI()
         }
         case EditorMode::SoundAndMusic:
         {
-            MesaGUI::PrimitiveText(20, 100, 9, MesaGUI::TextAlignment::Left, "Sound and music creator coming soon");
+            Gui::PrimitiveText(20, 100, 9, Gui::Align::Left, "Sound and music creator coming soon");
             break;
         }
     }
 
 //    EditorMainBar();
 
-    // MesaGUI::PrimitivePanel(MesaGUI::UIRect(mainbarLayout), vec4(1,0,0,0.5));
-    // //MesaGUI::PrimitivePanel(MesaGUI::UIRect(entityDesignerTabLayout), vec4(0,1,0,0.5));
-    // MesaGUI::PrimitivePanel(MesaGUI::UIRect(entitySelectorLayout), vec4(0,0,1,0.5));
-    // MesaGUI::PrimitivePanel(MesaGUI::UIRect(entityCodeEditorLayout), vec4(1,0,1,0.5));
+    // Gui::PrimitivePanel(Gui::UIRect(mainbarLayout), vec4(1,0,0,0.5));
+    // //Gui::PrimitivePanel(Gui::UIRect(entityDesignerTabLayout), vec4(0,1,0,0.5));
+    // Gui::PrimitivePanel(Gui::UIRect(entitySelectorLayout), vec4(0,0,1,0.5));
+    // Gui::PrimitivePanel(Gui::UIRect(entityCodeEditorLayout), vec4(1,0,1,0.5));
 }

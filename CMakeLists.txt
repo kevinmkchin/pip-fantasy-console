@@ -42,6 +42,8 @@ set(SOURCE_FILES
         code/Input.cpp
         code/MesaIMGUI.h
         code/MesaIMGUI.cpp
+        code/GUI_DRAWING.H
+        code/GUI_DRAWING.CPP
         code/MemoryAllocator.h
         code/MemoryAllocator.cpp
         code/GameData.h
@@ -74,9 +76,7 @@ set(SOURCE_FILES
         code/editor/SpriteEditor.cpp
         code/editor/SpriteEditorActions.cpp
         code/editor/SpriteEditorActions.h
-        code/GUI_DRAWING.CPP
-        code/GUI_DRAWING.H
-
+        
 )
 
 set(OTHER_FILES_FOR_IDE

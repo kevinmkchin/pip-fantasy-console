@@ -15,15 +15,15 @@ struct TempLayout
     int absh;
 };
 
-static MesaGUI::ALH *worldEditorTabLayout = NULL;
-static MesaGUI::ALH *worldEntitySelectorLayout = NULL;
-static MesaGUI::ALH *worldViewerLayout = NULL;
+static Gui::ALH *worldEditorTabLayout = NULL;
+static Gui::ALH *worldEntitySelectorLayout = NULL;
+static Gui::ALH *worldViewerLayout = NULL;
 
 static void SetupWorldDesigner()
 {
-    worldEditorTabLayout = MesaGUI::NewALH(false);
-    worldEntitySelectorLayout = MesaGUI::NewALH(-1, -1, 180, -1, true);
-    worldViewerLayout = MesaGUI::NewALH(true);
+    worldEditorTabLayout = Gui::NewALH(false);
+    worldEntitySelectorLayout = Gui::NewALH(-1, -1, 180, -1, true);
+    worldViewerLayout = Gui::NewALH(true);
 
     worldEditorTabLayout->Insert(worldEntitySelectorLayout);
     worldEditorTabLayout->Insert(worldViewerLayout);
@@ -32,28 +32,28 @@ static void SetupWorldDesigner()
 static void WorldDesigner()
 {
     editorLayout->Replace(1, worldEditorTabLayout);
-    MesaGUI::UpdateMainCanvasALH(editorLayout);
+    Gui::UpdateMainCanvasALH(editorLayout);
 
 
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(worldEntitySelectorLayout), s_EditorColor1);
-    MesaGUI::BeginZone(MesaGUI::UIRect(worldEntitySelectorLayout));
+    Gui::PrimitivePanel(Gui::UIRect(worldEntitySelectorLayout), s_EditorColor1);
+    Gui::BeginWindow(Gui::UIRect(worldEntitySelectorLayout));
 
-    // MesaGUI::EditorBeginListBox();
+    // Gui::EditorBeginListBox();
     // const std::vector<int>& entityAssetIdsList = *activeEditorState->RetrieveAllEntityAssetIds();
     // for (size_t i = 0; i < entityAssetIdsList.size(); ++i)
     // {
     //     int entityAssetId = entityAssetIdsList.at(i);
     //     EntityAsset *e = activeEditorState->RetrieveEntityAssetById(entityAssetId);
     //     bool selected = entityAssetId == s_SelectedEntityAssetId;
-    //     if (MesaGUI::EditorSelectable(e->name.c_str(), &selected))
+    //     if (Gui::EditorSelectable(e->name.c_str(), &selected))
     //     {
     //         s_SelectedEntityAssetId = entityAssetId;
     //         InitializeCodeEditorState(&s_ActiveCodeEditorState, false, e->code.c_str(), (u32)e->code.size());
     //     }
     // }
-    // MesaGUI::EditorEndListBox();
-    // MesaGUI::MoveXYInZone(0, 10);
-    MesaGUI::EndZone();
+    // Gui::EditorEndListBox();
+    // Gui::MoveXYInWindow(0, 10);
+    Gui::EndWindow();
 
     // world editor
 
@@ -113,7 +113,7 @@ static void WorldDesigner()
     // spaceAssetTemp.placedEntities.push_back(caribou);
     //Gfx::BasicFrameBuffer worldViewRender = Gfx::GetCoreRenderer()->RenderTheFuckingWorldEditor(&spaceAssetTemp, activeEditorState, worldViewInfo);
 
-    //MesaGUI::PrimitivePanel(MesaGUI::UIRect(worldEditorArea.absx, worldEditorArea.absy, worldEditorArea.absw, worldEditorArea.absh), worldViewRender.colorTexId);
+    //Gui::PrimitivePanel(Gui::UIRect(worldEditorArea.absx, worldEditorArea.absy, worldEditorArea.absw, worldEditorArea.absh), worldViewRender.colorTexId);
 
 }
 

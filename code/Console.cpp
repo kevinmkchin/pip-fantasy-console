@@ -89,7 +89,7 @@ void SendInputToConsole(SDL_KeyboardEvent& keyevent)
 }
 
 
-static MesaGUI::ALH *consoleLayout = NULL;
+static Gui::ALH *consoleLayout = NULL;
 static vec4 s_ConsoleBlack = vec4(0.05f, 0.05f, 0.05f, 1);
 
 void DoBootScreen()
@@ -98,15 +98,15 @@ void DoBootScreen()
     if (!doOnce)
     {
         doOnce = true;
-        consoleLayout = MesaGUI::NewALH(true);
+        consoleLayout = Gui::NewALH(true);
     }
-    MesaGUI::UpdateMainCanvasALH(consoleLayout);
+    Gui::UpdateMainCanvasALH(consoleLayout);
 
     static float a = float(rand());
     static float b = float(rand());
     static float c = float(rand());
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(consoleLayout), s_ConsoleBlack);
-    // MesaGUI::PrimitivePanel(MesaGUI::UIRect(1, 1, 10, 10), 5, 
+    Gui::PrimitivePanel(Gui::UIRect(consoleLayout), s_ConsoleBlack);
+    // Gui::PrimitivePanel(Gui::UIRect(1, 1, 10, 10), 5,
     //                         vec4((sinf(Time.time * 4.f + a) + 1.f) * 0.5f, 
     //                              (sinf(Time.time * 4.f + b) + 1.f) * 0.5f, 
     //                              (sinf(Time.time * 4.f + c) + 1.f) * 0.5f, 1));
@@ -119,7 +119,7 @@ void DoBootScreen()
     //printf("%d\n", zeros);
     if (zeros < 4000)
     {
-        MesaGUI::PrimitiveText(40, 40, 9, MesaGUI::TextAlignment::Left, sConsoleMessagesBuffer + zeros);
+        Gui::PrimitiveText(40, 40, 9, Gui::Align::Left, sConsoleMessagesBuffer + zeros);
     }
 
     bool showCursor = int(Time.time * 3.6f) % 2 == 0;
@@ -127,7 +127,7 @@ void DoBootScreen()
         sConsoleCommandInputBuffer.PushBack('_');
     if (sConsoleCommandInputBuffer.count > 0)
     {
-        MesaGUI::PrimitiveText(40, consoleLayout->h - 60, 9, MesaGUI::TextAlignment::Left, sConsoleCommandInputBuffer.data);
+        Gui::PrimitiveText(40, consoleLayout->h - 60, 9, Gui::Align::Left, sConsoleCommandInputBuffer.data);
     }
     if (showCursor)
         sConsoleCommandInputBuffer.PopBack();
@@ -135,14 +135,14 @@ void DoBootScreen()
 
 void DoSingleCommandLine()
 {
-    MesaGUI::PrimitivePanel(MesaGUI::UIRect(0, 0, 4000, 15), s_ConsoleBlack);
+    Gui::PrimitivePanel(Gui::UIRect(0, 0, 4000, 15), s_ConsoleBlack);
 
     bool showCursor = int(Time.time * 3.6f) % 2 == 0;
     if (showCursor)
         sConsoleCommandInputBuffer.PushBack('_');
     if (sConsoleCommandInputBuffer.count > 0 )
     {
-        MesaGUI::PrimitiveText(4, 13, 9, MesaGUI::TextAlignment::Left, sConsoleCommandInputBuffer.data);
+        Gui::PrimitiveText(4, 13, 9, Gui::Align::Left, sConsoleCommandInputBuffer.data);
     }
     if (showCursor)
         sConsoleCommandInputBuffer.PopBack();
