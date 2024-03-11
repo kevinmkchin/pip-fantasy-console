@@ -604,14 +604,14 @@ namespace Gui
         {
             if (activeTextInputBuffer.count > 0)
             {
-                PrimitiveText(rect.x + rect.w, rect.y + rect.h, 14, Align::Right, activeTextInputBuffer.data);
+                PrimitiveText(rect.x + rect.w, rect.y + rect.h, 9, Align::Right, activeTextInputBuffer.data);
             }
         }
         else
         {
             char cbuf[32];
             stbsp_sprintf(cbuf, "%.2f", *v);
-            PrimitiveText(rect.x + rect.w, rect.y + rect.h, 14, Align::Right, cbuf);
+            PrimitiveText(rect.x + rect.w, rect.y + rect.h, 9, Align::Right, cbuf);
         }
     }
 
@@ -636,8 +636,6 @@ namespace Gui
         PrimitiveText(textX, rect.y + rect.h - textPadding.y, ascenderTextSize, textAlignment, label);
         return buttonValue;
     }
-
-
 
     void BeginWindow(UIRect windowRect, vec4 bgcolor, int depth)
     {
@@ -733,15 +731,15 @@ namespace Gui
 
         PrimitivePanel(UIRect(x, y, w-2, h), vec4(0.4f, 0.4f, 0.4f, 1.f));
         PrimitiveIntegerInputField(FreshID(), UIRect(x + 1, y + 1, w-4, h - 2), v);
-//        if (PrimitiveButton(FreshID(), UIRect(x + w, y + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
-//        {
-//            (*v) += increment;
-//        }
-//        if (PrimitiveButton(FreshID(), UIRect(x + w, y + (h / 2) + 1, 20, (h / 2) - 1), ui_ss.top().buttonNormalColor, ui_ss.top().buttonHoveredColor, ui_ss.top().buttonActiveColor))
-//        {
-//            (*v) -= increment;
-//        }
-//        PrimitiveText(x + w + 22, y + h, 9, Align::Left, label);
+        if (PrimitiveButton(FreshID(), UIRect(x + w, y + 1, 10, (h / 2) - 1), style_buttonNormalColor, style_buttonHoveredColor, style_buttonActiveColor))
+        {
+            (*v) += increment;
+        }
+        if (PrimitiveButton(FreshID(), UIRect(x + w, y + (h / 2) + 1, 10, (h / 2) - 1), style_buttonNormalColor, style_buttonHoveredColor, style_buttonActiveColor))
+        {
+            (*v) -= increment;
+        }
+        PrimitiveText(x + w + 12, y + h, 9, Align::Left, label);
 
         MoveXYInWindow(0, paddingAbove + h + paddingBelow);
     }
@@ -751,22 +749,22 @@ namespace Gui
         int x, y;
         GetXYInWindow(&x, &y);
 
-        int w = 80;
-        int h = 20;
+        int w = 50;
+        int h = 9+4;
         int paddingAbove = style_paddingTop;
         int paddingBelow = style_paddingBottom;
 
         PrimitivePanel(UIRect(x, y, w-2, h), vec4(0.4f, 0.4f, 0.4f, 1.f));
         PrimitiveFloatInputField(FreshID(), UIRect(x + 1, y + 1, w-4, h - 2), v);
-        if (PrimitiveButton(FreshID(), UIRect(x + w, y + 1, 20, (h / 2) - 1), style_buttonNormalColor, style_buttonHoveredColor, style_buttonActiveColor))
+        if (PrimitiveButton(FreshID(), UIRect(x + w, y + 1, 10, (h / 2) - 1), style_buttonNormalColor, style_buttonHoveredColor, style_buttonActiveColor))
         {
             (*v) += increment;
         }
-        if (PrimitiveButton(FreshID(), UIRect(x + w, y + (h / 2) + 1, 20, (h / 2) - 1), style_buttonNormalColor, style_buttonHoveredColor, style_buttonActiveColor))
+        if (PrimitiveButton(FreshID(), UIRect(x + w, y + (h / 2) + 1, 10, (h / 2) - 1), style_buttonNormalColor, style_buttonHoveredColor, style_buttonActiveColor))
         {
             (*v) -= increment;
         }
-        PrimitiveText(x + w + 22, y + h, 20, Align::Left, label);
+        PrimitiveText(x + w + 12, y + h, 9, Align::Left, label);
 
         MoveXYInWindow(0, paddingAbove + h + paddingBelow);
     }
