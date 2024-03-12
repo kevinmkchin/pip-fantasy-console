@@ -23,6 +23,7 @@ struct spredit_Frame
 struct SpriteEditorState
 {
     spredit_Frame frame;
+    std::vector<spredit_Color> palette;
 };
 
 void DoSpriteEditorGUI();
