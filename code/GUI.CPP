@@ -17,6 +17,9 @@
 #include "FileSystem.h"
 #include "Input.h"
 
+static ivec2 lastAddedElementDimension;
+static bool flag_HorizontalMode = false;
+
 static ui_id freshIdCounter = 0;
 static ui_id FreshID()
 {
@@ -120,6 +123,7 @@ namespace Gui
     {
         ui_id zoneId = null_ui_id;
         UIRect zoneRect;
+        int paddingFromLeft = 0;
         int topLeftXOffset = 0;
         int topLeftYOffset = 0;
     };
@@ -644,11 +648,14 @@ namespace Gui
         WindowData windata;
         windata.zoneId = FreshID();
         windata.zoneRect = windowRect;
-        windata.topLeftXOffset = 5;
+        windata.paddingFromLeft = 5;
+        windata.topLeftXOffset = windata.paddingFromLeft;
         windata.topLeftYOffset = 5;
         WINDOWSTACK.push(windata);
 
         PrimitivePanel(windowRect, bgcolor);
+
+        lastAddedElementDimension = ivec2();
     }
 
     void EndWindow()
@@ -678,12 +685,26 @@ namespace Gui
 
     void MoveXYInWindow(int x, int y)
     {
-        CurrentWindow()->topLeftXOffset += x;
-        CurrentWindow()->topLeftYOffset += y;
+        lastAddedElementDimension = ivec2(x,y);
+    }
+
+    void EditorMoveXY()
+    {
+        if (flag_HorizontalMode)
+        {
+            CurrentWindow()->topLeftXOffset += lastAddedElementDimension.x;
+        }
+        else
+        {
+            CurrentWindow()->topLeftXOffset = CurrentWindow()->paddingFromLeft;
+            CurrentWindow()->topLeftYOffset += lastAddedElementDimension.y;
+        }
     }
 
     void EditorText(const char* text)
     {
+        EditorMoveXY();
+
         int x;
         int y;
         GetXYInWindow(&x, &y);
@@ -697,6 +718,8 @@ namespace Gui
 
     bool EditorLabelledButton(const char* label)
     {
+        EditorMoveXY();
+
         int labelTextSize = style_textFont.ptr->font_height_px;
         float textW;
         float textH;
@@ -720,6 +743,8 @@ namespace Gui
 
     void EditorIncrementableIntegerField(const char* label, int* v, int increment)
     {
+        EditorMoveXY();
+
         int x;
         int y;
         GetXYInWindow(&x, &y);
@@ -746,6 +771,8 @@ namespace Gui
 
     void EditorIncrementableFloatField(const char* label, float* v, float increment)
     {
+        EditorMoveXY();
+
         int x, y;
         GetXYInWindow(&x, &y);
 
@@ -769,8 +796,22 @@ namespace Gui
         MoveXYInWindow(0, paddingAbove + h + paddingBelow);
     }
 
+    bool EditorSelectableRect(vec4 colorRGBA, bool *selected, int id)
+    {
+        EditorMoveXY();
+        int x, y;
+        GetXYInWindow(&x, &y);
+
+        PrimitivePanel(UIRect(x,y,12,12), colorRGBA);
+
+        MoveXYInWindow(12,12);
+
+        return Behaviour_Button(id, UIRect(x,y,12,12));
+    }
+
     bool EditorSelectable(const char *label, bool *selected)
     {
+        EditorMoveXY();
         int x, y;
         GetXYInWindow(&x, &y);
 
@@ -803,6 +844,21 @@ namespace Gui
 
     }
 
+    void EditorBeginHorizontal()
+    {
+        EditorMoveXY();
+        flag_HorizontalMode = true;
+        MoveXYInWindow(0,0);
+    }
+
+    void EditorEndHorizontal()
+    {
+        flag_HorizontalMode = false;
+        EditorMoveXY();
+        MoveXYInWindow(0,0);
+    }
+
+
 #include "editor/SpriteEditor.h"
 
     void SetFramePixelColor(spredit_Frame *frame, i32 x, i32 y, spredit_Color color)
@@ -814,6 +870,7 @@ namespace Gui
 
     void EditorColorPicker(ui_id id, float *hue, float *saturation, float *value, float *opacity)
     {
+        EditorMoveXY();
         int x, y;
         GetXYInWindow(&x, &y);
 
@@ -997,6 +1054,8 @@ namespace Gui
         PrimitivePanel(chromaselectorrect, chromaselector.gputex.textureId);
         PrimitivePanel(hueselectorrect, hueselector.gputex.textureId);
         PrimitivePanel(alphaselectorrect, alphaselector.gputex.textureId);
+
+        // Todo MoveXYInWindow
     }
 
 

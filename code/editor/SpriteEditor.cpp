@@ -256,11 +256,36 @@ void DoSpriteEditorGUI()
     Gui::EditorText("brush size");
     Gui::EditorIncrementableIntegerField("brush size", &brushSz);
 
+    static float hue = 0.45f;
+    static float saturation = 1.f;
+    static float value = 1.f;
+    Gui::EditorBeginHorizontal();
+    for (int i = 0; i < spreditState.palette.size(); ++i)
+    {
+        spredit_Color c = spreditState.palette.at(i);
+        if (Gui::EditorSelectableRect(vec4(RGB255TO1(c.r, c.g, c.b), float(c.a)/255.f), nullptr, 8482371 + i))
+        {
+            //RGBToHSV(RGB255TO1(c.r, c.g, c.b));
+            // activeRGB = vec3(RGB255TO1(c.r, c.g, c.b));
+            vec3 hsv = RGBToHSV(RGB255TO1(c.r, c.g, c.b));
+            hue = hsv.x;
+            saturation = hsv.y;
+            value = hsv.z;
+            activeOpacity = float(c.a)/255.f;
+        }
+        if (i > 0 && i % 3 == 1)
+        {
+            Gui::EditorEndHorizontal();
+            Gui::EditorBeginHorizontal();
+        }
+    }
+    Gui::EditorEndHorizontal();
+
     int showUserColorX;
     int showUserColorY;
     Gui::GetXYInWindow(&showUserColorX, &showUserColorY);
-    Gui::PrimitivePanel(Gui::UIRect(showUserColorX, showUserColorY, 61, 12), vec4(activeRGB, activeOpacity));
-    Gui::MoveXYInWindow(0, 12);
+    Gui::PrimitivePanel(Gui::UIRect(showUserColorX, showUserColorY + 2, 61, 12), vec4(activeRGB, activeOpacity));
+    Gui::MoveXYInWindow(0, 16);
 
     static float panxf = 20;
     static float panyf = 20;
@@ -268,9 +293,12 @@ void DoSpriteEditorGUI()
     //Gui::EditorIncrementableIntegerField()
     Gui::EditorText((std::to_string(zoom * 100) + std::string(".0%")).c_str());
 
-    static float hue = 0.45f;
-    static float saturation = 1.f;
-    static float value = 1.f;
+    if (Gui::EditorLabelledButton("add to palette"))
+    {
+        vec3 rgbf = HSVToRGB(hue,saturation,value);
+        spreditState.palette.push_back({ u8(rgbf.x * 255.f), u8(rgbf.y * 255.f), u8(rgbf.z * 255.f), u8(activeOpacity * 255.f) });
+    }
+
     Gui::EditorColorPicker(0x32f98, &hue, &saturation, &value, &activeOpacity);
     activeRGB = HSVToRGB(hue, saturation, value);
 
@@ -298,6 +326,19 @@ void DoSpriteEditorGUI()
                 p->a = 0xff;
             }
         }
+
+        // temp
+        spreditState.palette.push_back({ 0xff, 0x00, 0x00, 0xff });
+        spreditState.palette.push_back({ 0xff, 0xff, 0x00, 0xff });
+        spreditState.palette.push_back({ 0xff, 0x00, 0xff, 0xff });
+        spreditState.palette.push_back({ 0x00, 0xff, 0xff, 0xff });
+        spreditState.palette.push_back({ 0x00, 0xff, 0x00, 0xff });
+        spreditState.palette.push_back({ 0x00, 0x00, 0xff, 0xff });
+        spreditState.palette.push_back({ 0x00, 0x41, 0x41, 0xff });
+        spreditState.palette.push_back({ 0x41, 0x00, 0xff, 0xff });
+        spreditState.palette.push_back({ 0x00, 0x41, 0xff, 0xff });
+        spreditState.palette.push_back({ 0xff, 0x41, 0x41, 0xff });
+        spreditState.palette.push_back({ 0x41, 0x00, 0x41, 0xff });
     }
 
     if (Input.mouseYScroll)

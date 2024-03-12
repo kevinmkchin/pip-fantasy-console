@@ -94,22 +94,35 @@ namespace Gui
     void EndWindow();
     void GetWindowWidthAndHeight(int *w, int *h);
     void GetXYInWindow(int *x, int *y);
-    void MoveXYInWindow(int x, int y);
+    void MoveXYInWindow(int x, int y); // rename to something like EditorIncreaseRowBounds or SetLastAddedElementDimensions
+    void EditorMoveXY();
+    // Essentially workflow is like this:
+    // When Editor GUI element function called:
+    // - EditorMoveXY to shift offsets by the last added element
+    // - GetXY and draw stuff
+    // - call MoveXYInWindow to cache the dimensions of this added element
 
     /* GUI elements that go inside windows
     * */
     void EditorText(const char *text);
+    // TODO void EditorImage(u32 glTextureId, ivec2 size, vec2 uv0 = vec2(0.f,0.f), vec2 uv1 = vec2(1.f,1.f));
+    // TODO void EditorImageButton(u32 glTextureId, ivec2 size, vec2 uv0 = vec2(0.f,0.f), vec2 uv1 = vec2(1.f,1.f));
     bool EditorLabelledButton(const char *label);
     void EditorIncrementableIntegerField(const char *label, int *v, int increment = 1);
     void EditorIncrementableFloatField(const char *label, float *v, float increment = 0.1f);
 
     // EditorSelectable returns true once when it gets selected
     bool EditorSelectable(const char *label, bool *selected);
+    bool EditorSelectableRect(vec4 colorRGBA, bool *selected, int id);
 
     void EditorBeginListBox();
     void EditorEndListBox();
 
+    void EditorBeginHorizontal();
+    void EditorEndHorizontal();
+
     void EditorColorPicker(ui_id id, float *hue, float *saturation, float *value, float *opacity);
+
 
 
 
