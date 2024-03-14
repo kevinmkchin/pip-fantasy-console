@@ -283,9 +283,9 @@ void DoSpriteEditorGUI()
 
     int showUserColorX;
     int showUserColorY;
-    Gui::GetXYInWindow(&showUserColorX, &showUserColorY);
+    Gui::Window_GetCurrentOffsets(&showUserColorX, &showUserColorY);
     Gui::PrimitivePanel(Gui::UIRect(showUserColorX, showUserColorY + 2, 61, 12), vec4(activeRGB, activeOpacity));
-    Gui::MoveXYInWindow(0, 16);
+    Gui::Window_StageLastElementDimension(0, 16);
 
     static float panxf = 20;
     static float panyf = 20;

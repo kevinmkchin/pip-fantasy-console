@@ -234,7 +234,7 @@ static ivec2 WindowCoordinateToCodeEditorCoordinate(ivec2 xy_win)
     ivec2 xy_internal = Gfx::GetCoreRenderer()->TransformWindowCoordinateToEditorGUICoordinateSpace(xy_win);
     Gui::BeginWindow(Gui::UIRect(codeEditorTabLayout));
     ivec2 xy_in_zone;
-    Gui::GetXYInWindow(&xy_in_zone.x, &xy_in_zone.y);
+    Gui::Window_GetCurrentOffsets(&xy_in_zone.x, &xy_in_zone.y);
     Gui::EndWindow();
     ivec2 xy_codeeditorgui = ivec2(xy_internal.x - xy_in_zone.x, xy_internal.y - xy_in_zone.y);
     return xy_codeeditorgui;
