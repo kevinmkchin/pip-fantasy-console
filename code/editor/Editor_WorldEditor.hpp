@@ -52,7 +52,7 @@ static void WorldDesigner()
     //     }
     // }
     // Gui::EditorEndListBox();
-    // Gui::MoveXYInWindow(0, 10);
+    // Gui::Window_StageLastElementDimension(0, 10);
     Gui::EndWindow();
 
     // world editor

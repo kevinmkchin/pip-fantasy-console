@@ -92,15 +92,15 @@ namespace Gui
     * */
     void BeginWindow(UIRect windowRect, vec4 bgcolor = vec4(0.05f, 0.05f, 0.05f, 0.5f), int depth = -1);
     void EndWindow();
-    void GetWindowWidthAndHeight(int *w, int *h);
-    void GetXYInWindow(int *x, int *y);
-    void MoveXYInWindow(int x, int y); // rename to something like EditorIncreaseRowBounds or SetLastAddedElementDimensions
-    void EditorMoveXY();
+    void Window_GetWidthHeight(int *w, int *h);
+    void Window_GetCurrentOffsets(int *x, int *y);
+    void Window_StageLastElementDimension(int x, int y);
+    void Window_CommitLastElementDimension();
     // Essentially workflow is like this:
     // When Editor GUI element function called:
-    // - EditorMoveXY to shift offsets by the last added element
+    // - Window_CommitLastElementDimension to shift offsets by the last added element
     // - GetXY and draw stuff
-    // - call MoveXYInWindow to cache the dimensions of this added element
+    // - call Window_StageLastElementDimension to cache the dimensions of this added element
 
     /* GUI elements that go inside windows
     * */

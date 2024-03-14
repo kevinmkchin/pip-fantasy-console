@@ -401,8 +401,8 @@ static void ColorCode(const char *code)
 void DoCodeEditorGUI(CodeEditorString code)
 {
     int x, y, w, h;
-    Gui::GetXYInWindow(&x, &y);
-    Gui::GetWindowWidthAndHeight(&w, &h);
+    Gui::Window_GetCurrentOffsets(&x, &y);
+    Gui::Window_GetWidthHeight(&w, &h);
 
     Gui::UIRect codeEditorRect = Gui::UIRect(x, y, w - 8, h - 8);
 

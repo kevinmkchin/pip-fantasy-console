@@ -671,24 +671,24 @@ namespace Gui
         }
     }
 
-    void GetWindowWidthAndHeight(int *w, int *h)
+    void Window_GetWidthHeight(int *w, int *h)
     {
         *w = CurrentWindow()->zoneRect.w;
         *h = CurrentWindow()->zoneRect.h;
     }
 
-    void GetXYInWindow(int *x, int *y)
+    void Window_GetCurrentOffsets(int *x, int *y)
     {
         *x = CurrentWindow()->zoneRect.x + CurrentWindow()->topLeftXOffset;
         *y = CurrentWindow()->zoneRect.y + CurrentWindow()->topLeftYOffset;
     }
 
-    void MoveXYInWindow(int x, int y)
+    void Window_StageLastElementDimension(int x, int y)
     {
         lastAddedElementDimension = ivec2(x,y);
     }
 
-    void EditorMoveXY()
+    void Window_CommitLastElementDimension()
     {
         if (flag_HorizontalMode)
         {
@@ -703,22 +703,22 @@ namespace Gui
 
     void EditorText(const char* text)
     {
-        EditorMoveXY();
+        Window_CommitLastElementDimension();
 
         int x;
         int y;
-        GetXYInWindow(&x, &y);
+        Window_GetCurrentOffsets(&x, &y);
 
         int sz = style_textFont.ptr->font_height_px;
 
         PrimitiveText(x + style_paddingLeft, y + sz + style_paddingTop, sz, Align::Left, text);
 
-        MoveXYInWindow(0, sz + style_paddingTop + style_paddingBottom);
+        Window_StageLastElementDimension(0, sz + style_paddingTop + style_paddingBottom);
     }
 
     bool EditorLabelledButton(const char* label)
     {
-        EditorMoveXY();
+        Window_CommitLastElementDimension();
 
         int labelTextSize = style_textFont.ptr->font_height_px;
         float textW;
@@ -727,7 +727,7 @@ namespace Gui
 
         int buttonX;
         int buttonY;
-        GetXYInWindow(&buttonX, &buttonY);
+        Window_GetCurrentOffsets(&buttonX, &buttonY);
         buttonX += style_paddingLeft;
         buttonY += style_paddingTop;
         int buttonW = GM_max((int) textW + 4, 50);
@@ -736,18 +736,18 @@ namespace Gui
         UIRect buttonRect = UIRect(buttonX, buttonY, buttonW, buttonH);
         bool result = PrimitiveLabelledButton(buttonRect, label, Align::Center);
 
-        MoveXYInWindow(0, style_paddingTop + buttonH + style_paddingBottom);
+        Window_StageLastElementDimension(0, style_paddingTop + buttonH + style_paddingBottom);
 
         return result;
     }
 
     void EditorIncrementableIntegerField(const char* label, int* v, int increment)
     {
-        EditorMoveXY();
+        Window_CommitLastElementDimension();
 
         int x;
         int y;
-        GetXYInWindow(&x, &y);
+        Window_GetCurrentOffsets(&x, &y);
 
         int w = 50;
         int h = 9 + 4;
@@ -766,15 +766,15 @@ namespace Gui
         }
         PrimitiveText(x + w + 12, y + h, 9, Align::Left, label);
 
-        MoveXYInWindow(0, paddingAbove + h + paddingBelow);
+        Window_StageLastElementDimension(0, paddingAbove + h + paddingBelow);
     }
 
     void EditorIncrementableFloatField(const char* label, float* v, float increment)
     {
-        EditorMoveXY();
+        Window_CommitLastElementDimension();
 
         int x, y;
-        GetXYInWindow(&x, &y);
+        Window_GetCurrentOffsets(&x, &y);
 
         int w = 50;
         int h = 9+4;
@@ -793,40 +793,40 @@ namespace Gui
         }
         PrimitiveText(x + w + 12, y + h, 9, Align::Left, label);
 
-        MoveXYInWindow(0, paddingAbove + h + paddingBelow);
+        Window_StageLastElementDimension(0, paddingAbove + h + paddingBelow);
     }
 
     bool EditorSelectableRect(vec4 colorRGBA, bool *selected, int id)
     {
-        EditorMoveXY();
+        Window_CommitLastElementDimension();
         int x, y;
-        GetXYInWindow(&x, &y);
+        Window_GetCurrentOffsets(&x, &y);
 
         PrimitivePanel(UIRect(x,y,12,12), colorRGBA);
 
-        MoveXYInWindow(12,12);
+        Window_StageLastElementDimension(12, 12);
 
         return Behaviour_Button(id, UIRect(x,y,12,12));
     }
 
     bool EditorSelectable(const char *label, bool *selected)
     {
-        EditorMoveXY();
+        Window_CommitLastElementDimension();
         int x, y;
-        GetXYInWindow(&x, &y);
+        Window_GetCurrentOffsets(&x, &y);
 
         UIRect selectableRegion = UIRect(x, y, 100, 11);
         if (*selected)
         {
             PrimitivePanel(selectableRegion, vec4(0,0,0,0.4f));
             PrimitiveText(x + 1, y + 10, 9, Align::Left, label);
-            MoveXYInWindow(0, 11);
+            Window_StageLastElementDimension(0, 11);
         }
         else
         {
             *selected = PrimitiveButton(FreshID(), selectableRegion, vec4(), vec4(0,0,0,0.2f), vec4(0,0,0,0.4f), true);
             PrimitiveText(x + 1, y + 10, 9, Align::Left, label);
-            MoveXYInWindow(0, 11);
+            Window_StageLastElementDimension(0, 11);
             if (*selected)
             {
                 return true;
@@ -846,16 +846,16 @@ namespace Gui
 
     void EditorBeginHorizontal()
     {
-        EditorMoveXY();
+        Window_CommitLastElementDimension();
         flag_HorizontalMode = true;
-        MoveXYInWindow(0,0);
+        Window_StageLastElementDimension(0, 0);
     }
 
     void EditorEndHorizontal()
     {
         flag_HorizontalMode = false;
-        EditorMoveXY();
-        MoveXYInWindow(0,0);
+        Window_CommitLastElementDimension();
+        Window_StageLastElementDimension(0, 0);
     }
 
 
@@ -870,9 +870,9 @@ namespace Gui
 
     void EditorColorPicker(ui_id id, float *hue, float *saturation, float *value, float *opacity)
     {
-        EditorMoveXY();
+        Window_CommitLastElementDimension();
         int x, y;
-        GetXYInWindow(&x, &y);
+        Window_GetCurrentOffsets(&x, &y);
 
         static spredit_Frame chromaselector;
         static spredit_Frame hueselector;
@@ -1055,7 +1055,7 @@ namespace Gui
         PrimitivePanel(hueselectorrect, hueselector.gputex.textureId);
         PrimitivePanel(alphaselectorrect, alphaselector.gputex.textureId);
 
-        // Todo MoveXYInWindow
+        // Todo Window_StageLastElementDimension
     }
 
 
