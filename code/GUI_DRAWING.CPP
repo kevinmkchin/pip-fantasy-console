@@ -3,7 +3,6 @@
 
 #include "singleheaders/vertext.h"
 #include "GfxRenderer.h"
-#include "PrintLog.h"
 
 static Gfx::Shader __main_ui_shader;
 static const char* __main_ui_shader_vs =

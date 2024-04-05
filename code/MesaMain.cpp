@@ -12,12 +12,10 @@
 #define STB_SPRINTF_IMPLEMENTATION
 #include "singleheaders/stb_sprintf.h"
 
-#include "MesaUtility.h"
-#include "Timer.h"
+#include "UTILITY.H"
 #include "GfxRenderer.h"
 #include "Input.h"
 #include "Console.h"
-#include "PrintLog.h"
 #include "GUI.H"
 #include "editor/Editor.h"
 #include "Game.h"

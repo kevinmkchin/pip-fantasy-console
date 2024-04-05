@@ -582,7 +582,7 @@ START_OF_OP_SWITCH:
 #undef VM_RETURN_RUNTIME_ERROR
 }
 
-#include "../Timer.h"
+#include "../UTILITY.H"
 
 static InterpretResult Interpret(const char *source)
 {

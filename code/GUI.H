@@ -7,7 +7,7 @@
 
 #include "MesaMath.h"
 #include "MesaCommon.h"
-#include "MesaUtility.h"
+#include "UTILITY.H"
 struct vtxt_font;
 
 #define null_ui_id (-1)

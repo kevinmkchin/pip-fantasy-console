@@ -2,7 +2,7 @@
 
 #include "MesaCommon.h"
 #include "FileSystem.h"
-#include "MesaUtility.h"
+#include "UTILITY.H"
 
 namespace Gfx
 {

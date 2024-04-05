@@ -1,7 +1,7 @@
 #include "PipAPI.h"
 
 #include "GfxRenderer.h"
-#include "Timer.h"
+#include "UTILITY.H"
 #include "Input.h"
 
 HashMap PipAPI_time;

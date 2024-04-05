@@ -1,7 +1,6 @@
 #include "Editor.h"
 
 #include "../FileSystem.h"
-#include "../PrintLog.h"
 #include "../GameData.h"
 #include "../GfxDataTypesAndUtility.h"
 #include "../GfxRenderer.h"
@@ -176,7 +175,6 @@ void LoadGameData(const std::string& pathFromWd)
     SetupCodeEditorString(&tempCodeEditorStringA, (char*)gamedata.codePage1.c_str(), gamedata.codePage1.size());
 }
 
-#include "../Timer.h"
 #include <sstream>
 #include <chrono>
 

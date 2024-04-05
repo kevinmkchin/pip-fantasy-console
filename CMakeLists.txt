@@ -22,10 +22,8 @@ set(SOURCE_FILES
         code/MesaOpenGL.h
         code/MesaMain.h
         code/MesaMain.cpp
-        code/MesaUtility.h
-        code/MesaUtility.cpp
-        code/Timer.h
-        code/Timer.cpp
+        code/UTILITY.H
+        code/UTILITY.CPP
         code/Console.h
         code/Console.cpp
         code/GfxRenderer.h
@@ -36,8 +34,6 @@ set(SOURCE_FILES
         code/GfxShader.cpp
         code/FileSystem.h
         code/FileSystem.cpp
-        code/PrintLog.h
-        code/PrintLog.cpp
         code/Input.h
         code/Input.cpp
         code/GUI.H
