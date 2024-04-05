@@ -212,6 +212,7 @@ void algo_line_perfect(int x1, int y1, int x2, int y2) // I don't like
 
 void DoSpriteEditorGUI()
 {
+    /*
     Gui::BeginWindow(Gui::UIRect(200,100,200,200), vec4(0.05f,0.05f,0.05f,0.5f), 3);
 
     Gui::EditorText("Hello world!");
@@ -247,7 +248,7 @@ void DoSpriteEditorGUI()
     Gui::EditorEndListBox();
 
     Gui::EndWindow();
-
+    */
 
 
 

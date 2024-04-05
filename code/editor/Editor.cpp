@@ -163,6 +163,19 @@ void Temp_LoadScript(std::string pathFromWd)
     }
 }
 
+void SaveGameData(const std::string& pathFromWd)
+{
+    SerializeGameData(&gamedata, wd_path(pathFromWd).c_str());
+}
+
+void LoadGameData(const std::string& pathFromWd)
+{
+    ClearGameData(&gamedata);
+    DeserializeGameData(wd_path(pathFromWd).c_str(), &gamedata);
+
+    SetupCodeEditorString(&tempCodeEditorStringA, (char*)gamedata.codePage1.c_str(), gamedata.codePage1.size());
+}
+
 #include "../Timer.h"
 #include <sstream>
 #include <chrono>
@@ -182,20 +195,17 @@ void Temp_ExecCurrentScript()
 
 void InitEditorGUI()
 {
+    ClearGameData(&gamedata);
     LoadResourcesForEditorGUI();
 
-    GiveMeTheConsole()->bind_cmd("save", Temp_SaveScript);
-    GiveMeTheConsole()->bind_cmd("open", Temp_LoadScript);
+    GiveMeTheConsole()->bind_cmd("save", SaveGameData);
+    GiveMeTheConsole()->bind_cmd("open", LoadGameData);
+    GiveMeTheConsole()->bind_cmd("oldsavescript", Temp_SaveScript);
+    GiveMeTheConsole()->bind_cmd("oldopenscript", Temp_LoadScript);
     GiveMeTheConsole()->bind_cmd("run", Temp_ExecCurrentScript);
     GiveMeTheConsole()->bind_cmd("sprites", SwitchToSpritesEditor);
     GiveMeTheConsole()->bind_cmd("code", SwitchToCodeEditor);
     GiveMeTheConsole()->bind_cmd("spaces", SwitchToSpacesEditor);
-
-
-    //EditorState *activeEditorState = EditorState::ActiveEditorState();
-
-    gamedata.codePage1 = "";
-    //activeEditorState->codePage1 = "str = 'test' fn tick() { print(str) }\nfn draw() { gfx_sprite(0, 0, 0) gfx_sprite(1, 50, 50) }";
 
     SetupWorldDesigner();
 
@@ -357,7 +367,7 @@ void EditorDoGUI()
             Gui::UpdateMainCanvasALH(editorLayout);
 
             //Gui::PrimitivePanel(Gui::UIRect(codeEditorTabLayout), );// 0x193342 //s_EditorColor1);
-            Gui::BeginWindow(Gui::UIRect(codeEditorTabLayout), vec4(RGBHEXTO1(0x414141), 1.f));
+            Gui::BeginWindow(Gui::UIRect(codeEditorTabLayout), vec4(0.157f, 0.172f, 0.204f, 1.f));
             DoCodeEditorGUI(tempCodeEditorStringA);
             gamedata.codePage1 = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
             Gui::EndWindow();

@@ -258,9 +258,31 @@ static void GetRowStartAndEnd(const CodeEditorString code, int row, int *startIn
     }
 }
 
-static const vec3 CodeColorBraces = vec3(RGBHEXTO1(0xb6b8b9));
-static const vec3 CodeColorNumberLiteral = vec3(RGBHEXTO1(0xb6b8b9));
-static const vec3 CodeColorStringLiteral = vec3(RGBHEXTO1(0xb6b8b9));
+/*
+0xb6b8b9
+0xffaed7
+*/
+//#define CODE_COLOR_OPERATORS        0xffffff
+//#define CODE_COLOR_BRACES           0xbcbcbc
+//#define CODE_COLOR_STRING_LITERAL   0xadd09d
+//#define CODE_COLOR_NUMBER_LITERAL   0x6be6dd
+//#define CODE_COLOR_KEYWORD          0xd77bba
+//#define CODE_COLOR_COMMENT          0x336530
+//#define CODE_COLOR_FN_DECL          0x9dffdf
+//#define CODE_COLOR_FN_CALL          0x9dffdf
+//#define CODE_COLOR_AFTER_DOT        0xa4c4d9
+//#define CODE_COLOR_IDENTIFIER_DEF   0xcad6e5
+#define CODE_COLOR_OPERATORS        0xffffff
+#define CODE_COLOR_BRACES           0xffffff
+#define CODE_COLOR_STRING_LITERAL   0xffffff
+#define CODE_COLOR_NUMBER_LITERAL   0xffffff
+#define CODE_COLOR_KEYWORD          0xffffff
+#define CODE_COLOR_COMMENT          0xffffff
+#define CODE_COLOR_FN_DECL          0xffffff
+#define CODE_COLOR_FN_CALL          0xffffff
+#define CODE_COLOR_AFTER_DOT        0xffffff
+#define CODE_COLOR_IDENTIFIER_DEF   0xffffff
+
 
 static void ColorCode(const char *code)
 {
@@ -299,34 +321,34 @@ static void ColorCode(const char *code)
             case TokenType::MINUS:
             case TokenType::ASTERISK:
             case TokenType::FORWARDSLASH:
-                color = vec3(RGBHEXTO1(0xffffff));
+                color = vec3(RGBHEXTO1(CODE_COLOR_OPERATORS));
                 break;
             case TokenType::COMMA:
             case TokenType::DOT:
             case TokenType::COLON:
-                color = vec3(RGBHEXTO1(0xffffff));
+                color = vec3(RGBHEXTO1(CODE_COLOR_OPERATORS));
                 break;
 
             case TokenType::LSQBRACK:
             case TokenType::RSQBRACK:
-                color = vec3(RGBHEXTO1(0xbcbcbc));
+                color = vec3(RGBHEXTO1(CODE_COLOR_BRACES));
                 break;
             case TokenType::LPAREN:
             case TokenType::RPAREN:
-                color = vec3(RGBHEXTO1(0xbcbcbc));
+                color = vec3(RGBHEXTO1(CODE_COLOR_BRACES));
                 break;
             case TokenType::LBRACE:
             case TokenType::RBRACE:
-                color = vec3(RGBHEXTO1(0xbcbcbc));
+                color = vec3(RGBHEXTO1(CODE_COLOR_BRACES));
                 break;
 
             case TokenType::STRING_LITERAL:
-                color = vec3(RGBHEXTO1(0xadd09d));
+                color = vec3(RGBHEXTO1(CODE_COLOR_STRING_LITERAL));
                 break;
             case TokenType::NUMBER_LITERAL:
             case TokenType::TRUE:
             case TokenType::FALSE:
-                color = vec3(RGBHEXTO1(0x6be6dd));
+                color = vec3(RGBHEXTO1(CODE_COLOR_NUMBER_LITERAL));
                 break;
 
             case TokenType::IDENTIFIER:
@@ -338,20 +360,20 @@ static void ColorCode(const char *code)
                 if (notFirstToken && tokens[i - 1].type == TokenType::FN)
                 {
                     // new fn declaration
-                    color = vec3(RGBHEXTO1(0x9dffdf));
+                    color = vec3(RGBHEXTO1(CODE_COLOR_FN_DECL));
                 }
                 else if (notFirstToken && tokens[i - 1].type == TokenType::DOT)
                 {
-                    color = vec3(RGBHEXTO1(0xa4c4d9));
+                    color = vec3(RGBHEXTO1(CODE_COLOR_AFTER_DOT));
                 }
                 else if (notLastToken && tokens[i + 1].type == TokenType::LPAREN)
                 {
                     // call
-                    color = vec3(RGBHEXTO1(0x9dffdf));
+                    color = vec3(RGBHEXTO1(CODE_COLOR_FN_CALL));
                 }
                 else
                 {
-                    color = vec3(RGBHEXTO1(0xcad6e5));
+                    color = vec3(RGBHEXTO1(CODE_COLOR_IDENTIFIER_DEF));
                 }
                 break;
 
@@ -364,21 +386,21 @@ static void ColorCode(const char *code)
             case TokenType::FN:
             case TokenType::MUT:
             case TokenType::RETURN:
-                color = vec3(RGBHEXTO1(0xd77bba));
+                color = vec3(RGBHEXTO1(CODE_COLOR_KEYWORD));
                 break;
 
             case TokenType::PRINT:
-                color = vec3(RGBHEXTO1(0xd77bba));//0xffaed7));
+                color = vec3(RGBHEXTO1(CODE_COLOR_KEYWORD));
                 break;
 
             case TokenType::ERROR:
                 if (std::string(t.errormsg) == std::string("Unterminated string."))
                 {
-                    color = vec3(RGBHEXTO1(0xadd09d));
+                    color = vec3(RGBHEXTO1(CODE_COLOR_STRING_LITERAL));
                 }
                 else if (std::string(t.errormsg) == std::string("comment"))
                 {
-                    color = vec3(RGBHEXTO1(0x336530));
+                    color = vec3(RGBHEXTO1(CODE_COLOR_COMMENT));
                 }
                 else
                 {
@@ -516,7 +538,7 @@ void DoCodeEditorGUI(CodeEditorString code)
             lineNumbersDisplayWidth = defaultLineNumbersDisplayWidth;
     }
 
-    Gui::PrimitivePanel(Gui::UIRect(x - 20, y - 32, lineNumbersDisplayWidth + 20 + 5, h + 64), vec4(RGBHEXTO1(0x414141), 1.f));
+    Gui::PrimitivePanel(Gui::UIRect(x - 20, y - 32, lineNumbersDisplayWidth + 20 + 5, h + 64), vec4(0.157f, 0.172f, 0.204f, 1.f));
 
     vec4 textColorBefore = Gui::style_textColor;
     Gui::style_textColor = vec4(1.f, 1.f, 1.f, 0.38f);
