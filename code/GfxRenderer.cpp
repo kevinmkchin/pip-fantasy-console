@@ -7,8 +7,7 @@
 #include <gl3w.h>
 #include "MesaOpenGL.h"
 
-#include "MesaUtility.h"
-#include "PrintLog.h"
+#include "UTILITY.H"
 #include "GUI.H"
 #include "MesaMain.h"
 

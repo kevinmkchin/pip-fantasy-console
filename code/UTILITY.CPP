@@ -1,9 +1,11 @@
-#include "MesaUtility.h"
+#include "UTILITY.H"
 #include "MesaCommon.h"
 #include "MesaOpenGL.h"
-#include "PrintLog.h"
+#include "Console.h"
 
 #include <cassert>
+#include <chrono>
+
 
 bool GLHasErrors()
 {
@@ -105,7 +107,7 @@ i32 ModifyASCIIBasedOnModifiers(i32 keycodeASCII, bool shift)
     return keycode;
 }
 
-std::string& RemoveCharactersFromEndOfString(std::string& str, const char c)
+std::string& RemoveCharactersFromEndOfString(std::string& str, char c)
 {
     while (str.back() == c)
     {
@@ -157,3 +159,73 @@ vec3 RGBToHSV(float r, float g, float b)
     vec3 hsv = vec3(h, s, cmax);
     return hsv;
 }
+
+Timer Time;
+
+using Clock = std::chrono::high_resolution_clock;
+
+static std::chrono::time_point<std::chrono::high_resolution_clock> programStartTime;
+
+Timer::Timer()
+        : deltaTime(-1.f)
+        , time(0.f)
+        , timeSinceStart(0.f)
+        , timeScale(1.f)
+        , unscaledDeltaTime(-1.f)
+{
+    programStartTime = Clock::now();
+}
+
+float Timer::UpdateDeltaTime()
+{
+    static Clock::time_point timeAtLastUpdate = Clock::now();
+
+    auto now = Clock::now();
+    float elapsedMs = (float)(std::chrono::duration_cast<std::chrono::microseconds>(now - timeAtLastUpdate)).count() * 0.001f;
+    timeAtLastUpdate = now;
+    float deltaTimeInSeconds = elapsedMs * 0.001f; // elapsed time in SECONDS
+    float currentTimeInSeconds = (float)(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() * 0.001f);
+    time = currentTimeInSeconds;
+    unscaledDeltaTime = deltaTimeInSeconds;
+    timeSinceStart += unscaledDeltaTime;
+    deltaTime = unscaledDeltaTime * Time.timeScale;
+
+    return deltaTime;
+}
+
+float Timer::TimeStamp()
+{
+    static Clock::time_point timeAtLastTimeStamp = Clock::now();
+    auto now = Clock::now();
+    float elapsedMs = (float)(std::chrono::duration_cast<std::chrono::microseconds>(now - timeAtLastTimeStamp)).count() * 0.001f;
+    timeAtLastTimeStamp = now;
+    float difference = elapsedMs * 0.001f;
+    return difference;
+}
+
+double Timer::TimeSinceProgramStartInSeconds()
+{
+    auto now = Clock::now();
+    return std::chrono::duration<double>(now - programStartTime).count();
+}
+
+CorePrintLog PrintLog;
+
+void CorePrintLog::Message(const std::string& message)
+{
+    std::string msgFmt = std::string(message + "\n");
+    SendMessageToConsole(msgFmt.c_str(), msgFmt.size());
+}
+
+void CorePrintLog::Warning(const std::string& warning_message)
+{
+    std::string msgFmt = std::string("WARNING: " + warning_message + "\n");
+    SendMessageToConsole(msgFmt.c_str(), msgFmt.size());
+}
+
+void CorePrintLog::Error(const std::string& error_message)
+{
+    std::string msgFmt = std::string("ERROR: " + error_message + "\n");
+    SendMessageToConsole(msgFmt.c_str(), msgFmt.size());
+}
+

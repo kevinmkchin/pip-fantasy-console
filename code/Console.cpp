@@ -3,9 +3,7 @@
 
 #include "MesaMain.h"
 #include "GUI.H"
-#include "Timer.h"
 #include "Input.h"
-#include "PrintLog.h"
 
 
 #define MESSAGES_CHAR_CAPACITY 4000

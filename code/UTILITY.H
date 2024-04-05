@@ -29,7 +29,7 @@ inline bool IsOneOfArray(T v, T* array, int count)
     return false;
 }
 
-std::string& RemoveCharactersFromEndOfString(std::string& str, const char c);
+std::string& RemoveCharactersFromEndOfString(std::string& str, char c);
 
 template<typename T, int _count> struct NiceArray
 {
@@ -126,3 +126,43 @@ template<typename T, int _count> struct NiceArray
         memset(data, 0, capacity * sizeof(*data));
     }
 };
+
+class Timer
+{
+public:
+    Timer();
+
+    float UpdateDeltaTime();
+
+    /** Returns the time elapsed in seconds since the last timestamp call. */
+    float TimeStamp();
+
+    double TimeSinceProgramStartInSeconds();
+
+public:
+    // Global accessor for delta time. Could be in whatever unit you want, but I like seconds.
+    float deltaTime;
+
+    // Time since epoch (TODO(Kevin): wtf?)
+    float time;
+
+    // Time since program start
+    float timeSinceStart;
+
+    // The scale at which time passes
+    float timeScale;
+
+    float unscaledDeltaTime;
+
+};
+
+class CorePrintLog {
+public:
+    void Message(const std::string& message);
+    void Warning(const std::string& warning_message);
+    void Error(const std::string& error_message);
+};
+
+extern Timer Time;
+extern CorePrintLog PrintLog;
+
