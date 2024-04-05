@@ -716,6 +716,12 @@ namespace Gui
         Window_StageLastElementDimension(0, sz + style_paddingTop + style_paddingBottom);
     }
 
+    void EditorSpacer(int x, int y)
+    {
+        Window_CommitLastElementDimension();
+        Window_StageLastElementDimension(x, y);
+    }
+
     bool EditorLabelledButton(const char* label)
     {
         Window_CommitLastElementDimension();
@@ -1056,6 +1062,7 @@ namespace Gui
         PrimitivePanel(alphaselectorrect, alphaselector.gputex.textureId);
 
         // Todo Window_StageLastElementDimension
+        Window_StageLastElementDimension(chromaselectorrect.w, chromaselector.h + hueselector.h + alphaselectorrect.h);
     }
 
 

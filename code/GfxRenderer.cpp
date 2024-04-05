@@ -113,7 +113,7 @@ namespace Gfx
     void QueueSpriteForRender(i64 spriteId, vec2 position)
     {
         RenderQueueData dat;
-        dat.sprite = gamedata.sprites.at(spriteId);
+        dat.sprite = runtimedata.sprites.at(spriteId);
         dat.position = position;
         gameRenderQueue.push_back(dat);
     }

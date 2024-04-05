@@ -6,12 +6,7 @@
 #include "MesaCommon.h"
 #include "MesaMath.h"
 #include "GfxDataTypesAndUtility.h"
-
-/*
-Keeps track of all assets in project.
-Saves all project/assets/game data to disk.
-Loads all project/assets/game data from disk.
-*/
+#include "Editor/SpriteEditor.h"
 
 //struct EditorWorldViewInfo
 //{
@@ -22,14 +17,33 @@ Loads all project/assets/game data from disk.
 //    // dim = actual dim / zoom level
 //};
 
-// struct Sprite
-// {
-//     Gfx::TextureHandle sprite;
-// }
+//struct SpriteDataLayer
+//{
+//
+//};
 
+//struct SpriteDataFrame
+//{
+//    spredit_Frame frame;
+//};
+
+struct SpriteData
+{
+    std::string name;
+    //std::vector<SpriteDataFrame> frames;
+    spredit_Frame frame;
+
+    // layers
+    // animations
+};
+
+/*
+Keeps track of all assets in project.
+*/
 struct GameData
 {
-    std::vector<Gfx::TextureHandle> sprites;
+    // in-editor
+    std::vector<SpriteData> spriteData;
     std::string codePage1;
 };
 
@@ -37,4 +51,11 @@ void SerializeGameData(GameData *gameData, const char *path);
 void DeserializeGameData(const char *path, GameData *gameData);
 void ClearGameData(GameData *gameData);
 
+struct RuntimeData
+{
+    // this shit should be transient just compile it from Game/Project data when we start play
+    std::vector<Gfx::TextureHandle> sprites;
+};
+
 extern GameData gamedata;
+extern RuntimeData runtimedata;

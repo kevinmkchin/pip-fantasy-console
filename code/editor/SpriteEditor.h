@@ -26,4 +26,5 @@ struct SpriteEditorState
     std::vector<spredit_Color> palette;
 };
 
+void ResetSpriteEditorState();
 void DoSpriteEditorGUI();

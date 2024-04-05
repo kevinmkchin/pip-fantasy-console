@@ -210,6 +210,28 @@ void algo_line_perfect(int x1, int y1, int x2, int y2) // I don't like
   }
 }
 
+void ResetSpriteEditorState()
+{
+    spreditState.frame.w = 64;
+    spreditState.frame.h = 64;
+    spreditState.frame.pixels = (spredit_Color*)
+            calloc(spreditState.frame.w * spreditState.frame.h, sizeof(spredit_Color));
+
+    for (int i = 0; i < spreditState.frame.w; ++i)
+    {
+        for (int j = 0; j < spreditState.frame.h; ++j)
+        {
+            spredit_Color *p = PixelAt(&spreditState.frame, i, j);
+            //p->r = u8((float)i / 32.f * 255);
+            //p->g = u8((float)j / 32.f * 255);
+            p->r = 0xff;
+            p->g = 0xff;
+            p->b = 0xff;
+            p->a = 0xff;
+        }
+    }
+}
+
 void DoSpriteEditorGUI()
 {
     /*
@@ -303,30 +325,48 @@ void DoSpriteEditorGUI()
     Gui::EditorColorPicker(0x32f98, &hue, &saturation, &value, &activeOpacity);
     activeRGB = HSVToRGB(hue, saturation, value);
 
-    Gui::EndWindow();
-
-
-    spreditState.frame.w = 64;
-    spreditState.frame.h = 64;
-    if (spreditState.frame.pixels == 0)
+    Gui::EditorSpacer(0, 16);
+    Gui::EditorText("Sprites");
+    for (auto& sprd : gamedata.spriteData)
     {
-        InitSpriteEditorActionBuffers();
-        spreditState.frame.pixels = (spredit_Color*)
-                calloc(spreditState.frame.w * spreditState.frame.h, sizeof(spredit_Color));
-
-        for (int i = 0; i < spreditState.frame.w; ++i)
+        if (Gui::EditorLabelledButton(sprd.name.c_str()))
         {
-            for (int j = 0; j < spreditState.frame.h; ++j)
+            spreditState.frame = sprd.frame;
+        }
+    }
+    if (Gui::EditorLabelledButton("new sprite"))
+    {
+        SpriteData spr;
+        spr.frame.w = 32;
+        spr.frame.h = 32;
+        spr.frame.pixels = (spredit_Color*)
+                calloc(spr.frame.w * spr.frame.h, sizeof(spredit_Color));
+
+        for (int i = 0; i < spr.frame.w; ++i)
+        {
+            for (int j = 0; j < spr.frame.h; ++j)
             {
-                spredit_Color *p = PixelAt(&spreditState.frame, i, j);
-                //p->r = u8((float)i / 32.f * 255);
-                //p->g = u8((float)j / 32.f * 255);
+                spredit_Color *p = PixelAt(&spr.frame, i, j);
                 p->r = 0xff;
                 p->g = 0xff;
                 p->b = 0xff;
                 p->a = 0xff;
             }
         }
+
+        spr.name = "newspr";
+
+        gamedata.spriteData.push_back(spr);
+    }
+
+    Gui::EndWindow();
+
+
+    if (spreditState.frame.pixels == 0)
+    {
+        InitSpriteEditorActionBuffers();
+
+        ResetSpriteEditorState();
 
         // temp
         spreditState.palette.push_back({ 0xff, 0x00, 0x00, 0xff });
