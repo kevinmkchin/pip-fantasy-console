@@ -123,6 +123,7 @@ namespace Gui
 
     void EditorColorPicker(ui_id id, float *hue, float *saturation, float *value, float *opacity);
 
+    void EditorSpacer(int x, int y);
 
 
 

@@ -22,7 +22,8 @@ Easy:
 
 # Immediate next
 
-- Serialize/deserialize sprite data to game file
+- Clean up 
+  - sprite editor & game data
 
 - [Sprite editor] **color palette**
 - [Sprite editor] **Animation frames**
@@ -110,6 +111,7 @@ Gfx (probably don't make a module out of this)
 
 # Done
 
+- Serialize/deserialize sprite data to game file
 - Serialize/deserialize game data functions
 - Intertwine between mouse pos to fix sprite editor blinking pixel hopping leaving gaps
 - Editor code coloring with text vertex colors

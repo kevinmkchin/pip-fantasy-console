@@ -45,10 +45,10 @@ static void LoadResourcesForEditorGUI()
     thBu01_active = Gfx::CreateGPUTextureFromDisk(data_path("bu01_active.png").c_str());
     borders_00 = Gfx::CreateGPUTextureFromDisk(data_path("borders_01.png").c_str());
 
-    gamedata.sprites.push_back(thBu01_normal);
-    gamedata.sprites.push_back(thBu01_active);
-    gamedata.sprites.push_back(Gfx::CreateGPUTextureFromDisk(data_path("spr_ground_01.png").c_str()));
-    gamedata.sprites.push_back(Gfx::CreateGPUTextureFromDisk(data_path("spr_crosshair_00.png").c_str()));
+    runtimedata.sprites.push_back(thBu01_normal);
+    runtimedata.sprites.push_back(thBu01_active);
+    runtimedata.sprites.push_back(Gfx::CreateGPUTextureFromDisk(data_path("spr_ground_01.png").c_str()));
+    runtimedata.sprites.push_back(Gfx::CreateGPUTextureFromDisk(data_path("spr_crosshair_00.png").c_str()));
 }
 
 
