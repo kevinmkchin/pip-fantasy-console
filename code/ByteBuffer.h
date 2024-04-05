@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_BYTE_BUFFER_H_
-#define _INCLUDE_BYTE_BUFFER_H_
+#ifndef INCLUDE_BYTE_BUFFER_H
+#define INCLUDE_BYTE_BUFFER_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,86 +16,17 @@ struct ByteBuffer
 
 #define BYTE_BUFFER_DEFAULT_CAPACITY 1024
 
-void ByteBufferInit(ByteBuffer* buffer)
-{
-    buffer->data = (uint8_t*) malloc(BYTE_BUFFER_DEFAULT_CAPACITY);
-    memset(buffer->data, 0, BYTE_BUFFER_DEFAULT_CAPACITY);
-    buffer->position = 0;
-    buffer->size = 0;
-    buffer->capacity = BYTE_BUFFER_DEFAULT_CAPACITY;
-}
+ByteBuffer ByteBufferNew();
+void ByteBufferFree(ByteBuffer* buffer);
+void ByteBufferInit(ByteBuffer* buffer);
+void ByteBufferClear(ByteBuffer* buffer);
 
-ByteBuffer ByteBufferNew()
-{
-    ByteBuffer buffer = {0};
-    ByteBufferInit(&buffer);
-    return buffer;
-}
-
-void ByteBufferFree(ByteBuffer* buffer)
-{
-    if(buffer && buffer->data) 
-    {
-        free(buffer->data);
-    }
-    buffer->size = 0;
-    buffer->position = 0;
-    buffer->capacity = 0;
-}
-
-void ByteBufferClear(ByteBuffer* buffer)
-{
-    buffer->size = 0;
-    buffer->position = 0;   
-}
-
-void ByteBufferResize(ByteBuffer* buffer, size_t sz)
-{
-    uint8_t* data = (uint8_t*)realloc(buffer->data, sz);
-    if(data == NULL)
-    {
-        return;
-    }
-    buffer->data = data;
-    buffer->capacity = (uint32_t)sz;
-}
-
-void ByteBufferSeekToStart(ByteBuffer* buffer)
-{
-    buffer->position = 0;
-}
-
-void ByteBufferSeekToEnd(ByteBuffer* buffer)
-{
-    buffer->position = buffer->size;
-}
-
-void ByteBufferAdvancePosition(ByteBuffer* buffer, size_t sz)
-{
-    buffer->position += (uint32_t)sz; 
-}
-
-void __byteBufferWriteImpl(ByteBuffer* buffer, void* data, size_t sz)
-{
-    size_t totalWriteSize = buffer->position + sz;
-    if(totalWriteSize >= buffer->capacity)
-    {
-        size_t capacity = buffer->capacity ? buffer->capacity * 2 : BYTE_BUFFER_DEFAULT_CAPACITY;
-        while(capacity < totalWriteSize)
-        {
-            capacity *= 2;
-        }
-        ByteBufferResize(buffer, capacity);
-    }
-    memcpy(buffer->data + buffer->position, data, sz);
-    buffer->position += sz;
-    buffer->size += sz;
-}
-
-void ByteBufferPatchAt(ByteBuffer *buffer, uint32_t pos, void *data, size_t sz)
-{
-    memcpy(buffer->data + pos, data, sz);
-}
+//void ByteBufferResize(ByteBuffer* buffer, size_t sz);
+//void ByteBufferSeekToStart(ByteBuffer* buffer);
+//void ByteBufferSeekToEnd(ByteBuffer* buffer);
+//void ByteBufferAdvancePosition(ByteBuffer* buffer, size_t sz);
+//void ByteBufferPatchAt(ByteBuffer *buffer, uint32_t pos, void *data, size_t sz);
+void __byteBufferWriteImpl(ByteBuffer* buffer, void* data, size_t sz);
 
 // Generic write function
 #define ByteBufferWrite(_buffer, T, _val)\
@@ -126,6 +57,95 @@ do {\
     memcpy((_dest_p), _bb->data + _bb->position, (_size));\
     _bb->position += (uint32_t)(_size);\
 } while(0)
+
+int ByteBufferWriteToFile(ByteBuffer* buffer, const char* filePath);
+int ByteBufferReadFromFile(ByteBuffer* buffer, const char* filePath);
+
+
+#endif // INCLUDE_BYTE_BUFFER_H
+
+#ifdef KEVIN_BYTE_BUFFER_IMPLEMENTATION
+
+void ByteBufferInit(ByteBuffer* buffer)
+{
+    buffer->data = (uint8_t*) malloc(BYTE_BUFFER_DEFAULT_CAPACITY);
+    memset(buffer->data, 0, BYTE_BUFFER_DEFAULT_CAPACITY);
+    buffer->position = 0;
+    buffer->size = 0;
+    buffer->capacity = BYTE_BUFFER_DEFAULT_CAPACITY;
+}
+
+ByteBuffer ByteBufferNew()
+{
+    ByteBuffer buffer = {0};
+    ByteBufferInit(&buffer);
+    return buffer;
+}
+
+void ByteBufferFree(ByteBuffer* buffer)
+{
+    if(buffer && buffer->data)
+    {
+        free(buffer->data);
+    }
+    buffer->size = 0;
+    buffer->position = 0;
+    buffer->capacity = 0;
+}
+
+void ByteBufferClear(ByteBuffer* buffer)
+{
+    buffer->size = 0;
+    buffer->position = 0;
+}
+
+void ByteBufferResize(ByteBuffer* buffer, size_t sz)
+{
+    uint8_t* data = (uint8_t*)realloc(buffer->data, sz);
+    if(data == NULL)
+    {
+        return;
+    }
+    buffer->data = data;
+    buffer->capacity = (uint32_t)sz;
+}
+
+void ByteBufferSeekToStart(ByteBuffer* buffer)
+{
+    buffer->position = 0;
+}
+
+void ByteBufferSeekToEnd(ByteBuffer* buffer)
+{
+    buffer->position = buffer->size;
+}
+
+void ByteBufferAdvancePosition(ByteBuffer* buffer, size_t sz)
+{
+    buffer->position += (uint32_t)sz;
+}
+
+void __byteBufferWriteImpl(ByteBuffer* buffer, void* data, size_t sz)
+{
+    size_t totalWriteSize = buffer->position + sz;
+    if(totalWriteSize >= buffer->capacity)
+    {
+        size_t capacity = buffer->capacity ? buffer->capacity * 2 : BYTE_BUFFER_DEFAULT_CAPACITY;
+        while(capacity < totalWriteSize)
+        {
+            capacity *= 2;
+        }
+        ByteBufferResize(buffer, capacity);
+    }
+    memcpy(buffer->data + buffer->position, data, sz);
+    buffer->position += (uint32_t)sz;
+    buffer->size += (uint32_t)sz;
+}
+
+void ByteBufferPatchAt(ByteBuffer *buffer, uint32_t pos, void *data, size_t sz)
+{
+    memcpy(buffer->data + pos, data, sz);
+}
 
 int ByteBufferWriteToFile(ByteBuffer* buffer, const char* filePath)
 {
@@ -188,5 +208,5 @@ int ByteBufferReadFromFile(ByteBuffer* buffer, const char* filePath)
     return 1;
 }
 
+#endif
 
-#endif // _INCLUDE_BYTE_BUFFER_H_

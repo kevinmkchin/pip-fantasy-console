@@ -59,7 +59,7 @@ void Undo(SpriteEditorState *state)
         {
             u32 pixelsModifiedCount = 0;
             ByteBufferPop(&undoBuffer, u32, &pixelsModifiedCount);
-            for (int i = 0; i < pixelsModifiedCount; ++i)
+            for (u32 i = 0; i < pixelsModifiedCount; ++i)
             {
                 // read from undo buffer
                 spredit_PixelWriteAction_Data delta;
@@ -90,7 +90,7 @@ void Redo(SpriteEditorState *state)
         {
             u32 pixelsModifiedCount = 0;
             ByteBufferPop(&redoBuffer, u32, &pixelsModifiedCount);
-            for (int i = 0; i < pixelsModifiedCount; ++i)
+            for (u32 i = 0; i < pixelsModifiedCount; ++i)
             {
                 // read from undo buffer
                 spredit_PixelWriteAction_Data delta;

@@ -13,14 +13,14 @@ Saves all project/assets/game data to disk.
 Loads all project/assets/game data from disk.
 */
 
-struct EditorWorldViewInfo
-{
-    int zoomLevel = 1; // 1, 2, 3, 4
-    ivec2 pan;
-    ivec2 dimAfterZoom;
-    ivec2 dimInUIScale;
-    // dim = actual dim / zoom level
-};
+//struct EditorWorldViewInfo
+//{
+//    int zoomLevel = 1; // 1, 2, 3, 4
+//    ivec2 pan;
+//    ivec2 dimAfterZoom;
+//    ivec2 dimInUIScale;
+//    // dim = actual dim / zoom level
+//};
 
 // struct Sprite
 // {
@@ -29,11 +29,12 @@ struct EditorWorldViewInfo
 
 struct GameData
 {
-public:
     std::vector<Gfx::TextureHandle> sprites;
-
-public:
     std::string codePage1;
 };
+
+void SerializeGameData(GameData *gameData, const char *path);
+void DeserializeGameData(const char *path, GameData *gameData);
+void ClearGameData(GameData *gameData);
 
 extern GameData gamedata;

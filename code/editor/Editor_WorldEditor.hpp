@@ -5,8 +5,6 @@
 // Editor Camera Position
 // Editor World View Dimensions in pixels
 
-EditorWorldViewInfo worldViewInfo;
-
 struct TempLayout
 {
     int absx;
@@ -65,9 +63,9 @@ static void WorldDesigner()
     if (worldEditorArea.absw % 2 == 1) worldEditorArea.absw += 1; // Note(Kevin): Ortho projection matrix is weird when odd w h t.f. fix to even number
     if (worldEditorArea.absh % 2 == 1) worldEditorArea.absh += 1; // probably do something better in the future cuz now we might render to a canvas 1 pixel larger than expected.
 
-    worldViewInfo.pan = ivec2(0, 0); // based on mouse panning
-    worldViewInfo.dimAfterZoom = ivec2(worldEditorArea.absw / 1, worldEditorArea.absh / 1);
-    worldViewInfo.dimInUIScale = ivec2(worldEditorArea.absw, worldEditorArea.absh);
+//    worldViewInfo.pan = ivec2(0, 0); // based on mouse panning
+//    worldViewInfo.dimAfterZoom = ivec2(worldEditorArea.absw / 1, worldEditorArea.absh / 1);
+//    worldViewInfo.dimInUIScale = ivec2(worldEditorArea.absw, worldEditorArea.absh);
 
     // SpaceAsset& spaceAssetTemp = *activeEditorState->RetrieveSpaceAssetById(activeEditorState->activeSpaceId);
 

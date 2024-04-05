@@ -22,6 +22,8 @@ Easy:
 
 # Immediate next
 
+- Serialize/deserialize sprite data to game file
+
 - [Sprite editor] **color palette**
 - [Sprite editor] **Animation frames**
 - [Sprite editor] Layers
@@ -45,7 +47,6 @@ Easy:
 
 # Todo
 
-- save/load gamedata
 - boot sound (SDL_mixer)
 - Markdown reader - manual in markdown, toggled with F1
 - code editor: pg up pg down (maybe for functions?)
@@ -109,6 +110,7 @@ Gfx (probably don't make a module out of this)
 
 # Done
 
+- Serialize/deserialize game data functions
 - Intertwine between mouse pos to fix sprite editor blinking pixel hopping leaving gaps
 - Editor code coloring with text vertex colors
 - fixed bug where primitive drawing was doing vb size * 0.2 instead of divide by 6...
