@@ -2,7 +2,7 @@
 
 #include "Editor.h"
 #include "SpriteEditorActions.h"
-#include "../GameData.h"
+#include "../ProjectData.h"
 #include "../GfxRenderer.h"
 #include "../Input.h"
 
@@ -55,10 +55,45 @@ std::string OpenLoadImageDialog()
     return imagepath;
 }
 
+void AllocSpriteImage(SpriteImage *image, i32 w, i32 h, bool white)
+{
+    image->w = w;
+    image->h = h;
+    image->pixels = (SpriteColor*) calloc(w * h, sizeof(SpriteColor));
+
+    if (white)
+    {
+        for (i32 y = 0; y < h; ++y)
+        {
+            for (i32 x = 0; x < w; ++x)
+            {
+                SpriteColor *p = image->pixels + (image->w*y + x);
+                p->r = 0xff;
+                p->g = 0xff;
+                p->b = 0xff;
+                p->a = 0xff;
+            }
+        }
+    }
+}
+
+void SpriteImageToGPUTexture(Gfx::TextureHandle *texture, SpriteImage *image)
+{
+    if (texture->textureId == 0)
+    {
+        *texture = Gfx::CreateGPUTextureFromBitmap((unsigned char*)image->pixels, image->w, image->h, GL_RGBA, GL_RGBA, GL_NEAREST);
+    }
+    else
+    {
+        Gfx::UpdateGPUTextureFromBitmap(texture, (unsigned char*)image->pixels, image->w, image->h);
+    }
+}
+
+
 
 SpriteEditorState spreditState;
 
-static spredit_Color *PixelAt(spredit_Frame *frame, i32 x, i32 y)
+static SpriteColor *PixelAt(SpriteImage *frame, i32 x, i32 y)
 {
     if (x >= frame->w || y >= frame->h || x < 0 || y < 0)
         return NULL;
@@ -68,32 +103,12 @@ static spredit_Color *PixelAt(spredit_Frame *frame, i32 x, i32 y)
     return frame->pixels + (frame->w*y + x);
 }
 
-static void UpdateGPUTex(spredit_Frame *frame)
-{
-    if (frame->gputex.textureId == 0)
-    {
-        frame->gputex = Gfx::CreateGPUTextureFromBitmap(
-                (unsigned char*)frame->pixels, frame->w, frame->h,
-                GL_RGBA, GL_RGBA, GL_NEAREST);
-    }
-    else
-    {
-        Gfx::UpdateGPUTextureFromBitmap(&frame->gputex, (unsigned char*)frame->pixels, frame->w, frame->h);
-    }
-}
-
-static void DeleteGPUTex(spredit_Frame *frame)
-{
-    // TODO(Kevin): delete gpu texture function in GfxDataTypesAndUtility
-}
-
 struct Fuck
 {
     i32 x;
     i32 y;
-    spredit_Color pixel;
+    SpriteColor pixel;
 };
-
 
 static int brushSz = 1;
 static vec3 activeRGB = vec3();
@@ -122,7 +137,7 @@ void DoBrushPoint(i32 x, i32 y)
 
             if (sqrtf(float(cx*cx + cy*cy)) < float(brushSz/2) + (brushSz % 2 == 1 ? 0.24f : -0.1f))
             {
-                spredit_Color *p = PixelAt(&spreditState.frame, mx+i, my+j);
+                SpriteColor *p = PixelAt(&spreditState.frame, mx + i, my + j);
                 if (p)
                 {
                     // Blend mode: RGB is linearly interpolated, A is added onto where opacity is % from
@@ -212,24 +227,7 @@ void algo_line_perfect(int x1, int y1, int x2, int y2) // I don't like
 
 void ResetSpriteEditorState()
 {
-    spreditState.frame.w = 64;
-    spreditState.frame.h = 64;
-    spreditState.frame.pixels = (spredit_Color*)
-            calloc(spreditState.frame.w * spreditState.frame.h, sizeof(spredit_Color));
-
-    for (int i = 0; i < spreditState.frame.w; ++i)
-    {
-        for (int j = 0; j < spreditState.frame.h; ++j)
-        {
-            spredit_Color *p = PixelAt(&spreditState.frame, i, j);
-            //p->r = u8((float)i / 32.f * 255);
-            //p->g = u8((float)j / 32.f * 255);
-            p->r = 0xff;
-            p->g = 0xff;
-            p->b = 0xff;
-            p->a = 0xff;
-        }
-    }
+    AllocSpriteImage(&spreditState.frame, 64, 64, true);
 }
 
 void DoSpriteEditorGUI()
@@ -285,7 +283,7 @@ void DoSpriteEditorGUI()
     Gui::EditorBeginHorizontal();
     for (int i = 0; i < spreditState.palette.size(); ++i)
     {
-        spredit_Color c = spreditState.palette.at(i);
+        SpriteColor c = spreditState.palette.at(i);
         if (Gui::EditorSelectableRect(vec4(RGB255TO1(c.r, c.g, c.b), float(c.a)/255.f), nullptr, 8482371 + i))
         {
             //RGBToHSV(RGB255TO1(c.r, c.g, c.b));
@@ -327,7 +325,7 @@ void DoSpriteEditorGUI()
 
     Gui::EditorSpacer(0, 16);
     Gui::EditorText("Sprites");
-    for (auto& sprd : gamedata.spriteData)
+    for (auto& sprd : projectData.spriteData)
     {
         if (Gui::EditorLabelledButton(sprd.name.c_str()))
         {
@@ -339,14 +337,14 @@ void DoSpriteEditorGUI()
         SpriteData spr;
         spr.frame.w = 32;
         spr.frame.h = 32;
-        spr.frame.pixels = (spredit_Color*)
-                calloc(spr.frame.w * spr.frame.h, sizeof(spredit_Color));
+        spr.frame.pixels = (SpriteColor*)
+                calloc(spr.frame.w * spr.frame.h, sizeof(SpriteColor));
 
         for (int i = 0; i < spr.frame.w; ++i)
         {
             for (int j = 0; j < spr.frame.h; ++j)
             {
-                spredit_Color *p = PixelAt(&spr.frame, i, j);
+                SpriteColor *p = PixelAt(&spr.frame, i, j);
                 p->r = 0xff;
                 p->g = 0xff;
                 p->b = 0xff;
@@ -356,7 +354,7 @@ void DoSpriteEditorGUI()
 
         spr.name = "newspr";
 
-        gamedata.spriteData.push_back(spr);
+        projectData.spriteData.push_back(spr);
     }
 
     Gui::EndWindow();
@@ -448,12 +446,12 @@ void DoSpriteEditorGUI()
     static i32 x0 = -1;
     static i32 y0 = -1;
 
-    static spredit_Color *pixelsBeforeAction = nullptr;
+    static SpriteColor *pixelsBeforeAction = nullptr;
     if (Input.mouseLeftHasBeenPressed && mouseOverViewport)
     {
         if (pixelsBeforeAction) delete pixelsBeforeAction;
-        size_t sz = sizeof(spredit_Color) * spreditState.frame.w * spreditState.frame.h;
-        pixelsBeforeAction = (spredit_Color*)malloc(sz);
+        size_t sz = sizeof(SpriteColor) * spreditState.frame.w * spreditState.frame.h;
+        pixelsBeforeAction = (SpriteColor*)malloc(sz);
         memcpy(pixelsBeforeAction, spreditState.frame.pixels, sz);
     }
 
@@ -485,7 +483,7 @@ void DoSpriteEditorGUI()
         if (Input.KeyHasBeenPressed(SDL_SCANCODE_J))
         {
             // Note(Kevin): once I add layers, need to add up the color under mouse from each layer
-            spredit_Color *p = PixelAt(&spreditState.frame, x, y);
+            SpriteColor *p = PixelAt(&spreditState.frame, x, y);
             if (p)
             {
                 vec3 hsv = RGBToHSV(RGB255TO1(p->r, p->g, p->b));
@@ -509,7 +507,7 @@ void DoSpriteEditorGUI()
         y0 = y;
     }
 
-    UpdateGPUTex(&spreditState.frame);
+    SpriteImageToGPUTexture(&spreditState.gputex, &spreditState.frame);
 
 //    Gui::BeginWindow(alh_sprite_editor_right_panel_top, vec4(0.157f, 0.172f, 0.204f, 1.f));
     Gui::BeginWindow(alh_sprite_editor, vec4(0.157f, 0.172f, 0.204f, 1.f));
@@ -521,7 +519,7 @@ void DoSpriteEditorGUI()
     Gui::PrimitivePanel(Gui::UIRect(
             alh_sprite_editor_right_panel_top->x + (int)panxf,
             alh_sprite_editor_right_panel_top->y + (int)panyf,
-            spreditState.frame.w * zoom, spreditState.frame.h * zoom), spreditState.frame.gputex.textureId);
+            spreditState.frame.w * zoom, spreditState.frame.h * zoom), spreditState.gputex.textureId);
     Gui::EndWindow();
 
     if (!Input.mouseLeftPressed && mouseOverViewport)

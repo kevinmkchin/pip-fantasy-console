@@ -1,7 +1,7 @@
 #include "Editor.h"
 
 #include "../FileSystem.h"
-#include "../GameData.h"
+#include "../ProjectData.h"
 #include "../GfxDataTypesAndUtility.h"
 #include "../GfxRenderer.h"
 #include "../Input.h"
@@ -43,11 +43,6 @@ static void LoadResourcesForEditorGUI()
     thBu01_hovered = Gfx::CreateGPUTextureFromDisk(data_path("bu01_hovered.png").c_str());
     thBu01_active = Gfx::CreateGPUTextureFromDisk(data_path("bu01_active.png").c_str());
     borders_00 = Gfx::CreateGPUTextureFromDisk(data_path("borders_01.png").c_str());
-
-    runtimedata.sprites.push_back(thBu01_normal);
-    runtimedata.sprites.push_back(thBu01_active);
-    runtimedata.sprites.push_back(Gfx::CreateGPUTextureFromDisk(data_path("spr_ground_01.png").c_str()));
-    runtimedata.sprites.push_back(Gfx::CreateGPUTextureFromDisk(data_path("spr_crosshair_00.png").c_str()));
 }
 
 
@@ -164,15 +159,15 @@ void Temp_LoadScript(std::string pathFromWd)
 
 void SaveGameData(const std::string& pathFromWd)
 {
-    SerializeGameData(&gamedata, wd_path(pathFromWd).c_str());
+    SerializeProjectData(&projectData, wd_path(pathFromWd).c_str());
 }
 
 void LoadGameData(const std::string& pathFromWd)
 {
-    ClearGameData(&gamedata);
-    DeserializeGameData(wd_path(pathFromWd).c_str(), &gamedata);
+    ClearProjectData(&projectData);
+    DeserializeProjectData(wd_path(pathFromWd).c_str(), &projectData);
 
-    SetupCodeEditorString(&tempCodeEditorStringA, (char*)gamedata.codePage1.c_str(), gamedata.codePage1.size());
+    SetupCodeEditorString(&tempCodeEditorStringA, (char*)projectData.codePage1.c_str(), projectData.codePage1.size());
 }
 
 #include <sstream>
@@ -193,7 +188,7 @@ void Temp_ExecCurrentScript()
 
 void InitEditorGUI()
 {
-    ClearGameData(&gamedata);
+    ClearProjectData(&projectData);
     LoadResourcesForEditorGUI();
 
     GiveMeTheConsole()->bind_cmd("save", SaveGameData);
@@ -225,7 +220,7 @@ void InitEditorGUI()
     alh_sprite_editor_right_panel->Insert(alh_sprite_editor_right_panel_bot);
 
     tempCodeEditorStringA = GiveMeNewCodeEditorString();
-    SetupCodeEditorString(&tempCodeEditorStringA, gamedata.codePage1.c_str(), (u32)gamedata.codePage1.size());
+    SetupCodeEditorString(&tempCodeEditorStringA, projectData.codePage1.c_str(), (u32)projectData.codePage1.size());
 }
 
 static bool IsPointInLayoutRect(ivec2 point, Gui::ALH *layout)
@@ -367,7 +362,7 @@ void EditorDoGUI()
             //Gui::PrimitivePanel(Gui::UIRect(codeEditorTabLayout), );// 0x193342 //s_EditorColor1);
             Gui::BeginWindow(Gui::UIRect(codeEditorTabLayout), vec4(0.157f, 0.172f, 0.204f, 1.f));
             DoCodeEditorGUI(tempCodeEditorStringA);
-            gamedata.codePage1 = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
+            projectData.codePage1 = std::string(tempCodeEditorStringA.string, tempCodeEditorStringA.stringlen);
             Gui::EndWindow();
 
 //            Gui::UIRect codeEditorBorder = Gui::UIRect(codeEditorTabLayout);

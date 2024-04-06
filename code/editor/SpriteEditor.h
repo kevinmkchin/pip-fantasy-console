@@ -3,7 +3,7 @@
 #include "../MesaCommon.h"
 #include "../GfxDataTypesAndUtility.h"
 
-struct spredit_Color
+struct SpriteColor
 {
     u8 r = 0;
     u8 g = 0;
@@ -11,19 +11,32 @@ struct spredit_Color
     u8 a = 0;
 };
 
-struct spredit_Frame
+struct SpriteImage
 {
-    spredit_Color *pixels;
+    SpriteColor *pixels;
     i32 w;
     i32 h;
-
-    Gfx::TextureHandle gputex;
 };
+
+struct SpriteData
+{
+    std::string name;
+    //std::vector<SpriteFrame> frames;
+    SpriteImage frame;
+    // layers
+    // animations
+};
+
+void AllocSpriteImage(SpriteImage *image, i32 w, i32 h, bool white);
+void SpriteImageToGPUTexture(Gfx::TextureHandle *texture, SpriteImage *image);
 
 struct SpriteEditorState
 {
-    spredit_Frame frame;
-    std::vector<spredit_Color> palette;
+    SpriteImage frame;
+
+    Gfx::TextureHandle gputex;
+
+    std::vector<SpriteColor> palette;
 };
 
 void ResetSpriteEditorState();

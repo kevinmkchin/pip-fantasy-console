@@ -14,9 +14,9 @@ do {\
 } while (0)
 
 
-static void UndoPixelWriteAction(spredit_Color *pixels, spredit_PixelWriteAction_Data delta)
+static void UndoPixelWriteAction(SpriteColor *pixels, spredit_PixelWriteAction_Data delta)
 {
-    spredit_Color *pixel = &pixels[delta.idx];
+    SpriteColor *pixel = &pixels[delta.idx];
     if (delta.signBits & 0x01) pixel->r -= delta.r;
     else                       pixel->r += delta.r;
     if (delta.signBits & 0x02) pixel->g -= delta.g;
@@ -27,9 +27,9 @@ static void UndoPixelWriteAction(spredit_Color *pixels, spredit_PixelWriteAction
     else                       pixel->a += delta.a;
 }
 
-static void RedoPixelWriteAction(spredit_Color *pixels, spredit_PixelWriteAction_Data delta)
+static void RedoPixelWriteAction(SpriteColor *pixels, spredit_PixelWriteAction_Data delta)
 {
-    spredit_Color *pixel = &pixels[delta.idx];
+    SpriteColor *pixel = &pixels[delta.idx];
     if (delta.signBits & 0x01) pixel->r += delta.r;
     else                       pixel->r -= delta.r;
     if (delta.signBits & 0x02) pixel->g += delta.g;
@@ -114,14 +114,14 @@ void ClearRedoBuffer()
     redoBuffer.size = 0;
 }
 
-void RecordPixelsWrite(spredit_Color *pixelsBefore, spredit_Color *pixelsAfter, i32 w, i32 h)
+void RecordPixelsWrite(SpriteColor *pixelsBefore, SpriteColor *pixelsAfter, i32 w, i32 h)
 {
 #define IsPixelDiff(lhs, rhs) (lhs.r != rhs.r || lhs.g != rhs.g || lhs.b != rhs.b || lhs.a != rhs.a)
 
     u32 pixelsWrittenCount = 0;
 
     // for each diff, save new PixelWriteAction_Data
-    for (u32 i = 0; i < w * h; ++i)
+    for (u32 i = 0; i < u32(w * h); ++i)
     {
         if (IsPixelDiff(pixelsBefore[i], pixelsAfter[i]))
         {

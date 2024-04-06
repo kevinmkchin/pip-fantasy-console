@@ -21,6 +21,6 @@ void InitSpriteEditorActionBuffers();
 void Undo(SpriteEditorState *state);
 void Redo(SpriteEditorState *state);
 void ClearRedoBuffer();
-void RecordPixelsWrite(spredit_Color *pixelsBefore, spredit_Color *pixelsAfter, i32 w, i32 h);
+void RecordPixelsWrite(SpriteColor *pixelsBefore, SpriteColor *pixelsAfter, i32 w, i32 h);
 
 

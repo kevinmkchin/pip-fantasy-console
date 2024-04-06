@@ -1,11 +1,15 @@
 #include "Game.h"
-#include "GameData.h"
+#include "ProjectData.h"
 
 #include "PipAPI.h"
 
 bool TemporaryGameInit()
 {
-    std::string& gamecode = gamedata.codePage1;
+    CompileRuntimeTextureAtlas(&runtimeTextureAtlas, &projectData);
+//    runtimeTextureAtlas.textureAtlas.push_back(Gfx::CreateGPUTextureFromDisk(data_path("spr_ground_01.png").c_str()));
+//    runtimeTextureAtlas.textureAtlas.push_back(Gfx::CreateGPUTextureFromDisk(data_path("spr_crosshair_00.png").c_str()));
+
+    std::string& gamecode = projectData.codePage1;
 
     PipLangVM_InitVM();
     InitializePipAPI();
@@ -33,4 +37,5 @@ void TemporaryGameShutdown()
 {
     TeardownPipAPI();
     PipLangVM_FreeVM();
+    TearDownRuntimeTextureAtlas(&runtimeTextureAtlas);
 }
