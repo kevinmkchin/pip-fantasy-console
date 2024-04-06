@@ -1,10 +1,10 @@
-#include "GameData.h"
+#include "ProjectData.h"
 #include "UTILITY.H"
 #define KEVIN_BYTE_BUFFER_IMPLEMENTATION
 #include "ByteBuffer.h"
 
-GameData gamedata;
-RuntimeData runtimedata;
+ProjectData projectData;
+RuntimeTextureAtlas runtimeTextureAtlas;
 
 
 static ByteBuffer gameDataSerializeBuffer;
@@ -14,7 +14,7 @@ static void SerializeSpriteData(SpriteData *spriteData)
     void *pixelsSource = spriteData->frame.pixels;
     i32 pixelsW = spriteData->frame.w;
     i32 pixelsH = spriteData->frame.h;
-    i32 pixelsSz = pixelsW * pixelsH * (i32)sizeof(spredit_Color);
+    i32 pixelsSz = pixelsW * pixelsH * (i32)sizeof(SpriteColor);
     ByteBufferWrite(&gameDataSerializeBuffer, i32, pixelsW);
     ByteBufferWrite(&gameDataSerializeBuffer, i32, pixelsH);
     ByteBufferWriteBulk(&gameDataSerializeBuffer, pixelsSource, pixelsSz);
@@ -25,15 +25,15 @@ static void DeserializeSpriteData(SpriteData *spriteData)
     i32 pixelsW, pixelsH;
     ByteBufferRead(&gameDataSerializeBuffer, i32, &pixelsW);
     ByteBufferRead(&gameDataSerializeBuffer, i32, &pixelsH);
-    i32 pixelsSz = pixelsW * pixelsH * (i32)sizeof(spredit_Color);
+    i32 pixelsSz = pixelsW * pixelsH * (i32)sizeof(SpriteColor);
     spriteData->frame.w = pixelsW;
     spriteData->frame.h = pixelsH;
-    spriteData->frame.pixels = (spredit_Color*)malloc(pixelsSz * sizeof(spredit_Color));
+    spriteData->frame.pixels = (SpriteColor*)malloc(pixelsSz * sizeof(SpriteColor));
     void *pixelsTarget = spriteData->frame.pixels;
     ByteBufferReadBulk(&gameDataSerializeBuffer, pixelsTarget, pixelsSz);
 }
 
-static void ActuallySerializeEverything(GameData *gameData)
+static void ActuallySerializeEverything(ProjectData *gameData)
 {
     i32 numSpriteData = (i32)gameData->spriteData.size();
     ByteBufferWrite(&gameDataSerializeBuffer, i32, numSpriteData);
@@ -50,7 +50,7 @@ static void ActuallySerializeEverything(GameData *gameData)
 
 }
 
-static void ActuallyDeserializeEverything(GameData *gameData)
+static void ActuallyDeserializeEverything(ProjectData *gameData)
 {
     i32 numSpriteData = 0;
     ByteBufferRead(&gameDataSerializeBuffer, i32, &numSpriteData);
@@ -70,7 +70,7 @@ static void ActuallyDeserializeEverything(GameData *gameData)
 
 }
 
-void SerializeGameData(GameData *gameData, const char *path)
+void SerializeProjectData(ProjectData *gameData, const char *path)
 {
     PrintLog.Message("Saving game data.");
 
@@ -84,7 +84,7 @@ void SerializeGameData(GameData *gameData, const char *path)
     ByteBufferFree(&gameDataSerializeBuffer);
 }
 
-void DeserializeGameData(const char *path, GameData *gameData)
+void DeserializeProjectData(const char *path, ProjectData *gameData)
 {
     PrintLog.Message("Loading new game data.");
 
@@ -100,11 +100,39 @@ void DeserializeGameData(const char *path, GameData *gameData)
     ByteBufferFree(&gameDataSerializeBuffer);
 }
 
-void ClearGameData(GameData *gameData)
+void ClearProjectData(ProjectData *gameData)
 {
     PrintLog.Message("Clearing loaded game data.");
-    gamedata.spriteData.clear();
-    gamedata.codePage1.clear();
+    gameData->spriteData.clear();
+    gameData->codePage1.clear();
 
     ResetSpriteEditorState();
 }
+
+
+void CompileRuntimeTextureAtlas(RuntimeTextureAtlas *atlas, ProjectData *gameData)
+{
+    atlas->textureAtlas.clear();
+    for (int i = 0; i < gameData->spriteData.size(); ++i)
+    {
+        SpriteData sprd = gameData->spriteData.at(i);
+        Gfx::TextureHandle texForThisSprite;
+        SpriteImageToGPUTexture(&texForThisSprite, &sprd.frame);
+
+        atlas->textureAtlas.push_back(texForThisSprite);
+    }
+}
+
+void TearDownRuntimeTextureAtlas(RuntimeTextureAtlas *atlas)
+{
+    // TODO glDeleteTextures in GfxDataTypesAndUtility
+}
+
+Gfx::TextureHandle MapIntoTextureAtlas(RuntimeTextureAtlas *atlas, u32 spriteId)
+{
+    if (atlas->textureAtlas.size() < spriteId)
+        return {};
+    return atlas->textureAtlas.at(spriteId);
+}
+
+

@@ -112,7 +112,8 @@ namespace Gfx
     void QueueSpriteForRender(i64 spriteId, vec2 position)
     {
         RenderQueueData dat;
-        dat.sprite = runtimedata.sprites.at(spriteId);
+        Gfx::TextureHandle texHandle = MapIntoTextureAtlas(&runtimeTextureAtlas, spriteId);
+        dat.sprite = texHandle;
         dat.position = position;
         gameRenderQueue.push_back(dat);
     }

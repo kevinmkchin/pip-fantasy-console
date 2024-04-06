@@ -866,7 +866,7 @@ namespace Gui
 
 #include "editor/SpriteEditor.h"
 
-    void SetFramePixelColor(spredit_Frame *frame, i32 x, i32 y, spredit_Color color)
+    void SetFramePixelColor(SpriteImage *frame, i32 x, i32 y, SpriteColor color)
     {
         if (x >= frame->w || y >= frame->h || x < 0 || y < 0)
             return;
@@ -879,25 +879,22 @@ namespace Gui
         int x, y;
         Window_GetCurrentOffsets(&x, &y);
 
-        static spredit_Frame chromaselector;
-        static spredit_Frame hueselector;
-        static spredit_Frame alphaselector;
-        if (chromaselector.gputex.textureId == 0)
+        static SpriteImage chromaselector;
+        static SpriteImage hueselector;
+        static SpriteImage alphaselector;
+        static Gfx::TextureHandle chromaselectorgputex;
+        static Gfx::TextureHandle hueselectorgputex;
+        static Gfx::TextureHandle alphaselectorgputex;
+        if (chromaselectorgputex.textureId == 0)
         {
-            chromaselector.w = 61;
-            chromaselector.h = 96;
-            chromaselector.pixels = (spredit_Color*)calloc(chromaselector.w * chromaselector.h, sizeof(spredit_Color));
-            chromaselector.gputex = Gfx::CreateGPUTextureFromBitmap((u8*)chromaselector.pixels, chromaselector.w, chromaselector.h, GL_RGBA, GL_RGBA);
+            AllocSpriteImage(&chromaselector, 61, 96, false);
+            SpriteImageToGPUTexture(&chromaselectorgputex, &chromaselector);
 
-            hueselector.w = chromaselector.w;
-            hueselector.h = 12;
-            hueselector.pixels = (spredit_Color*)calloc(hueselector.w * hueselector.h, sizeof(spredit_Color));
-            hueselector.gputex = Gfx::CreateGPUTextureFromBitmap((u8*)hueselector.pixels, hueselector.w, hueselector.h, GL_RGBA, GL_RGBA);
+            AllocSpriteImage(&hueselector, chromaselector.w, 12, false);
+            SpriteImageToGPUTexture(&hueselectorgputex, &hueselector);
 
-            alphaselector.w = chromaselector.w;
-            alphaselector.h = 12;
-            alphaselector.pixels = (spredit_Color*)calloc(alphaselector.w * alphaselector.h, sizeof(spredit_Color));
-            alphaselector.gputex = Gfx::CreateGPUTextureFromBitmap((u8*)alphaselector.pixels, alphaselector.w, alphaselector.h, GL_RGBA, GL_RGBA);
+            AllocSpriteImage(&alphaselector, chromaselector.w, 12, false);
+            SpriteImageToGPUTexture(&alphaselectorgputex, &alphaselector);
         }
 
         const UIRect chromaselectorrect = UIRect(x, y, chromaselector.w, chromaselector.h);
@@ -969,7 +966,7 @@ namespace Gui
                 float isaturation = float(i) / float(chromaselector.w - 1);
                 float ivalue = float(j) / float(chromaselector.h - 1);
                 vec3 interprgb = HSVToRGB(*hue, isaturation, ivalue);
-                spredit_Color c = {
+                SpriteColor c = {
                         (u8)(255.f * interprgb.x),
                         (u8)(255.f * interprgb.y),
                         (u8)(255.f * interprgb.z),
@@ -978,7 +975,7 @@ namespace Gui
                 *(chromaselector.pixels + chromaselector.w * j + i) = c;
             }
         }
-        spredit_Color selectedchromacirclecolor = { 0,0,0,200 };
+        SpriteColor selectedchromacirclecolor = {0, 0, 0, 200 };
         if (*value < 0.5f)
             selectedchromacirclecolor = { 255,255,255,200 };
         i32 left = i32(*saturation * float(chromaselector.w)) - 2;
@@ -991,7 +988,7 @@ namespace Gui
         SetFramePixelColor(&chromaselector, (left + 2), (bottom + 0), selectedchromacirclecolor);
         SetFramePixelColor(&chromaselector, (left + 1), (bottom + 3), selectedchromacirclecolor);
         SetFramePixelColor(&chromaselector, (left + 2), (bottom + 3), selectedchromacirclecolor);
-        Gfx::UpdateGPUTextureFromBitmap(&chromaselector.gputex, (u8*)chromaselector.pixels, chromaselector.w, chromaselector.h);
+        SpriteImageToGPUTexture(&chromaselectorgputex, &chromaselector);
 
         for (i32 i = 0; i < hueselector.w; ++i)
         {
@@ -1009,7 +1006,7 @@ namespace Gui
         }
         i32 selectedhuecirclex = i32(*hue * float(hueselector.w));
         i32 selectedhuecircley = hueselector.h / 2;
-        spredit_Color selectedhuecirclecolor = { 10,10,10,180 };
+        SpriteColor selectedhuecirclecolor = {10, 10, 10, 180 };
         SetFramePixelColor(&hueselector, selectedhuecirclex-2, selectedhuecircley-1, selectedhuecirclecolor);
         SetFramePixelColor(&hueselector, selectedhuecirclex-2, selectedhuecircley, selectedhuecirclecolor);
         SetFramePixelColor(&hueselector, selectedhuecirclex+1, selectedhuecircley-1, selectedhuecirclecolor);
@@ -1018,7 +1015,7 @@ namespace Gui
         SetFramePixelColor(&hueselector, selectedhuecirclex, selectedhuecircley-2, selectedhuecirclecolor);
         SetFramePixelColor(&hueselector, selectedhuecirclex-1, selectedhuecircley+1, selectedhuecirclecolor);
         SetFramePixelColor(&hueselector, selectedhuecirclex, selectedhuecircley+1, selectedhuecirclecolor);
-        Gfx::UpdateGPUTextureFromBitmap(&hueselector.gputex, (u8*)hueselector.pixels, hueselector.w, hueselector.h);
+        SpriteImageToGPUTexture(&hueselectorgputex, &hueselector);
 
         for (i32 i = 0; i < alphaselector.w; ++i)
         {
@@ -1045,7 +1042,7 @@ namespace Gui
         }
         i32 selectedalphacirclex = i32(*opacity * float(alphaselector.w));
         i32 selectedalphacircley = alphaselector.h / 2;
-        spredit_Color selectedalphacirclecolor = { 10,10,10,180 };
+        SpriteColor selectedalphacirclecolor = {10, 10, 10, 180 };
         SetFramePixelColor(&alphaselector, selectedalphacirclex-2, selectedalphacircley-1, selectedalphacirclecolor);
         SetFramePixelColor(&alphaselector, selectedalphacirclex-2, selectedalphacircley, selectedalphacirclecolor);
         SetFramePixelColor(&alphaselector, selectedalphacirclex+1, selectedalphacircley-1, selectedalphacirclecolor);
@@ -1054,11 +1051,11 @@ namespace Gui
         SetFramePixelColor(&alphaselector, selectedalphacirclex, selectedalphacircley-2, selectedalphacirclecolor);
         SetFramePixelColor(&alphaselector, selectedalphacirclex-1, selectedalphacircley+1, selectedalphacirclecolor);
         SetFramePixelColor(&alphaselector, selectedalphacirclex, selectedalphacircley+1, selectedalphacirclecolor);
-        Gfx::UpdateGPUTextureFromBitmap(&alphaselector.gputex, (u8*)alphaselector.pixels, alphaselector.w, alphaselector.h);
+        SpriteImageToGPUTexture(&alphaselectorgputex, &alphaselector);
 
-        PrimitivePanel(chromaselectorrect, chromaselector.gputex.textureId);
-        PrimitivePanel(hueselectorrect, hueselector.gputex.textureId);
-        PrimitivePanel(alphaselectorrect, alphaselector.gputex.textureId);
+        PrimitivePanel(chromaselectorrect, chromaselectorgputex.textureId);
+        PrimitivePanel(hueselectorrect, hueselectorgputex.textureId);
+        PrimitivePanel(alphaselectorrect, alphaselectorgputex.textureId);
 
         // Todo Window_StageLastElementDimension
         Window_StageLastElementDimension(chromaselectorrect.w, chromaselector.h + hueselector.h + alphaselectorrect.h);

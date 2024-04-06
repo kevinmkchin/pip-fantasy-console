@@ -22,8 +22,7 @@ Easy:
 
 # Immediate next
 
-- Clean up 
-  - sprite editor & game data
+- Clean up sprite editor
 
 - [Sprite editor] **color palette**
 - [Sprite editor] **Animation frames**

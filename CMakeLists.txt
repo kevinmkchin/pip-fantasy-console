@@ -42,8 +42,8 @@ set(SOURCE_FILES
         code/GUI_DRAWING.CPP
         code/MemoryAllocator.h
         code/MemoryAllocator.cpp
-        code/GameData.h
-        code/GameData.cpp
+        code/ProjectData.h
+        code/ProjectData.cpp
         code/Game.h
         code/Game.cpp
         code/PipAPI.h
