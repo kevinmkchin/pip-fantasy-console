@@ -6,23 +6,23 @@ Hotline Miami x Nuclear Throne kind of game
 - Do something interesting with the camera
 - Dodge to avoid bullets -> faster than NT but slower than HM
 
-Easy:
-- prettify Editor GUI elements (the ones that go inside Windows)
-- use static buffer for preview brush changes instead of std vector
-
-- limit undo redo buffer size
-- optimize color picker the for loops are quite slow
-
-- [CompileTimeID] GUI fresh ID is not great...will be buggy when number of elements change dynamically
-  - should change to be managed by the window (elements in same window will persist the same ids).
-
 # Known Bugs
 
 - [Code editor] code editor upon input, ensure cursor is visible by updating scroll values
 
 # Immediate next
 
-- Clean up sprite editor
+- list project assets and switch views
+- clean up sprite editor
+  - use static buffer for preview brush changes instead of std vector
+  - limit undo redo buffer size
+  - optimize color picker the for loops are quite slow
+- configure sprite (transparency, size)
+- [GUI] ScrollView - basically a sub window with translated masking? how would input work?
+- [GUI] Prettify Editor GUI elements
+
+- [CompileTimeID] GUI fresh ID is not great...will be buggy when number of elements change dynamically
+  - should change to be managed by the window (elements in same window will persist the same ids).
 
 - [Sprite editor] **color palette**
 - [Sprite editor] **Animation frames**
@@ -43,14 +43,14 @@ Easy:
 - [Code editor] cut, copy, paste
 - [Code editor] ctrl+backspace and ctrl+delete for word deletion
 - [Code editor] ctrl+d for duplicate line
-- [Code editor] SCROLLING
+- [Code editor] SCROLLING (2024-04-05 what the fuck did I mean by this?)
 
 # Todo
 
 - boot sound (SDL_mixer)
 - Markdown reader - manual in markdown, toggled with F1
-- code editor: pg up pg down (maybe for functions?)
-- code editor: ctrl+f
+- [Code editor] pg up pg down (maybe for functions?)
+- [Code editor] ctrl+f
 
 ## piplang general
  - math ops: flr, ceil, rnd -> all return integer, max, min
@@ -64,8 +64,6 @@ Easy:
 
 - camera API (maybe not? user can implement own camera)
 - gui API
-- juice API
-- sfx & music API
 - juice API
 - sfx & music API
 
