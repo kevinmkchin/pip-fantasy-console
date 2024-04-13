@@ -131,7 +131,10 @@ void TearDownRuntimeTextureAtlas(RuntimeTextureAtlas *atlas)
 Gfx::TextureHandle MapIntoTextureAtlas(RuntimeTextureAtlas *atlas, u32 spriteId)
 {
     if (atlas->textureAtlas.size() < spriteId)
+    {
+        PrintLog.Error("spriteId doesn't exist.");
         return {};
+    }
     return atlas->textureAtlas.at(spriteId);
 }
 
