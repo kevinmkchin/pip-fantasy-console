@@ -227,7 +227,7 @@ void algo_line_perfect(int x1, int y1, int x2, int y2) // I don't like
 
 void ResetSpriteEditorState()
 {
-    AllocSpriteImage(&spreditState.frame, 64, 64, true);
+    AllocSpriteImage(&spreditState.frame, 32, 32, true);
 }
 
 void DoSpriteEditorGUI()
