@@ -42,7 +42,8 @@ static void LoadResourcesForEditorGUI()
     borders_00 = Gfx::CreateGPUTextureFromDisk(data_path("borders_01.png").c_str());
 
     gamedata.sprites.push_back(thBu01_normal);
-    gamedata.sprites.push_back(thBu01_active);
+    // gamedata.sprites.push_back(thBu01_active);
+    gamedata.sprites.push_back(Gfx::CreateGPUTextureFromDisk(data_path("spr_fish.png").c_str()));
     gamedata.sprites.push_back(Gfx::CreateGPUTextureFromDisk(data_path("spr_ground_01.png").c_str()));
     gamedata.sprites.push_back(Gfx::CreateGPUTextureFromDisk(data_path("spr_crosshair_00.png").c_str()));
 }
