@@ -1,6 +1,6 @@
-# Pip Fantasy Console (work-in-progress)
+# Pip Fantasy Console (work in progress)
 
-Pip Fantasy Console is work-in-progress game making tool inspired by fantasy consoles like PICO-8. Although unfinished, I coded some really cool stuff for this that is worth sharing.
+Pip Fantasy Console is a work-in-progress game making tool inspired by fantasy consoles like PICO-8. Although unfinished, I coded some really cool stuff for this that is worth sharing.
 
 ![](https://kevin.gd/images/pip-demo/mario.png)
 > Sprite editor
